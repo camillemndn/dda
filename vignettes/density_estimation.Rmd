@@ -1,0 +1,35 @@
+---
+title: "density_estimation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{density_estimation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+devtools::load_all()
+```
+
+```{r mean_by_region}
+library(tidyverse)
+data(vietnam_temperature)
+
+temp <- vietnam_temperature |>
+  filter(year == "1987") |>
+  dplyr::group_by(region)
+
+smooth <- function(...) to_dd(rangeval = c(-5, 45), ...)
+mean_by_region <- temp |>
+  mutate(t_max_dd = lapply(t_max, smooth)) |>
+  summarize(mean = list(mean.dd(unlist(t_max_dd))))
+
+plot(mean_by_region$mean[[6]])
+```

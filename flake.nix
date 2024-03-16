@@ -15,6 +15,7 @@
 
         r-deps = with pkgs.rPackages; [
           devtools
+          fdANOVA
           fda
           mvnfast
           refund
