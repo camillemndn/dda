@@ -21,9 +21,12 @@ devtools::load_all()
 ```{r mean_by_region}
 library(tidyverse)
 data(vietnam_temperature)
+data(vietnam_regions)
+
+selected_year <- 1987
 
 temp <- vietnam_temperature |>
-  filter(year == "1987") |>
+  filter(year == selected_year) |>
   dplyr::group_by(region)
 
 smooth <- function(...) to_dd(rangeval = c(-5, 45), ...)
@@ -31,5 +34,17 @@ mean_by_region <- temp |>
   mutate(t_max_dd = lapply(t_max, smooth)) |>
   summarize(mean = list(mean.dd(unlist(t_max_dd))))
 
-plot(mean_by_region$mean[[6]])
+par(mfrow = c(2, 3))
+for (i in 1:6) {
+  plot(mean_by_region$mean[[i]],
+    xlab = "Temperature (°C)",
+    ylab = vietnam_regions[vietnam_regions$code == mean_by_region$region[i], "name"]
+  )
+}
+title(paste("Temperature Densities in Vietnam by Region in", selected_year),
+  line = -2, outer = TRUE
+)
+
+# Total mean
+mean.dd(mean_by_region$mean)
 ```
