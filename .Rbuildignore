@@ -2,3 +2,5 @@
 ^\.envrc$
 ^flake\.nix$
 ^flake\.lock$
+^doc$
+^Meta$

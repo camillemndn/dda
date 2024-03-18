@@ -51,3 +51,5 @@ rsconnect/
 # direnv
 .direnv
 inst/doc
+/doc/
+/Meta/

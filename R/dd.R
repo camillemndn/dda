@@ -163,6 +163,8 @@ plot.dd <- function(dd, ...) {
   dd$plot(...)
 }
 #' @export
+eval.default <- eval
+#' @export
 eval <- function(...) {
   UseMethod("eval")
 }
