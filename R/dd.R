@@ -5,6 +5,7 @@
 #'
 #' @details
 #' More details here.
+#' @export
 
 dd <- R6::R6Class("dd",
   public = list(
@@ -199,7 +200,9 @@ inprod.dd <- function(dd1, ...) {
 #' @param ... The vector of densities.
 #' @return A density object which is the mean.
 #' @export
-mean.dd <- function(vec_dd) {
+mean_dd <- function(...) {
+  args <- list(...)
+  vec_dd <- if (length(args) == 1 && is.list(args[[1]])) args[[1]] else args
   sum_dd <- Reduce(`+.dd`, vec_dd)
   n <- length(vec_dd)
   1 / n * sum_dd

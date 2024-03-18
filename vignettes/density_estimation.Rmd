@@ -37,7 +37,7 @@ smooth <- function(...) {
 }
 mean_by_region <- temp |>
   mutate(t_max_dd = lapply(t_max, smooth)) |>
-  summarize(mean = list(mean.dd(unlist(t_max_dd))))
+  summarize(mean = list(mean_dd(unlist(t_max_dd))))
 
 par(mfrow = c(2, 3))
 for (i in 1:6) {
@@ -51,5 +51,5 @@ title(paste("Temperature Densities in Vietnam by Region in", selected_year),
 )
 
 # Total mean
-mean.dd(mean_by_region$mean)
+mean_dd(mean_by_region$mean)
 ```
