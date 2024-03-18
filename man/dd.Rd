@@ -41,11 +41,12 @@ Create a new distributional data object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{dd$new(
   sample = NULL,
-  clr = fda::fd(),
-  constant = NULL,
-  rangeval = range(sample),
+  basis = fda::create.bspline.basis(rangeval, nbasis),
+  rangeval = NULL,
   nbasis = 10,
-  lambda = 0
+  lambda = 0,
+  clr = fda::fd(sample, basisobj = basis),
+  constant = NULL
 )}\if{html}{\out{</div>}}
 }
 
@@ -54,15 +55,17 @@ Create a new distributional data object.
 \describe{
 \item{\code{sample}}{An \code{fd} object representating the clr transform.}
 
-\item{\code{clr}}{An \code{fd} object representating the clr transform.}
-
-\item{\code{constant}}{Normalizing constant.}
+\item{\code{basis}}{The bspline basis.}
 
 \item{\code{rangeval}}{An \code{fd} object representating the clr transform.}
 
 \item{\code{nbasis}}{An \code{fd} object representating the clr transform.}
 
 \item{\code{lambda}}{An \code{fd} object representating the clr transform.}
+
+\item{\code{clr}}{An \code{fd} object representating the clr transform.}
+
+\item{\code{constant}}{Normalizing constant.}
 }
 \if{html}{\out{</div>}}
 }

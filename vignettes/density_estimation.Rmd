@@ -29,7 +29,12 @@ temp <- vietnam_temperature |>
   filter(year == selected_year) |>
   dplyr::group_by(region)
 
-smooth <- function(...) to_dd(rangeval = c(-5, 45), ...)
+smooth <- function(...) {
+  dd$new(
+    rangeval = c(-5, 45),
+    lambda = 1e-1, nbasis = 30, ...
+  )
+}
 mean_by_region <- temp |>
   mutate(t_max_dd = lapply(t_max, smooth)) |>
   summarize(mean = list(mean.dd(unlist(t_max_dd))))

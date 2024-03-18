@@ -24,13 +24,19 @@ dd <- R6::R6Class("dd",
     #' @param lambda An `fd` object representating the clr transform.
     #' @param clr An `fd` object representating the clr transform.
     #' @param constant Normalizing constant.
+    #' @param basis The bspline basis.
     #' @return A new `Distributional Data` object.
-    initialize = function(sample = NULL, clr = fda::fd(), constant = NULL,
-                          rangeval = range(sample),
+    initialize = function(sample = NULL,
+                          basis = fda::create.bspline.basis(rangeval, nbasis),
+                          rangeval = NULL,
                           nbasis = 10,
-                          lambda = 0) {
+                          lambda = 0,
+                          clr = fda::fd(sample, basisobj = basis),
+                          constant = NULL) {
+      if (is.null(rangeval)) {
+        rangeval <- if (!is.null(sample)) range(sample) else c(0, 1)
+      }
       if (!is.null(sample)) {
-        rangeval <- range(rangeval)
         # Set up basis for W(x)
         basisobj <- fda::create.bspline.basis(rangeval, nbasis)
         # Set up initial value for wfdobj
@@ -38,7 +44,6 @@ dd <- R6::R6Class("dd",
         wfdparobj <- fda::fdPar(wfd0, lambda = lambda)
         # Estimate density
         wfdobj <- fda::density.fd(sample, wfdparobj)$Wfdobj
-        cstfdobj <- fda::create.constant.basis(rangeval)
         wint <- integrate(
           \(t) fda::eval.fd(wfdobj, t),
           min(rangeval), max(rangeval),
@@ -198,9 +203,4 @@ mean.dd <- function(vec_dd) {
   sum_dd <- Reduce(`+.dd`, vec_dd)
   n <- length(vec_dd)
   1 / n * sum_dd
-}
-
-#' @export
-to_dd <- function(...) {
-  dd$new(...)
 }
