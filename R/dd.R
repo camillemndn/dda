@@ -161,6 +161,7 @@ dd <- R6::R6Class("dd",
   }
 }
 
+#' @title Plot
 #' @description
 #' Plots a distributional data object.
 #' @param dd Density to plot.
@@ -174,6 +175,8 @@ eval.default <- eval
 eval <- function(...) {
   UseMethod("eval")
 }
+
+#' @title Evaluation
 #' @description
 #' Evaluates a distributional data object at a point `t`.
 #' @param dd Density to eval.
@@ -187,6 +190,8 @@ eval.dd <- function(dd, t) {
 inprod <- function(...) {
   UseMethod("inprod")
 }
+
+#' @title Inner product
 #' @description
 #' Computes the Aitchison inner product.
 #' @param ... The other density to compute inner product.
@@ -195,6 +200,8 @@ inprod <- function(...) {
 inprod.dd <- function(dd1, ...) {
   dd1$inprod(...)
 }
+
+#' @title Aitchison mean
 #' @description
 #' Computes the mean of a vector of densities.
 #' @param ... The vector of densities.
