@@ -55,7 +55,6 @@ dd <- R6::R6Class("dd",
         self$clr <- clr
       }
       self$constant <- constant
-      self$normalize()
     },
     #' @description
     #' Add two distributional data objects together.
@@ -94,6 +93,7 @@ dd <- R6::R6Class("dd",
     #' @param t A real number `t`.
     #' @return A real number.
     eval = function(t) {
+      self$normalize()
       exp(fda::eval.fd(self$clr, t)) / as.numeric(self$constant)
     },
     #' @description
