@@ -69,15 +69,18 @@ eval.dd <- function(ddobj, t) {
 #' @export
 normalize <- function(self) {
   if (!(is.numeric(self$constant))) {
-    rangemin <- min(self$basis$rangeval)
-    rangemax <- max(self$basis$rangeval)
-    dens <- \(t) exp(fda::eval.fd(self, t))
-    constant <- format(
-      integrate(dens, rangemin, rangemax,
-        rel.tol = .Machine$double.eps^0.5
-      )$value,
-      scientific = TRUE
-    )
+    constant <- rep(NA, ncol(self$coefs))
+    for (i in seq_len(ncol(self$coefs))) {
+      rangemin <- min(self$basis$rangeval)
+      rangemax <- max(self$basis$rangeval)
+      dens <- \(t) exp(fda::eval.fd(self[i], t))
+      constant[i] <- format(
+        integrate(dens, rangemin, rangemax,
+          rel.tol = .Machine$double.eps^0.5
+        )$value,
+        scientific = TRUE
+      )
+    }
     constant
   }
 }
@@ -94,7 +97,7 @@ plot.dd <- function(ddobj, rangeval = ddobj$basis$rangeval,
                     h = 0.01,
                     ...) {
   argvals <- seq(min(rangeval), max(rangeval), h)
-  plot(argvals, eval(ddobj, argvals), type = "l", ...)
+  plot(rep(argvals, ncol(ddobj$coefs)), eval(ddobj, argvals), type = "l", ...)
 }
 
 #' @title Aitchison mean
@@ -125,3 +128,69 @@ cov.default <- cov
 cov <- function(...) UseMethod("cov")
 #' @export
 cov.dd <- var.dd
+
+#' @export
+merge.dd <- function(...) {
+  fdlist <- as.list(...)
+  coefs <- as.matrix(data.frame(lapply(fdlist, \(x) x$coefs)))
+  reps <- unlist(lapply(fdlist, \(x) x$fdnames$reps))
+  colnames(coefs) <- reps
+  fdnames <- list(
+    time = setNames(lapply(fdlist, \(x) x$fdnames$time), reps),
+    reps = reps,
+    value = fdlist[[1]]$fdnames$values
+  )
+  fdobj <- fdlist[[1]]
+  fdobj$coefs <- coefs
+  fdobj$fdnames <- fdnames
+  structure(fdobj, class = c("dd", "fd"))
+}
+
+#' @export
+ICS.default <- ICS::ICS
+
+#' @export
+ICS <- function(...) UseMethod("ICS")
+
+#' @export
+ICS.fd <- function(fdobj, ...) {
+  changemat <- zbsplines(basis = fdobj$basis, inv = TRUE)
+  gram <- t(changemat) %*% fda::inprod(fdobj$basis, fdobj$basis) %*% changemat
+  icsobj <- ICS::ICS(crossprod(zbsplines(fdobj), gram), ...)
+  icsobj$W <- fda::fd(
+    zbsplines(coefs = icsobj$W, basis = fdobj$basis, inv = TRUE),
+    fdobj$basis
+  )
+  icsobj
+}
+
+#' @export
+ICS.dd <- function(...) {
+  icsobj <- ICS.fd(...)
+  icsobj$W <- density(clr = icsobj$W)
+  icsobj
+}
+
+#' @export
+zbsplines <- function(
+    fdobj = NULL,
+    coefs = fdobj$coefs, basis = fdobj$basis, inv = FALSE) {
+  rangeval <- basis$rangeval
+  knots <- basis$params
+  k <- length(knots)
+  p <- basis$nbasis
+  d <- p - k
+  a <- min(rangeval)
+  b <- max(rangeval)
+  extknots <- c(rep(a, d), knots, rep(b, d))
+  dinvmat <- diag(diff(extknots, lag = d))
+  kmat <- diag(p)[, -p]
+  kmat[cbind(2:p, 1:(p - 1))] <- -1
+  kinvmat <- MASS::ginv(kmat)
+  changemat <- if (inv) d * solve(dinvmat) %*% kmat else kinvmat %*% dinvmat / d
+  if (is.null(coefs)) {
+    changemat
+  } else {
+    changemat %*% coefs
+  }
+}
