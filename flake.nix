@@ -53,6 +53,7 @@
             (python3.withPackages python-deps)
             (quarto.override { extraRPackages = r-deps; extraPythonPackages = python-deps; })
             (rWrapper.override { packages = r-deps; })
+            (rstudioWrapper.override { packages = r-deps; })
             texliveFull
           ];
         };
