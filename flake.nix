@@ -1,12 +1,14 @@
 {
   description = "thesis";
   inputs.nixpkgs.url = "nixpkgs";
+  inputs.nixpkgs-unstable.url = "nixpkgs/nixos-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        unstable = nixpkgs-unstable.legacyPackages.${system};
 
         python-deps = p: with p; [
           plotly
@@ -17,12 +19,13 @@
           devtools
           fdANOVA
           fda
+          fda_usc
           mvnfast
           refund
           robCompositions
           compositions
-          ICS
-          ICSOutlier
+          unstable.rPackages.ICS
+          unstable.rPackages.ICSOutlier
           corrplot
           xts
           ellipse
@@ -32,6 +35,7 @@
           plotly
           tidyverse
 
+          sinew
           languageserver
           viridis
           quarto

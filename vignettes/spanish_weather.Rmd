@@ -1,0 +1,40 @@
+---
+title: "Spanish Weather"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Spanish Weather}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(dda)
+library(fda.usc)
+```
+
+```{r preprocessing}
+data(aemet)
+temps <- aemet$temp
+str(temps)
+
+smooth <- function(...) density(nbasis = 11, ...)
+
+temps <- dda:::merge.dd(as.list(apply(temps$data, 1, smooth)))
+plot(temps)
+```
+
+```{r ics}
+plot(ICS(temps)$W)
+temps_out <- ICS_outlier(temps)
+plot(temps_out)
+```
+
+
+

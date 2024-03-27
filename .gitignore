@@ -53,3 +53,7 @@ rsconnect/
 inst/doc
 /doc/
 /Meta/
+
+# Quarto
+*_files
+*_cache

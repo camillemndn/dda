@@ -15,11 +15,11 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-devtools::load_all()
+library(dda)
+library(tidyverse)
 ```
 
 ```{r mean_by_region}
-library(tidyverse)
 data(vietnam_temperature)
 data(vietnam_regions)
 
@@ -32,30 +32,21 @@ temp <- vietnam_temperature |>
 smooth <- function(...) {
   density(
     rangeval = c(20, 37),
-    lambda = 1e-1, nbasis = 30, ...
+    lambda = 1, nbasis = 30, ...
   )
 }
 
 temp <- temp |> mutate(t_max_dd = lapply(t_max, smooth))
 
-mean_by_region <- temp |> summarize(mean = list(mean(merge.dd(t_max_dd))))
+mean_by_region <- temp |> summarize(mean = list(mean(dda:::merge.dd(t_max_dd))))
 
-par(mfrow = c(2, 3))
-for (i in 1:6) {
-  plot(mean_by_region$mean[[i]],
-    xlab = "Temperature (°C)",
-    ylab = vietnam_regions[vietnam_regions$code == mean_by_region$region[i], "name"]
-  )
-}
-title(paste("Temperature Densities in Vietnam by Region in", selected_year),
-  line = -2, outer = TRUE
-)
+plot(dda:::merge.dd(mean_by_region$mean))
 
 # Total mean
-plot(mean(merge.dd(mean_by_region$mean)))
+plot(mean(dda:::merge.dd(mean_by_region$mean)))
 ```
 
 ```{r ics}
-ICS(merge.dd(temp$t_max_dd))
+plot(dda:::ICS.fd(dda:::merge.dd(temp$t_max_dd))$W)
 ```
 

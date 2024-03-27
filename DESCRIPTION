@@ -2,17 +2,20 @@ Package: dda
 Title: Distributional Data Analysis
 Version: 0.0.0.9000
 Authors@R:
-    person("Camille", "Mondon", , "camille.mondon@tse-fr.eu", role = c("aut", "cre"),
+    person("Camille", "Mondon", email = "camille.mondon@tse-fr.eu", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0007-4569-990X"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Description: Descriptive statistics, Invariant Coordinate Selection, ANOVA on density data.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports: 
     fda,
-    ICS
+    fda.usc,
+    ggplot2,
+    ICS,
+    ICSOutlier,
+    MASS
 Suggests: 
     knitr,
     rmarkdown
