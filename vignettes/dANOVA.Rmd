@@ -30,7 +30,7 @@ temp <- vietnam_temperature |>
 
 smooth <- function(...) {
   density(
-    rangeval = c(20, 37),
+    rangeval = c(10, 40),
     lambda = 0, nbasis = 11, ...
   )
 }

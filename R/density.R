@@ -79,9 +79,9 @@ merge.dd <- function(...) {
   reps <- unlist(lapply(fdlist, \(x) x$fdnames$reps))
   colnames(coefs) <- reps
   fdnames <- list(
-    time = stats::setNames(lapply(fdlist, \(x) x$fdnames$time), reps),
+    args = stats::setNames(lapply(fdlist, \(x) x$fdnames$time), reps),
     reps = reps,
-    value = fdlist[[1]]$fdnames$values
+    funs = fdlist[[1]]$fdnames$values
   )
   fdobj <- fdlist[[1]]
   fdobj$coefs <- coefs

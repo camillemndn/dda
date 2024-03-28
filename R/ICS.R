@@ -65,6 +65,10 @@ ICS.dd <- function(...) {
   icsobj
 }
 
+#' @rdname ICS_outlier
+#' @export
+ICS_outlier.default <- ICSOutlier::ICS_outlier
+
 #' @title FUNCTION_TITLE
 #' @description FUNCTION_DESCRIPTION
 #' @param X PARAM_DESCRIPTION
@@ -85,21 +89,6 @@ ICS.dd <- function(...) {
 #' @param iseed PARAM_DESCRIPTION, Default: NULL
 #' @param pkg PARAM_DESCRIPTION, Default: 'ICSOutlier'
 #' @param q_type PARAM_DESCRIPTION, Default: 7
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if (interactive()) {
-#'   # EXAMPLE1
-#' }
-#' }
-#' @rdname ICS_outlier.default
-#' @export
-ICS_outlier.default <- ICSOutlier::ICS_outlier
-
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
 #' @param ... PARAM_DESCRIPTION
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
@@ -194,18 +183,6 @@ ICS_outlier.dd <- function(
   res
 }
 
-
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if (interactive()) {
-#'   # EXAMPLE1
-#' }
-#' }
 #' @rdname ICS_outlier
 #' @export
 ICS_outlier.fd <- ICS_outlier.dd
