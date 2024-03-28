@@ -11,14 +11,15 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports: 
     fda,
-    fda.usc,
     ggplot2,
     ICS,
     ICSOutlier,
     MASS
 Suggests: 
+    fda.usc,
     knitr,
-    rmarkdown
+    rmarkdown,
+    tidyverse
 VignetteBuilder: knitr
 Depends: 
     R (>= 2.10)

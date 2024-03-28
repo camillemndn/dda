@@ -5,6 +5,7 @@ vignette: >
   %\VignetteIndexEntry{Spanish Weather}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteDepends{fda.usc}
 ---
 
 ```{r, include = FALSE}

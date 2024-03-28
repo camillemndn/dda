@@ -20,14 +20,14 @@ plot.dd <- function(ddobj, rangeval = ddobj$basis$rangeval,
                     ...) {
   argvals <- seq(min(rangeval), max(rangeval), h)
   df <- data.frame(cbind(argvals, eval.dd(ddobj, argvals)))
-  df_long <- reshape(df,
+  df_long <- stats::reshape(df,
     varying = list(names(df)[-1]),
     v.names = "y",
     times = names(df)[-1],
     timevar = "obs",
     direction = "long"
   )
-  ggplot(df_long, aes(x = argvals, y = y, color = obs)) +
+  ggplot(df_long, aes(x = argvals, y = df_long$y, color = df_long$obs)) +
     geom_line() +
     labs(x = "x", y = "y", title = "Multiple Curves")
 }

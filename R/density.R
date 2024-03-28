@@ -1,26 +1,5 @@
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param sample PARAM_DESCRIPTION, Default: NULL
-#' @param method PARAM_DESCRIPTION, Default: c("MPL", "kernel")
-#' @param basis PARAM_DESCRIPTION, Default: fda::create.bspline.basis(rangeval, nbasis)
-#' @param rangeval PARAM_DESCRIPTION, Default: NULL
-#' @param nbasis PARAM_DESCRIPTION, Default: 10
-#' @param lambda PARAM_DESCRIPTION, Default: 0
-#' @param clr PARAM_DESCRIPTION, Default: fda::fd(sample, basisobj = basis)
-#' @param constant PARAM_DESCRIPTION, Default: NULL
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if (interactive()) {
-#'   # EXAMPLE1
-#' }
-#' }
-#' @seealso
-#'  \code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[fda]{density.fd}}, \code{\link[fda]{eval.fd}}
-#' @rdname density_kernel
-#' @export
+#' @noRd
+#' @importFrom stats density
 density_kernel <- density.default
 
 #' @title FUNCTION_TITLE
@@ -68,7 +47,7 @@ density.default <- function(sample = NULL, method = c("MPL", "kernel"),
     wfdparobj <- fda::fdPar(wfd0, lambda = lambda)
     # Estimate density
     wfdobj <- fda::density.fd(sample, wfdparobj)$Wfdobj
-    wint <- integrate(
+    wint <- stats::integrate(
       \(t) fda::eval.fd(wfdobj, t),
       min(rangeval), max(rangeval),
       rel.tol = .Machine$double.eps^0.5
@@ -100,7 +79,7 @@ merge.dd <- function(...) {
   reps <- unlist(lapply(fdlist, \(x) x$fdnames$reps))
   colnames(coefs) <- reps
   fdnames <- list(
-    time = setNames(lapply(fdlist, \(x) x$fdnames$time), reps),
+    time = stats::setNames(lapply(fdlist, \(x) x$fdnames$time), reps),
     reps = reps,
     value = fdlist[[1]]$fdnames$values
   )

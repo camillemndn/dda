@@ -62,7 +62,7 @@ normalize <- function(self) {
       rangemax <- max(self$basis$rangeval)
       dens <- \(t) exp(fda::eval.fd(self[i], t))
       constant[i] <- format(
-        integrate(dens, rangemin, rangemax,
+        stats::integrate(dens, rangemin, rangemax,
           rel.tol = .Machine$double.eps^0.5
         )$value,
         scientific = TRUE

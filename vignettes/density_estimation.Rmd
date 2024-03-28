@@ -5,6 +5,7 @@ vignette: >
   %\VignetteIndexEntry{density_estimation}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteDepends{tidyverse}
 ---
 
 ```{r, include = FALSE}
