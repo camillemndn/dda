@@ -13,8 +13,7 @@ Imports:
     fda,
     ggplot2,
     ICS,
-    ICSOutlier,
-    MASS
+    ICSOutlier
 Suggests: 
     fda.usc,
     knitr,

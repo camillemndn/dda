@@ -36,11 +36,11 @@ ICS <- function(...) UseMethod("ICS")
 #' @importFrom fda inprod fd
 #' @importFrom ICS ICS
 ICS.fd <- function(fdobj, ...) {
-  changemat <- zbsplines(basis = fdobj$basis, inv = TRUE)
+  changemat <- to_zbsplines(basis = fdobj$basis, inv = TRUE)
   gram <- t(changemat) %*% fda::inprod(fdobj$basis, fdobj$basis) %*% changemat
-  icsobj <- ICS::ICS(crossprod(zbsplines(fdobj), gram), ...)
+  icsobj <- ICS::ICS(crossprod(to_zbsplines(fdobj), gram), ...)
   icsobj$W <- fda::fd(
-    zbsplines(coefs = icsobj$W, basis = fdobj$basis, inv = TRUE),
+    to_zbsplines(coefs = t(icsobj$W), basis = fdobj$basis, inv = TRUE),
     fdobj$basis
   )
   icsobj
@@ -65,7 +65,36 @@ ICS.dd <- function(...) {
   icsobj
 }
 
-#' @rdname ICS_outlier
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param X PARAM_DESCRIPTION
+#' @param S1 PARAM_DESCRIPTION, Default: ICS_cov
+#' @param S2 PARAM_DESCRIPTION, Default: ICS_cov4
+#' @param S1_args PARAM_DESCRIPTION, Default: list()
+#' @param S2_args PARAM_DESCRIPTION, Default: list()
+#' @param ICS_algorithm PARAM_DESCRIPTION, Default: c("whiten", "standard", "QR")
+#' @param method PARAM_DESCRIPTION, Default: 'norm_test'
+#' @param test PARAM_DESCRIPTION, Default: 'agostino.test'
+#' @param n_eig PARAM_DESCRIPTION, Default: 10000
+#' @param level_test PARAM_DESCRIPTION, Default: 0.05
+#' @param adjust PARAM_DESCRIPTION, Default: TRUE
+#' @param level_dist PARAM_DESCRIPTION, Default: 0.025
+#' @param n_dist PARAM_DESCRIPTION, Default: 10000
+#' @param type PARAM_DESCRIPTION, Default: 'smallprop'
+#' @param n_cores PARAM_DESCRIPTION, Default: NULL
+#' @param iseed PARAM_DESCRIPTION, Default: NULL
+#' @param pkg PARAM_DESCRIPTION, Default: 'ICSOutlier'
+#' @param q_type PARAM_DESCRIPTION, Default: 7
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @rdname ICS_outlier.default
 #' @export
 ICS_outlier.default <- ICSOutlier::ICS_outlier
 

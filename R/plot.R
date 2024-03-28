@@ -15,6 +15,7 @@
 #' @rdname plot.dd
 #' @export
 #' @importFrom ggplot2 ggplot aes geom_line labs
+#' @importFrom fda plot.fd
 plot.dd <- function(ddobj, rangeval = ddobj$basis$rangeval,
                     h = 0.001,
                     ...) {
@@ -28,6 +29,6 @@ plot.dd <- function(ddobj, rangeval = ddobj$basis$rangeval,
     direction = "long"
   )
   ggplot(df_long, aes(x = argvals, y = df_long$y, color = df_long$obs)) +
-    geom_line() +
+    geom_line(show.legend = F) +
     labs(x = "x", y = "y", title = "Multiple Curves")
 }

@@ -29,7 +29,7 @@ str(temps)
 smooth <- function(...) {
   density(
     nbasis = 11,
-    rangeval = c(10, 32),
+    rangeval = c(10, 28),
     lambda = 1e-1,
     ...
   )
@@ -40,14 +40,28 @@ plot(temps)
 ```
 
 ```{r ics}
-# plot(ICS(temps)$W)
+temps_ics <- ICS(temps)
+plot(temps_ics)
+plot(temps_ics$W[1:3])
+```
+
+```{r ics_outlier}
 temps_out <- ICS_outlier(temps)
 plot(temps_out)
-temps_ics <- ICS(temps)
 plot(temps) + scale_color_manual(values = temps_out$outliers + 1)
-plot.fd(temps[temps_out$outliers == 1])
+plot.fd(temps[temps_out$outliers == 1], col = "black")
+fda:::lines.fd(mean(temps), col = "green")
 plot.fd(temps, col = temps_out$outliers + 1)
 ```
 
+```{r zbsplines_checks}
+bfd <- fd(basisobj = temps$basis)
+bfd$coefs <- to_zbsplines(basis = bfd$basis, inv = TRUE)
+inprod(bfd)
+plot(bfd)
 
-
+a <- to_zbsplines(basis = bfd$basis, inv = TRUE)
+a_inv <- to_zbsplines(basis = bfd$basis)
+all(round(a %*% a_inv %*% temps$coefs - temps$coefs, 3) == 0)
+all(round(a_inv %*% a, 14) == diag(bfd$basis$nbasis - 1))
+```

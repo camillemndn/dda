@@ -1,11 +1,10 @@
 ---
-title: "density_estimation"
+title: "dANOVA"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{density_estimation}
+  %\VignetteIndexEntry{dANOVA}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-  %\VignetteDepends{tidyverse}
 ---
 
 ```{r, include = FALSE}
@@ -23,17 +22,16 @@ library(tidyverse)
 ```{r mean_by_region}
 data(vietnam_temperature)
 data(vietnam_regions)
-
 selected_year <- 1987
 
 temp <- vietnam_temperature |>
   filter(year == selected_year) |>
-  dplyr::group_by(region)
+  group_by(region)
 
 smooth <- function(...) {
   density(
     rangeval = c(20, 37),
-    lambda = 1, nbasis = 30, ...
+    lambda = 0, nbasis = 11, ...
   )
 }
 
@@ -41,13 +39,9 @@ temp <- temp |> mutate(t_max_dd = lapply(t_max, smooth))
 
 mean_by_region <- temp |> summarize(mean = list(mean(dda:::merge.dd(t_max_dd))))
 
+# Means by region
 plot(dda:::merge.dd(mean_by_region$mean))
 
 # Total mean
 plot(mean(dda:::merge.dd(mean_by_region$mean)))
 ```
-
-```{r ics}
-plot(dda:::ICS.fd(dda:::merge.dd(temp$t_max_dd))$W)
-```
-
