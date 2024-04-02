@@ -17,15 +17,15 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(dda)
 library(tidyverse)
-```
-
-```{r mean_by_region}
 data(vietnam_temperature)
 data(vietnam_regions)
-selected_year <- 1987
+```
+
+```{r before}
+selected_years <- 1987:1989
 
 temp <- vietnam_temperature |>
-  filter(year == selected_year) |>
+  filter(year %in% selected_years) |>
   group_by(region)
 
 smooth <- function(...) {

@@ -32,6 +32,7 @@
           whitening
 
           ggExtra
+          GGally
           plotly
           tidyverse
 
