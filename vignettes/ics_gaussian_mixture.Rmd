@@ -107,6 +107,9 @@ ggpairs(as.data.frame(ICS(x1dlog)$scores),
   diag = "blank",
   aes(label = 1:n, color = x1_out)
 ) + geom_text()
+
+x1dlog_out <- ICS_outlier(x1dlog)
+plot(x1dlog_out)
 ```
 
 ### Conclusions
