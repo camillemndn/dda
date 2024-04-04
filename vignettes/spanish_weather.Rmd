@@ -19,12 +19,16 @@ knitr::opts_chunk$set(
 library(dda)
 library(fda.usc)
 library(ggplot2)
+library(GGally)
 ```
 
 ```{r preprocessing}
 data(aemet)
 temps <- aemet$temp
 str(temps)
+
+plot(density(temps$data[1, ], method = "kernel"))
+plot(density(temps$data[1, ], nbasis = 10, lambda = 1))
 
 nknots <- 24
 knots <- quantile(temps$data, seq(0, 1, 1 / nknots))
@@ -37,15 +41,18 @@ smooth <- function(...) {
   )
 }
 
-
 temps <- dda:::merge.dd(as.list(apply(temps$data, 1, smooth)))
 plot(temps)
 ```
 
 ```{r ics}
 temps_ics <- ICS(temps)
-plot(temps_ics)
-plot(temps_ics$W[1:3])
+plot(temps_ics$W)
+ggpairs(as.data.frame(temps_ics$scores),
+  diag = "blank",
+  columns = c(1:3, 22:25),
+  aes(label = seq_len(ncol(temps$coefs)))
+) + geom_text()
 ```
 
 ```{r ics_outlier}
