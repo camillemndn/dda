@@ -8,7 +8,7 @@ density_kernel <- density.default
 #' @param method PARAM_DESCRIPTION, Default: c("MPL", "kernel")
 #' @param basis PARAM_DESCRIPTION, Default: fda::create.bspline.basis(rangeval, nbasis)
 #' @param rangeval PARAM_DESCRIPTION, Default: NULL
-#' @param nbasis PARAM_DESCRIPTION, Default: 10
+#' @param nbasis PARAM_DESCRIPTION, Default: NULL
 #' @param lambda PARAM_DESCRIPTION, Default: 0
 #' @param clr PARAM_DESCRIPTION, Default: fda::fd(sample, basisobj = basis)
 #' @param constant PARAM_DESCRIPTION, Default: NULL
@@ -28,7 +28,7 @@ density_kernel <- density.default
 density.default <- function(sample = NULL, method = c("MPL", "kernel"),
                             basis = fda::create.bspline.basis(rangeval, nbasis),
                             rangeval = NULL,
-                            nbasis = 10,
+                            nbasis = NULL,
                             lambda = 0,
                             clr = fda::fd(sample, basisobj = basis),
                             constant = NULL, ...) {
@@ -36,21 +36,18 @@ density.default <- function(sample = NULL, method = c("MPL", "kernel"),
     return(density_kernel(sample, ...))
   }
 
-  if (is.null(rangeval)) {
-    rangeval <- if (!is.null(sample)) range(sample) else c(0, 1)
-  }
   if (!is.null(sample)) {
-    # Set up basis for W(x)
-    basisobj <- fda::create.bspline.basis(rangeval, nbasis)
+    rangeval <- basis$rangeval
     # Set up initial value for wfdobj
-    wfd0 <- fda::fd(matrix(0, nbasis, 1), basisobj)
+    wfd0 <- fda::fd(matrix(0, basis$nbasis, 1), basis)
     wfdparobj <- fda::fdPar(wfd0, lambda = lambda)
     # Estimate density
     wfdobj <- fda::density.fd(sample, wfdparobj)$Wfdobj
     wint <- stats::integrate(
       \(t) fda::eval.fd(wfdobj, t),
       min(rangeval), max(rangeval),
-      rel.tol = .Machine$double.eps^0.5
+      rel.tol = .Machine$double.eps^0.5,
+      stop.on.error = FALSE
     )$value
     ddobj <- wfdobj - wint / diff(rangeval)
   } else {

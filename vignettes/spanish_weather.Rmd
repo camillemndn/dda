@@ -26,14 +26,17 @@ data(aemet)
 temps <- aemet$temp
 str(temps)
 
+nknots <- 24
+knots <- quantile(temps$data, seq(0, 1, 1 / nknots))
+
 smooth <- function(...) {
   density(
-    nbasis = 11,
-    rangeval = c(10, 28),
+    basis = fda::create.bspline.basis(breaks = knots),
     lambda = 1e-1,
     ...
   )
 }
+
 
 temps <- dda:::merge.dd(as.list(apply(temps$data, 1, smooth)))
 plot(temps)
