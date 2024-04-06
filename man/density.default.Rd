@@ -8,8 +8,8 @@
   sample = NULL,
   method = c("MPL", "kernel"),
   basis = fda::create.bspline.basis(rangeval, nbasis),
-  rangeval = NULL,
-  nbasis = 10,
+  rangeval = if (is.null(sample)) c(0, 1) else range(sample),
+  nbasis = NULL,
   lambda = 0,
   clr = fda::fd(sample, basisobj = basis),
   constant = NULL,
@@ -25,7 +25,7 @@
 
 \item{rangeval}{PARAM_DESCRIPTION, Default: NULL}
 
-\item{nbasis}{PARAM_DESCRIPTION, Default: 10}
+\item{nbasis}{PARAM_DESCRIPTION, Default: NULL}
 
 \item{lambda}{PARAM_DESCRIPTION, Default: 0}
 
