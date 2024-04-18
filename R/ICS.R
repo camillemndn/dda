@@ -124,7 +124,7 @@ ICS_outlier.dd <- function(
   }
   object <- tryCatch(
     {
-      ICS(X,
+      ICS.dd(X,
         S1 = S1, S2 = S2, S1_args = S1_args, S2_args = S2_args,
         algorithm = algorithm, center = TRUE, fix_signs = "scores"
       )
@@ -205,7 +205,7 @@ ICS_outlier.fd <- function(
   }
   object <- tryCatch(
     {
-      ICS(X,
+      ICS.fd(X,
         S1 = S1, S2 = S2, S1_args = S1_args, S2_args = S2_args,
         algorithm = algorithm, center = TRUE, fix_signs = "scores"
       )
