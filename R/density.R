@@ -25,18 +25,35 @@ density_kernel <- density.default
 #'  \code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[fda]{density.fd}}, \code{\link[fda]{eval.fd}}
 #' @rdname density.default
 #' @export
-density.default <- function(sample = NULL, method = c("MPL", "kernel"),
-                            basis = fda::create.bspline.basis(rangeval, nbasis),
-                            rangeval = if (is.null(sample)) c(0, 1) else range(sample),
-                            nbasis = NULL,
-                            lambda = 0,
-                            clr = fda::fd(sample, basisobj = basis),
-                            constant = NULL, ...) {
+density.default <- function(
+    sample = NULL, method = c("MPL", "kernel"),
+    basis = fda::create.bspline.basis(
+      rangeval = rangeval,
+      nbasis = nbasis, norder = norder, breaks = breaks
+    ),
+    breaks = if (!is.null(sample)) {
+      quantile(unlist(sample), seq(0, 1, 1 / (nbasis - norder + 1)))
+    } else {
+      NULL
+    },
+    rangeval = if (!is.null(sample)) range(breaks) else c(0, 1),
+    nbasis = 12,
+    norder = 5,
+    lambda = 0,
+    clr = fda::fd(unlist(sample), basisobj = basis),
+    constant = NULL,
+    normalize = TRUE,
+    ...) {
   if (match.arg(method) == "kernel") {
     return(density_kernel(sample, ...))
   }
-
-  if (!is.null(sample)) {
+  return_list <- FALSE
+  if (inherits(sample, "list")) {
+    sample <- unlist(sample)
+    return_list <- TRUE
+  }
+  if (is.numeric(sample)) {
+    print(length(sample))
     rangeval <- basis$rangeval
     # Set up initial value for wfdobj
     wfd0 <- fda::fd(matrix(0, basis$nbasis, 1), basis)
@@ -53,8 +70,12 @@ density.default <- function(sample = NULL, method = c("MPL", "kernel"),
   } else {
     ddobj <- clr
   }
-  ddobj$constant <- if (is.null(constant)) normalize(ddobj) else constant
-  structure(ddobj, class = c("dd", "fd"))
+  if (normalize) {
+    ddobj$constant <- if (is.null(constant)) normalize(ddobj) else constant
+  }
+  ddobj$sample <- sample
+  class(ddobj) <- c("dd", "fd")
+  if (return_list) list(ddobj) else ddobj
 }
 
 #' @title FUNCTION_TITLE
