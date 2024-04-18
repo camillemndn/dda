@@ -263,7 +263,3 @@ ICS_outlier.fd <- function(
   class(res) <- "ICS_Out"
   res
 }
-
-#' @rdname ICS_outlier
-#' @export
-ICS_outlier.fd <- ICS_outlier.dd
