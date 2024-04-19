@@ -38,6 +38,32 @@ eval.dd <- function(ddobj, t) {
   sweep(exp(fda::eval.fd(ddobj, t)), 2, as.numeric(ddobj$constant), "/")
 }
 
+#' @export
+eval_funs <- function(.data, funs, n = 101,
+                      rangeval = range(lapply(
+                        dplyr::pull(.data, {{ funs }}),
+                        \(fun) fun$basis$rangeval
+                      )),
+                      x = seq(rangeval[1], rangeval[2], length.out = n)) {
+  .data |>
+    dplyr::ungroup() |>
+    dplyr::mutate("{{funs}}_eval" := lapply(
+      {{ funs }},
+      function(fobj) {
+        rangeval <- fobj$basis$rangeval
+        x <- x[x >= rangeval[1] & x <= rangeval[2]]
+        data.frame(x = x, y = c(eval.dd(fobj, x)))
+      }
+    )) |>
+    dplyr::mutate(id = seq_len(n())) |>
+    tidyr::unnest(rlang::englue("{{funs}}_eval"))
+}
+
+#' @export
+unmerge <- function(fobj) {
+  lapply(seq_len(ncol(fobj$coefs)), \(i) fobj[i])
+}
+
 #' @title FUNCTION_TITLE
 #' @description FUNCTION_DESCRIPTION
 #' @param self PARAM_DESCRIPTION

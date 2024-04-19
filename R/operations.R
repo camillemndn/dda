@@ -14,7 +14,33 @@
 #' @rdname mean.dd
 #' @export
 #' @importFrom fda mean.fd
-mean.dd <- function(...) density(clr = fda::mean.fd(...))
+mean.dd <- function(ddobj, ...) {
+  return_list <- FALSE
+  if (inherits(ddobj, "list")) {
+    ddobj <- merge.dd(ddobj)
+    return_list <- TRUE
+  }
+  meandd <- density(clr = fda::mean.fd(ddobj), ...)
+  if (return_list) list(meandd) else meandd
+}
+
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @seealso
+#'  \code{\link[fda]{mean.fd}}
+#' @rdname gmean.dd
+#' @export
+#' @importFrom fda mean.fd
+gmean.dd <- function(ddobj, ...) mean.dd(ddobj, normalize = FALSE)
 
 #' @export
 `+.dd` <- function(...) density(clr = fda::plus.fd(...))
