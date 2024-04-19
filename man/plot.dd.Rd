@@ -4,24 +4,18 @@
 \alias{plot.dd}
 \title{FUNCTION_TITLE}
 \usage{
-\method{plot}{dd}(
-  ddobj,
-  rangeval = ddobj$basis$rangeval,
-  h = 0.001,
-  show.legend = FALSE,
-  ...
-)
+\method{plot}{dd}(ddobj, rangeval = ddobj$basis$rangeval, n = 101, show.legend = FALSE, ...)
 }
 \arguments{
 \item{ddobj}{PARAM_DESCRIPTION}
 
 \item{rangeval}{PARAM_DESCRIPTION, Default: ddobj$basis$rangeval}
 
-\item{h}{PARAM_DESCRIPTION, Default: 0.001}
-
 \item{show.legend}{PARAM_DESCRIPTION, Default: FALSE}
 
 \item{...}{PARAM_DESCRIPTION}
+
+\item{h}{PARAM_DESCRIPTION, Default: 0.001}
 }
 \value{
 OUTPUT_DESCRIPTION

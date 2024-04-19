@@ -17,19 +17,23 @@
 #' @export
 #' @importFrom ggplot2 ggplot aes geom_line labs
 #' @importFrom fda plot.fd
-plot.dd <- function(ddobj, rangeval = ddobj$basis$rangeval,
-                    h = 0.001, show.legend = FALSE,
-                    ...) {
-  argvals <- seq(min(rangeval), max(rangeval), h)
-  df <- data.frame(cbind(argvals, eval.dd(ddobj, argvals)))
-  df_long <- stats::reshape(df,
-    varying = list(names(df)[-1]),
-    v.names = "y",
-    times = names(df)[-1],
-    timevar = "obs",
-    direction = "long"
-  )
-  ggplot(df_long, aes(x = argvals, y = df_long$y, color = df_long$obs)) +
-    geom_line(show.legend = show.legend, ...) +
-    labs(x = "x", y = "y", title = "Multiple Curves")
+plot.dd <- function(ddobj, ..., n = 401,
+                    rangeval = range(lapply(
+                      dplyr::pull(.data, {{ funs }}),
+                      \(fun) fun$basis$rangeval
+                    )),
+                    x = seq(rangeval[1], rangeval[2], length.out = n)) {
+  plot_funs(tibble(fun = unmerge(ddobj)), fun, ...)
+}
+
+#' @export
+plot_funs <- function(.data, funs, ..., n = 401,
+                      rangeval = range(lapply(
+                        dplyr::pull(.data, {{ funs }}),
+                        \(fun) fun$basis$rangeval
+                      )),
+                      x = seq(rangeval[1], rangeval[2], length.out = n)) {
+  eval_funs(.data, {{ funs }}, n, rangeval, x) |>
+    ggplot2::ggplot(ggplot2::aes(x, y, group = id, ...)) +
+    ggplot2::geom_line()
 }
