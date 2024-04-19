@@ -16,32 +16,74 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(dda)
+library(fda.usc)
 library(tidyverse)
 data(vietnam_temperature)
 data(vietnam_regions)
 ```
 
-```{r before}
-selected_years <- 1987:1989
+```{r preprocessing}
+selected_years <- c(1987:1989, 2014:2016)
 
-temp <- vietnam_temperature |>
+vn_temp <- vietnam_temperature |>
   filter(year %in% selected_years) |>
-  group_by(region)
+  mutate(period = if_else(year >= 2000, "Present", "Past")) |>
+  select(period, region, province, t_max) |>
+  group_by(period, region, province)
 
-smooth <- function(...) {
-  density(
-    rangeval = c(10, 40),
-    lambda = 0, nbasis = 11, ...
+vn_temp <- vn_temp |> reframe(
+  t_max = density(t_max, lambda = 0, nbasis = 11)
+)
+```
+
+```{r group_by_region}
+vn_temp_region <- vn_temp |>
+  group_by(period, region) |>
+  summarize(
+    t_max_mean = mean.dd(t_max),
+    t_max_gmean = gmean.dd(t_max)
   )
+
+# Means by region and total: densities
+plot.dd(vn_temp_region, aes(f = t_max_mean, color = region))
+lines.dd(mean.dd(vn_temp$t_max))
+
+geom_functions <- function(.data = NULL, funs, ...) {
+  args <- rlang::exprs(...)
+  .data |>
+    dplyr::mutate(
+      eval_funs = lapply({{ funs }}, \(fun) \(t) eval(fun, t)),
+      range_funs = lapply({{ funs }}, \(fun) fun$basis$rangeval)
+    ) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(geom_funs = list(
+      ggplot2::geom_function(
+        fun = eval_funs,
+        xlim = range_funs, color = region
+      )
+    )) |>
+    dplyr::pull(geom_funs)
 }
 
-temp <- temp |> mutate(t_max_dd = lapply(t_max, smooth))
+vn_temp_region |> plot_funs(t_max_mean, color = period) +
+  facet_grid(rows = vars(region)) +
+  labs(x = "Temperature (°C)", y = "Yearly density") +
+  # Set plot title
+  ggtitle("Average density of temperature by region")
 
-mean_by_region <- temp |> summarize(mean = list(mean(dda:::merge.dd(t_max_dd))))
-
-# Means by region
-plot(dda:::merge.dd(mean_by_region$mean))
-
-# Total mean
-plot(mean(dda:::merge.dd(mean_by_region$mean)))
+# Means by region and total: clr
+plot.fd(vn_temp_region, aes(color = region))
+lines.fd(mean.dd(vn_temp$t_max))
 ```
+
+```{r lr_plots}
+```
+
+```{r f-test}
+```
+
+
+```{r t-test}
+```
+
+

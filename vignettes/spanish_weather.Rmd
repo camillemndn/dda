@@ -31,11 +31,11 @@ plot(density(temps$data[1, ], method = "kernel"))
 plot(density(temps$data[1, ], nbasis = 10, lambda = 1))
 
 nknots <- 24
-knots <- quantile(temps$data, seq(0, 1, 1 / nknots))
+breaks <- quantile(temps$data, seq(0, 1, 1 / (nknots + 1)))
 
 smooth <- function(...) {
   density(
-    basis = fda::create.bspline.basis(breaks = knots),
+    basis = fda::create.bspline.basis(breaks = breaks),
     lambda = 1e-1,
     ...
   )

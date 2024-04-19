@@ -18,32 +18,46 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(dda)
 library(tidyverse)
+library(GGally)
 ```
 
 ```{r preprocessing}
 data(vietnam_temperature)
-selected_year <- 1987
+selected_years <- 2013:2016
 
 temps <- vietnam_temperature |>
-  filter(year == selected_year) |>
+  filter(year %in% selected_years) |>
+  filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
+  arrange(region, province) |>
   group_by(region)
+
+nknots <- 6
+breaks <- quantile(unlist(temps$t_max), seq(0, 1, 1 / (nknots + 1)))
 
 smooth <- function(...) {
   density(
-    rangeval = c(10, 40),
-    lambda = 0, nbasis = 11, ...
+    basis = fda::create.bspline.basis(breaks = breaks),
+    lambda = 1e-1,
+    ...
   )
 }
 
 temps <- temps |> mutate(t_max_dd = lapply(t_max, smooth))
 t_max <- dda:::merge.dd(temps$t_max_dd)
-plot(t_max)
+plot(t_max[33])
 ```
 
 ```{r ics}
 t_max_ics <- ICS(t_max)
-plot(t_max_ics)
+plot(t_max_ics$gen_kurtosis)
+ggpairs(as.data.frame(t_max_ics$scores),
+  diag = "blank",
+  columns = c(1:3, 8:9),
+  aes(label = seq_len(nrow(temps)), color = temps$region, shape = NA)
+) + geom_text()
 plot(t_max_ics$W)
+plot(ICSOutlier::ics_distances(t_max_ics, index = 1:3))
+plot(ICSOutlier::ics_distances(t_max_ics))
 ```
 
 ```{r checks}

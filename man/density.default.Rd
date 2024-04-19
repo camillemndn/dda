@@ -7,12 +7,21 @@
 \method{density}{default}(
   sample = NULL,
   method = c("MPL", "kernel"),
-  basis = fda::create.bspline.basis(rangeval, nbasis),
-  rangeval = if (is.null(sample)) c(0, 1) else range(sample),
-  nbasis = NULL,
+  basis = fda::create.bspline.basis(rangeval = rangeval, nbasis = nbasis, norder =
+    norder, breaks = breaks),
+  breaks = if (!is.null(sample)) {
+     quantile(unlist(sample), seq(0, 1, 1/(nbasis -
+    norder + 1)))
+ } else {
+     NULL
+ },
+  rangeval = if (!is.null(sample)) range(breaks) else c(0, 1),
+  nbasis = 12,
+  norder = 5,
   lambda = 0,
-  clr = fda::fd(sample, basisobj = basis),
+  clr = fda::fd(unlist(sample), basisobj = basis),
   constant = NULL,
+  normalize = TRUE,
   ...
 )
 }
