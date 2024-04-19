@@ -52,7 +52,7 @@ eval_funs <- function(.data, funs, n = 101,
       function(fobj) {
         rangeval <- fobj$basis$rangeval
         x <- x[x >= rangeval[1] & x <= rangeval[2]]
-        data.frame(x = x, y = c(eval.dd(fobj, x)))
+        data.frame(x = x, y = c(eval(fobj, x)))
       }
     )) |>
     dplyr::mutate(id = seq_len(n())) |>
