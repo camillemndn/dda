@@ -35,6 +35,10 @@ eval <- function(...) UseMethod("eval")
 #' @importFrom fda eval.fd
 eval.dd <- function(ddobj, t) {
   class(ddobj) <- "fd"
+  if (is.null(ddobj$constant)) {
+    print("The normalizing constant is set as 1")
+    ddobj$constant <- 1
+  }
   sweep(exp(fda::eval.fd(ddobj, t)), 2, as.numeric(ddobj$constant), "/")
 }
 

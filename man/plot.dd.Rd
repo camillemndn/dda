@@ -4,18 +4,29 @@
 \alias{plot.dd}
 \title{FUNCTION_TITLE}
 \usage{
-\method{plot}{dd}(ddobj, rangeval = ddobj$basis$rangeval, n = 101, show.legend = FALSE, ...)
+\method{plot}{dd}(
+  ddobj,
+  ...,
+  n = 401,
+  rangeval = range(lapply(dplyr::pull(.data, {
+     {
+         funs
+     }
+ }),
+    function(fun) fun$basis$rangeval)),
+  x = seq(rangeval[1], rangeval[2], length.out = n)
+)
 }
 \arguments{
 \item{ddobj}{PARAM_DESCRIPTION}
 
-\item{rangeval}{PARAM_DESCRIPTION, Default: ddobj$basis$rangeval}
-
-\item{show.legend}{PARAM_DESCRIPTION, Default: FALSE}
-
 \item{...}{PARAM_DESCRIPTION}
 
+\item{rangeval}{PARAM_DESCRIPTION, Default: ddobj$basis$rangeval}
+
 \item{h}{PARAM_DESCRIPTION, Default: 0.001}
+
+\item{show.legend}{PARAM_DESCRIPTION, Default: FALSE}
 }
 \value{
 OUTPUT_DESCRIPTION
