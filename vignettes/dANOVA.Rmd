@@ -29,11 +29,11 @@ vn_temp <- vietnam_temperature |>
   filter(year %in% selected_years) |>
   mutate(period = if_else(year >= 2000, "Present", "Past")) |>
   select(period, region, province, t_max) |>
-  group_by(period, region, province)
+  nest_by(period, region, province, .key = "t_max") |>
+  ungroup()
 
-vn_temp <- vn_temp |> reframe(
-  t_max = density(t_max, lambda = 0, nbasis = 11)
-)
+vn_temp <- vn_temp |>
+  mutate(t_max = density(t_max, lambda = 1, nbasis = 15))
 ```
 
 ```{r group_by_region}
@@ -44,42 +44,29 @@ vn_temp_region <- vn_temp |>
     t_max_gmean = gmean.dd(t_max)
   )
 
-# Means by region and total: densities
-plot.dd(vn_temp_region, aes(f = t_max_mean, color = region))
-lines.dd(mean.dd(vn_temp$t_max))
-
-geom_functions <- function(.data = NULL, funs, ...) {
-  args <- rlang::exprs(...)
-  .data |>
-    dplyr::mutate(
-      eval_funs = lapply({{ funs }}, \(fun) \(t) eval(fun, t)),
-      range_funs = lapply({{ funs }}, \(fun) fun$basis$rangeval)
-    ) |>
-    dplyr::rowwise() |>
-    dplyr::mutate(geom_funs = list(
-      ggplot2::geom_function(
-        fun = eval_funs,
-        xlim = range_funs, color = region
-      )
-    )) |>
-    dplyr::pull(geom_funs)
-}
-
-vn_temp_region |> plot_funs(t_max_mean, color = period) +
-  facet_grid(rows = vars(region)) +
+# Aitchison means by region
+vn_temp_region |> plot_funs(t_max_mean, color = region) +
+  facet_grid(rows = vars(period)) +
   labs(x = "Temperature (°C)", y = "Yearly density") +
   # Set plot title
   ggtitle("Average density of temperature by region")
 
 # Means by region and total: clr
-plot.fd(vn_temp_region, aes(color = region))
-lines.fd(mean.dd(vn_temp$t_max))
+vn_temp_region |> plot_funs(t_max_gmean, color = region) +
+  facet_grid(rows = vars(period)) +
+  labs(x = "Temperature (°C)", y = "Geometric mean") +
+  # Set plot title
+  ggtitle("Geometric mean of temperature densities by region")
 ```
 
 ```{r lr_plots}
 ```
 
 ```{r f-test}
+vn_temp_ftest <- vn_temp |>
+  eval_funs(t_max, n = 401) |>
+  nest_by(period, x) |>
+  mutate(ftest = list(fisher.test(data$y, data$region, workspace = 2e8)))
 ```
 
 

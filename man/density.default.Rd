@@ -10,8 +10,8 @@
   basis = fda::create.bspline.basis(rangeval = rangeval, nbasis = nbasis, norder =
     norder, breaks = breaks),
   breaks = if (!is.null(sample)) {
-     quantile(unlist(sample), seq(0, 1, 1/(nbasis -
-    norder + 1)))
+     quantile(unlist(sample), seq(0, 1, length.out =
+    nbasis - norder + 2))
  } else {
      NULL
  },

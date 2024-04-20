@@ -32,7 +32,7 @@ density.default <- function(
       nbasis = nbasis, norder = norder, breaks = breaks
     ),
     breaks = if (!is.null(sample)) {
-      quantile(unlist(sample), seq(0, 1, 1 / (nbasis - norder + 1)))
+      quantile(unlist(sample), seq(0, 1, length.out = nbasis - norder + 2))
     } else {
       NULL
     },
@@ -49,11 +49,13 @@ density.default <- function(
   }
   return_list <- FALSE
   if (inherits(sample, "list")) {
-    sample <- unlist(sample)
-    return_list <- TRUE
+    return(lapply(sample, \(x) density(unlist(x),
+      basis = basis, lambda = lambda,
+      clr = clr, constant = constant, normalize = normalize
+    )))
   }
   if (is.numeric(sample)) {
-    print(length(sample))
+    print(paste("Sample size:", length(sample)))
     rangeval <- basis$rangeval
     # Set up initial value for wfdobj
     wfd0 <- fda::fd(matrix(0, basis$nbasis, 1), basis)
