@@ -30,6 +30,7 @@
           xts
           ellipse
           whitening
+          memoise
 
           ggExtra
           GGally

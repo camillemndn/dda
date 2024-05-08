@@ -13,7 +13,8 @@ Imports:
     fda,
     ggplot2,
     ICS,
-    ICSOutlier
+    ICSOutlier,
+    memoise
 Suggests: 
     fda.usc,
     knitr,

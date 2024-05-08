@@ -38,6 +38,7 @@ ICS_outlier(...)
   S1_args = list(),
   S2_args = list(),
   ICS_algorithm = c("whiten", "standard", "QR"),
+  index = NULL,
   method = "norm_test",
   test = "agostino.test",
   n_eig = 10000,
@@ -50,6 +51,7 @@ ICS_outlier(...)
   iseed = NULL,
   pkg = "ICSOutlier",
   q_type = 7,
+  verbose = FALSE,
   ...
 )
 
@@ -60,6 +62,7 @@ ICS_outlier(...)
   S1_args = list(),
   S2_args = list(),
   ICS_algorithm = c("whiten", "standard", "QR"),
+  index = NULL,
   method = "norm_test",
   test = "agostino.test",
   n_eig = 10000,
@@ -72,6 +75,7 @@ ICS_outlier(...)
   iseed = NULL,
   pkg = "ICSOutlier",
   q_type = 7,
+  verbose = FALSE,
   ...
 )
 }

@@ -66,11 +66,22 @@ vn_temp_region |> plot_funs(t_max_gmean, color = region) +
 vn_temp_ftest <- vn_temp |>
   eval_funs(t_max, n = 401) |>
   nest_by(period, x) |>
-  mutate(ftest = list(fisher.test(data$y, data$region, workspace = 2e8)))
+  mutate(ftest = anova(lm(y ~ region, data))$F[1])
+
+vn_temp_ftest |>
+  ggplot(aes(x, ftest)) +
+  geom_line() +
+  facet_grid(rows = vars(period))
+
+vn_temp_ftest <- vn_temp |>
+  eval_funs(t_max, n = 401) |>
+  group_by(x, region) |>
+  mutate(within = (y - mean(y))^2 / (n() - 6))
 ```
 
 
 ```{r t-test}
+
 ```
 
 

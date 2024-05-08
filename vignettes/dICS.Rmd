@@ -37,7 +37,7 @@ breaks <- quantile(unlist(temps$t_max), seq(0, 1, 1 / (nknots + 1)))
 smooth <- function(...) {
   density(
     basis = fda::create.bspline.basis(breaks = breaks),
-    lambda = 1e-1,
+    lambda = 1,
     ...
   )
 }
@@ -48,7 +48,7 @@ plot(t_max[33])
 ```
 
 ```{r ics}
-t_max_ics <- ICS(t_max)
+t_max_ics <- ICS(t_max, center = TRUE)
 plot(t_max_ics$gen_kurtosis)
 ggpairs(as.data.frame(t_max_ics$scores),
   diag = "blank",
@@ -65,7 +65,7 @@ all(round(fda::inprod(t_max, t_max_ics$W) - t_max_ics$scores, 2) == 0)
 ```
 
 ```{r ics_outlier}
-t_max_out <- ICS_outlier(t_max)
+t_max_out <- ICS_outlier(t_max, verbose = TRUE)
 plot(t_max_out)
 plot(t_max) + scale_color_manual(values = t_max_out$outliers + 1)
 fda::plot.fd(t_max, col = t_max_out$outliers + 1)

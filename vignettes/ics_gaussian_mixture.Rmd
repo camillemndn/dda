@@ -70,7 +70,7 @@ to send it to the Bayes space.
 ```{r}
 x1d <- dda:::merge.dd(as.list(apply(
   x1$data, 1,
-  function(...) density(rangeval = range(x1), nbasis = 10, ...)
+  function(...) density(nbasis = 10, ...)
 )))
 plot(x1d)
 ```

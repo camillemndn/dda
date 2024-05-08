@@ -25,6 +25,7 @@ density_kernel <- density.default
 #'  \code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[fda]{density.fd}}, \code{\link[fda]{eval.fd}}
 #' @rdname density.default
 #' @export
+#' @importFrom stats quantile
 density.default <- function(
     sample = NULL, method = c("MPL", "kernel"),
     basis = fda::create.bspline.basis(
@@ -55,7 +56,7 @@ density.default <- function(
     )))
   }
   if (is.numeric(sample)) {
-    print(paste("Sample size:", length(sample)))
+    cat("\r", "Sample size: ", length(sample))
     rangeval <- basis$rangeval
     # Set up initial value for wfdobj
     wfd0 <- fda::fd(matrix(0, basis$nbasis, 1), basis)
