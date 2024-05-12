@@ -20,18 +20,6 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1,
-        "narHash": "sha256-X+7a/Gm2cqHrloKbv/lYMzsnhny578yHci+FV2nLkpw=",
-        "path": "/nix/store/q6b2cbsaj2s8c21h2y7dc1d9lxf8w1hl-nixpkgs-patched",
-        "type": "path"
-      },
-      "original": {
-        "id": "nixpkgs",
-        "type": "indirect"
-      }
-    },
-    "nixpkgs-unstable": {
-      "locked": {
         "lastModified": 1715266358,
         "narHash": "sha256-doPgfj+7FFe9rfzWo1siAV2mVCasW+Bh8I1cToAXEE4=",
         "owner": "NixOS",
@@ -48,8 +36,7 @@
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs",
-        "nixpkgs-unstable": "nixpkgs-unstable"
+        "nixpkgs": "nixpkgs"
       }
     },
     "systems": {

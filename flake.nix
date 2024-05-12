@@ -1,14 +1,12 @@
 {
   description = "thesis";
-  inputs.nixpkgs.url = "nixpkgs";
-  inputs.nixpkgs-unstable.url = "nixpkgs/nixos-unstable";
+  inputs.nixpkgs.url = "nixpkgs/nixos-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        unstable = nixpkgs-unstable.legacyPackages.${system};
 
         python-deps = p: with p; [
           plotly
@@ -24,8 +22,8 @@
           refund
           robCompositions
           compositions
-          unstable.rPackages.ICS
-          unstable.rPackages.ICSOutlier
+          ICS
+          ICSOutlier
           corrplot
           xts
           ellipse
