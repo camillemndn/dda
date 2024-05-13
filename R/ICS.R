@@ -178,10 +178,9 @@ ICS_outlier.dd <- function(
       gen_kurtosis = object$gen_kurtosis,
       selected = as.factor(ifelse(1:p %in% res_method$index, "selected", "not selected"))
     )
-    g1 <- ggplot(screeplot_dat, aes(IC, gen_kurtosis,
-      color = selected, shape = selected
+    g1 <- ggplot(screeplot_dat, aes(IC, gen_kurtosis, shape = selected
     )) +
-      geom_point() +
+      geom_point(color = selected) +
       geom_line()
     print(g1)
   }
