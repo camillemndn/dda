@@ -33,7 +33,7 @@ vn_temp <- vietnam_temperature |>
   ungroup()
 
 vn_temp <- vn_temp |>
-  mutate(t_max = density(t_max, lambda = 1, nbasis = 15))
+  mutate(t_max = dd(t_max, lambda = 1, nbasis = 15))
 ```
 
 ```{r group_by_region}

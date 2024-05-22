@@ -25,29 +25,17 @@ library(GGally)
 data(vietnam_temperature)
 selected_years <- 2013:2016
 
-temps <- vietnam_temperature |>
+vnt <- vietnam_temperature |>
   filter(year %in% selected_years) |>
   filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
   arrange(region, province) |>
-  group_by(region)
+  mutate(across(c(t_min, t_max), \(x) as_dd(x, lambda = 0.1)))
 
-nknots <- 6
-breaks <- quantile(unlist(temps$t_max), seq(0, 1, 1 / (nknots + 1)))
-
-smooth <- function(...) {
-  density(
-    basis = fda::create.bspline.basis(breaks = breaks),
-    lambda = 1,
-    ...
-  )
-}
-
-temps <- temps |> mutate(t_max_dd = lapply(t_max, smooth))
-t_max <- dda:::merge.dd(temps$t_max_dd)
-plot(t_max[33])
+vnt |> plot_funs(t_max, color = region)
 ```
 
 ```{r ics}
+t_max <- dda:::merge.dd(vnt$t_max)
 t_max_ics <- ICS(t_max, center = TRUE)
 plot(t_max_ics$gen_kurtosis)
 ggpairs(as.data.frame(t_max_ics$scores),

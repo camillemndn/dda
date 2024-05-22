@@ -20,7 +20,7 @@ mean.dd <- function(ddobj, ...) {
     ddobj <- merge.dd(ddobj)
     return_list <- TRUE
   }
-  meandd <- density(clr = fda::mean.fd(ddobj), ...)
+  meandd <- dd(clr = fda::mean.fd(ddobj), ...)
   if (return_list) list(meandd) else meandd
 }
 
@@ -43,13 +43,13 @@ mean.dd <- function(ddobj, ...) {
 gmean.dd <- function(ddobj, ...) mean.dd(ddobj, normalize = FALSE)
 
 #' @export
-`+.dd` <- function(...) density(clr = fda::plus.fd(...))
+`+.dd` <- function(...) dd(clr = fda::plus.fd(...))
 #' @export
-`-.dd` <- function(...) density(clr = fda::minus.fd(...))
+`-.dd` <- function(...) dd(clr = fda::minus.fd(...))
 #' @export
-`*.dd` <- function(...) density(clr = fda::times.fd(...))
+`*.dd` <- function(...) dd(clr = fda::times.fd(...))
 #' @export
-`[.dd` <- function(...) density(clr = fda::`[.fd`(...))
+`[.dd` <- function(...) dd(clr = fda::`[.fd`(...))
 
 #' @noRd
 #' @export

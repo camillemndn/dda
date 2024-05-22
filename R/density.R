@@ -1,7 +1,3 @@
-#' @noRd
-#' @importFrom stats density
-density_kernel <- density.default
-
 #' @title FUNCTION_TITLE
 #' @description FUNCTION_DESCRIPTION
 #' @param sample PARAM_DESCRIPTION, Default: NULL
@@ -23,11 +19,11 @@ density_kernel <- density.default
 #' }
 #' @seealso
 #'  \code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[fda]{density.fd}}, \code{\link[fda]{eval.fd}}
-#' @rdname density.default
+#' @rdname dd
 #' @export
 #' @importFrom stats quantile
-density.default <- function(
-    sample = NULL, method = c("MPL", "kernel"),
+dd <- function(
+    sample = NULL,
     basis = fda::create.bspline.basis(
       rangeval = rangeval,
       nbasis = nbasis, norder = norder, breaks = breaks
@@ -45,12 +41,9 @@ density.default <- function(
     constant = NULL,
     normalize = TRUE,
     ...) {
-  if (match.arg(method) == "kernel") {
-    return(density_kernel(sample, ...))
-  }
   return_list <- FALSE
   if (inherits(sample, "list")) {
-    return(lapply(sample, \(x) density(unlist(x),
+    return(lapply(sample, \(x) dd(unlist(x),
       basis = basis, lambda = lambda,
       clr = clr, constant = constant, normalize = normalize
     )))
@@ -107,7 +100,7 @@ merge.dd <- function(...) {
   fdobj <- fdlist[[1]]
   fdobj$coefs <- coefs
   fdobj$fdnames <- fdnames
-  density(clr = fdobj, constant = unlist(lapply(fdlist, \(x) x$constant)))
+  dd(clr = fdobj, constant = unlist(lapply(fdlist, \(x) x$constant)))
 }
 
 #' @title FUNCTION_TITLE

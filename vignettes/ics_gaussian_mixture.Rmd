@@ -70,7 +70,7 @@ to send it to the Bayes space.
 ```{r}
 x1d <- dda:::merge.dd(as.list(apply(
   x1$data, 1,
-  function(...) density(nbasis = 10, ...)
+  function(...) dd(nbasis = 10, ...)
 )))
 plot(x1d)
 ```
@@ -94,7 +94,7 @@ Each function has its temporal mean substracted so it
 can represent the clr of a density.
 
 ```{r}
-x1dlog <- density(clr = fdata2fd(x1, nbasis = 11))
+x1dlog <- dd(clr = fdata2fd(x1, nbasis = 11))
 x1dlog$coefs <- sweep(x1dlog$coefs, 2, 0.1 * inprod(x1dlog))
 plot.fd(x1dlog, col = 3 - as.numeric(x1_out))
 ```

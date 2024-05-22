@@ -27,14 +27,14 @@ data(aemet)
 temps <- aemet$temp
 str(temps)
 
-plot(density(temps$data[1, ], method = "kernel"))
-plot(density(temps$data[1, ], nbasis = 10, lambda = 1))
+plot(dd(temps$data[1, ], method = "kernel"))
+plot(dd(temps$data[1, ], nbasis = 10, lambda = 1))
 
 nknots <- 24
 breaks <- quantile(temps$data, seq(0, 1, 1 / (nknots + 1)))
 
 smooth <- function(...) {
-  density(
+  dd(
     basis = fda::create.bspline.basis(breaks = breaks),
     lambda = 1e-1,
     ...

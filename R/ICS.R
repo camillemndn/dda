@@ -62,7 +62,7 @@ ICS.fd <- function(fdobj, ...) {
 #' @export
 ICS.dd <- function(...) {
   icsobj <- ICS.fd(...)
-  icsobj$W <- density(clr = icsobj$W)
+  icsobj$W <- dd(clr = icsobj$W)
   class(icsobj) <- c("ICS", "dd")
   icsobj
 }
