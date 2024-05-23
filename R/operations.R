@@ -24,6 +24,14 @@ mean.dd <- function(ddobj, ...) {
   if (return_list) list(meandd) else meandd
 }
 
+#' @export
+center <- function(...) UseMethod("center")
+
+#' @export
+center.dd <- function(ddobj, ...) {
+  dd(clr = fda::center.fd(ddobj), ...)
+}
+
 #' @title FUNCTION_TITLE
 #' @description FUNCTION_DESCRIPTION
 #' @param ... PARAM_DESCRIPTION

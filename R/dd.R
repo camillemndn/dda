@@ -24,30 +24,24 @@
 #' @importFrom stats quantile
 dd <- function(
     sample = NULL,
+    full_sample = sample,
     basis = fda::create.bspline.basis(
       rangeval = rangeval,
       nbasis = nbasis, norder = norder, breaks = breaks
     ),
-    breaks = if (!is.null(sample)) {
-      quantile(unlist(sample), seq(0, 1, length.out = nbasis - norder + 2))
+    breaks = if (is.numeric(sample)) {
+      quantile(full_sample, seq(0, 1, length.out = nbasis - norder + 2))
     } else {
       NULL
     },
-    rangeval = if (!is.null(sample)) range(breaks) else c(0, 1),
+    rangeval = if (is.numeric(sample)) range(breaks) else c(0, 1),
     nbasis = 12,
     norder = 5,
     lambda = 0,
-    clr = fda::fd(unlist(sample), basisobj = basis),
+    clr = fda::fd(basisobj = basis),
     constant = NULL,
     normalize = TRUE,
     ...) {
-  return_list <- FALSE
-  if (inherits(sample, "list")) {
-    return(lapply(sample, \(x) dd(unlist(x),
-      basis = basis, lambda = lambda,
-      clr = clr, constant = constant, normalize = normalize
-    )))
-  }
   if (is.numeric(sample)) {
     cat("\r", "Sample size: ", length(sample))
     rangeval <- basis$rangeval
@@ -71,36 +65,56 @@ dd <- function(
   }
   ddobj$sample <- sample
   class(ddobj) <- c("dd", "fd")
-  if (return_list) list(ddobj) else ddobj
+  ddobj
 }
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if (interactive()) {
-#'   # EXAMPLE1
-#' }
-#' }
-#' @rdname merge.dd
 #' @export
-merge.dd <- function(...) {
-  fdlist <- as.list(...)
-  coefs <- as.matrix(data.frame(lapply(fdlist, \(x) x$coefs)))
-  reps <- unlist(lapply(fdlist, \(x) x$fdnames$reps))
-  colnames(coefs) <- reps
-  fdnames <- list(
-    args = stats::setNames(lapply(fdlist, \(x) x$fdnames$time), reps),
-    reps = reps,
-    funs = fdlist[[1]]$fdnames$values
-  )
-  fdobj <- fdlist[[1]]
-  fdobj$coefs <- coefs
-  fdobj$fdnames <- fdnames
-  dd(clr = fdobj, constant = unlist(lapply(fdlist, \(x) x$constant)))
+as_dd <- function(...) UseMethod("as_dd")
+
+#' @export
+as_dd.list <- function(l, nbasis = 12, norder = 5, merge = FALSE, ...) {
+  # A list of dd objects is merged by default.
+  if (merge || all(sapply(l, \(x) inherits(x, "dd") || inherits(x, "fd")))) {
+    coefs <- as.matrix(data.frame(lapply(l, \(x) x$coefs)))
+    sample <- data.frame(lapply(l, \(x) x$sample))
+    reps <- unlist(lapply(l, \(x) x$fdnames$reps))
+    colnames(coefs) <- reps
+    fdnames <- list(
+      args = stats::setNames(lapply(l, \(x) x$fdnames$time), reps),
+      reps = reps,
+      funs = l[[1]]$fdnames$values
+    )
+    fdobj <- l[[1]]
+    fdobj$coefs <- coefs
+    fdobj$fdnames <- fdnames
+    ddobj <- dd(clr = fdobj, constant = unlist(lapply(l, \(x) x$constant)))
+    ddobj$sample <- sample
+    ddobj
+  } else {
+    lapply(l, \(x) as_dd(x, full_sample = unlist(l), ...))
+  }
+}
+
+#' @export
+as_dd.xts <- function(sample, ...) {
+  dd(sample, ...)
+}
+#' @export
+as_dd.dd <- function(ddobj, ...) {
+  lapply(seq_len(ncol(ddobj$coefs)), \(i) {
+    di <- ddobj[i]
+    di$sample <- ddobj$sample[, i]
+    di
+  })
+}
+
+#' @export
+as_dd.fd <- function(fdobj, ...) {
+  dd(clr = fdobj, basisobj = fdobj$basis)
+}
+#' @export
+as_dd.numeric <- function(sample, ...) {
+  dd(sample, ...)
 }
 
 #' @title FUNCTION_TITLE

@@ -63,11 +63,6 @@ eval_funs <- function(.data, funs, n = 101,
     tidyr::unnest(rlang::englue("{{funs}}_eval"))
 }
 
-#' @export
-unmerge <- function(fobj) {
-  lapply(seq_len(ncol(fobj$coefs)), \(i) fobj[i])
-}
-
 #' @title FUNCTION_TITLE
 #' @description FUNCTION_DESCRIPTION
 #' @param self PARAM_DESCRIPTION

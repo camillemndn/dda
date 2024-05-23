@@ -225,7 +225,7 @@ ICS_outlier.dd <- function(
       }
       if (!inherits(X, "ICS")) {
         dd_dat <- data.frame(
-          X = I(unmerge(X)),
+          X = I(as_dd(X)),
           outlier = outlier_fact
         )
         g4 <- plot_funs(dd_dat, X, color = outlier, alpha = outlier)
@@ -370,7 +370,7 @@ ICS_outlier.fd <- function(
       }
       if (!inherits(X, "ICS")) {
         fd_dat <- data.frame(
-          X = I(unmerge(X)),
+          X = I(as.fd(X)),
           outlier = outlier_fact
         )
         g4 <- plot_funs(fd_dat, X, color = outlier, alpha = outlier)

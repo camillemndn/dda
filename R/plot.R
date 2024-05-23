@@ -23,7 +23,7 @@ plot.dd <- function(ddobj, ..., n = 401,
                       \(fun) fun$basis$rangeval
                     )),
                     x = seq(rangeval[1], rangeval[2], length.out = n)) {
-  plot_funs(tibble(fun = unmerge(ddobj)), fun, ...)
+  plot_funs(data.frame(fun = I(as_dd(ddobj))), fun, ...)
 }
 
 #' @export
