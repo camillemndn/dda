@@ -3,7 +3,6 @@
 \name{ICS_outlier.default}
 \alias{ICS_outlier.default}
 \alias{ICS_outlier}
-\alias{ICS_outlier.dd}
 \alias{ICS_outlier.fd}
 \title{FUNCTION_TITLE}
 \usage{
@@ -31,30 +30,6 @@
 
 ICS_outlier(...)
 
-\method{ICS_outlier}{dd}(
-  X,
-  S1 = ICS::ICS_cov,
-  S2 = ICS::ICS_cov4,
-  S1_args = list(),
-  S2_args = list(),
-  ICS_algorithm = c("whiten", "standard", "QR"),
-  index = NULL,
-  method = "norm_test",
-  test = "agostino.test",
-  n_eig = 10000,
-  level_test = 0.05,
-  adjust = TRUE,
-  level_dist = 0.025,
-  n_dist = 10000,
-  type = "smallprop",
-  n_cores = NULL,
-  iseed = NULL,
-  pkg = "ICSOutlier",
-  q_type = 7,
-  verbose = FALSE,
-  ...
-)
-
 \method{ICS_outlier}{fd}(
   X,
   S1 = ICS::ICS_cov,
@@ -75,6 +50,7 @@ ICS_outlier(...)
   iseed = NULL,
   pkg = "ICSOutlier",
   q_type = 7,
+  plots = verbose,
   verbose = FALSE,
   ...
 )
