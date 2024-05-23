@@ -72,11 +72,11 @@ dd <- function(
 as_dd <- function(...) UseMethod("as_dd")
 
 #' @export
-as_dd.list <- function(l, nbasis = 12, norder = 5, merge = FALSE, ...) {
+as_dd.list <- function(l, merge = FALSE, ...) {
   # A list of dd objects is merged by default.
   if (merge || all(sapply(l, \(x) inherits(x, "dd") || inherits(x, "fd")))) {
     coefs <- as.matrix(data.frame(lapply(l, \(x) x$coefs)))
-    sample <- data.frame(lapply(l, \(x) x$sample))
+    sample <- lapply(l, \(x) x$sample)
     reps <- unlist(lapply(l, \(x) x$fdnames$reps))
     colnames(coefs) <- reps
     fdnames <- list(
@@ -103,7 +103,7 @@ as_dd.xts <- function(sample, ...) {
 as_dd.dd <- function(ddobj, ...) {
   lapply(seq_len(ncol(ddobj$coefs)), \(i) {
     di <- ddobj[i]
-    di$sample <- ddobj$sample[, i]
+    di$sample <- ddobj$sample[[i]]
     di
   })
 }
