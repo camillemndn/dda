@@ -4,18 +4,7 @@
 \alias{plot.dd}
 \title{FUNCTION_TITLE}
 \usage{
-\method{plot}{dd}(
-  ddobj,
-  ...,
-  n = 401,
-  rangeval = range(lapply(dplyr::pull(.data, {
-     {
-         funs
-     }
- }),
-    function(fun) fun$basis$rangeval)),
-  x = seq(rangeval[1], rangeval[2], length.out = n)
-)
+plot.dd(ddobj, ...)
 }
 \arguments{
 \item{ddobj}{PARAM_DESCRIPTION}

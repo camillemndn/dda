@@ -17,12 +17,7 @@
 #' @export
 #' @importFrom ggplot2 ggplot aes geom_line labs
 #' @importFrom fda plot.fd
-plot.dd <- function(ddobj, ..., n = 401,
-                    rangeval = range(lapply(
-                      dplyr::pull(.data, {{ funs }}),
-                      \(fun) fun$basis$rangeval
-                    )),
-                    x = seq(rangeval[1], rangeval[2], length.out = n)) {
+plot.dd <- function(ddobj, ...) {
   plot_funs(data.frame(fun = I(as_dd(ddobj))), fun, ...)
 }
 

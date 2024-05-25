@@ -15,6 +15,7 @@
 #' @export
 eval.default <- eval
 
+#' @export
 eval <- function(...) UseMethod("eval")
 #' @title FUNCTION_TITLE
 #' @description FUNCTION_DESCRIPTION
@@ -43,6 +44,7 @@ eval.dd <- function(ddobj, t) {
 }
 
 #' @export
+#' @importFrom dplyr n
 eval_funs <- function(.data, funs, n = 101,
                       rangeval = range(lapply(
                         dplyr::pull(.data, {{ funs }}),
@@ -59,7 +61,7 @@ eval_funs <- function(.data, funs, n = 101,
         data.frame(x = x, y = c(eval(fobj, x)))
       }
     )) |>
-    dplyr::mutate(id = seq_len(n())) |>
+    dplyr::mutate(id = seq_len(dplyr::n())) |>
     tidyr::unnest(rlang::englue("{{funs}}_eval"))
 }
 
