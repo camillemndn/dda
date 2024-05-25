@@ -35,9 +35,10 @@ ICS <- function(...) UseMethod("ICS")
 #' @export
 #' @importFrom fda inprod fd
 #' @importFrom ICS ICS
+#' @import ICS
 ICS.fd <- function(fdobj, ...) {
   changemat <- to_zbsplines(basis = fdobj$basis, inv = TRUE)
-  gram <- t(changemat) %*% fda::inprod(fdobj$basis, fdobj$basis) %*% changemat
+  gram <- t(changemat) %*% gram(fdobj$basis) %*% changemat
   icsobj <- ICS::ICS(crossprod(to_zbsplines(fdobj), gram), ...)
   icsobj$W <- fda::fd(
     to_zbsplines(coefs = t(icsobj$W), basis = fdobj$basis, inv = TRUE),
@@ -46,6 +47,32 @@ ICS.fd <- function(fdobj, ...) {
   class(icsobj) <- c("ICS", "fd")
   icsobj
 }
+
+gram <- function(bobj) {
+  rval <- bobj$rangeval
+  p <- bobj$nbasis
+  f <- function(t) t(fda::eval.basis(t, bobj)) %*% fda::eval.basis(t, bobj)
+
+  result_matrix <- matrix(0, nrow = p, ncol = p)
+
+  for (i in 1:p) {
+    for (j in 1:p) {
+      element_function <- Vectorize(function(x) {
+        f(x)[i, j]
+      })
+      result_matrix[i, j] <- stats::integrate(
+        element_function,
+        rval[1], rval[2]
+      )$value
+    }
+  }
+  result_matrix
+}
+
+# Example usage with a basis object (replace with your actual basis object)
+# basis_obj <- create.bspline.basis(rangeval = c(0, 1), nbasis = 4)
+# result <- gram(basis_obj)
+# print(result)
 
 #' @title FUNCTION_TITLE
 #' @description FUNCTION_DESCRIPTION
@@ -110,7 +137,7 @@ ICS_outlier <- function(...) UseMethod("ICS_outlier")
 #' @rdname ICS_outlier
 #' @export
 #' @importFrom ggplot2 ggplot geom_point aes geom_line geom_hline ggplotGrob guides
-#' @importFrom GGally ggpairs
+#' @importFrom GGally ggpairs ggmatrix_gtable
 ICS_outlier.fd <- function(
     X, S1 = ICS::ICS_cov, S2 = ICS::ICS_cov4, S1_args = list(), S2_args = list(),
     ICS_algorithm = c("whiten", "standard", "QR"), index = NULL, method = "norm_test",
@@ -178,7 +205,7 @@ ICS_outlier.fd <- function(
       IC = 1:p,
       gen_kurtosis = object$gen_kurtosis,
       selected = as.factor(ifelse(1:p %in% res_method$index, "selected", "not selected")),
-      eigenfun = I(if(inherits(X, "dd")) as_dd(object$W) else as.fd(object$W))
+      eigenfun = I(if (inherits(X, "dd")) as_dd(object$W) else as.fd(object$W))
     )
     g1 <- ggplot(screeplot_dat, aes(IC, gen_kurtosis)) +
       geom_line(aes(alpha = 0.5)) +
@@ -213,12 +240,17 @@ ICS_outlier.fd <- function(
         outlier = outlier_fact
       )
       screeplot_dat$IC <- as.factor(screeplot_dat$IC)
-      g2 <- plot_funs(screeplot_dat, eigenfun, color = IC, alpha = selected)
+      g2 <- screeplot_dat |>
+        filter(selected == "selected") |>
+        plot_funs(eigenfun, color = IC)
       if (verbose) print(g2)
+
       g3 <- ggplot(distances_dat, aes(Index, IC_distances, color = outlier)) +
         geom_point() +
         geom_hline(yintercept = IC_distances_quantile)
+
       pairs_dat <- data.frame(object$scores, outlier = outlier_fact)
+
       if (length(res_method$index) > 1) {
         g3b <- GGally::ggpairs(pairs_dat,
           diag = "blank",
@@ -229,14 +261,16 @@ ICS_outlier.fd <- function(
       } else {
         if (verbose) print(g3)
       }
+
       if (!inherits(X, "ICS")) {
-        dd_dat <- data.frame(
-          X = I(if(inherits(X, "dd")) as_dd(X) else as.fd(X)),
+        f_dat <- data.frame(
+          X = I(if (inherits(X, "dd")) as_dd(X) else fda::as.fd(X)),
           outlier = outlier_fact
         )
-        g4 <- plot_funs(dd_dat, X, color = outlier, alpha = outlier)
+        g4 <- plot_funs(f_dat, X, color = outlier, alpha = outlier)
         if (verbose) print(g4)
       }
+
       g <- gridExtra::grid.arrange(ggplotGrob(g1), ggplotGrob(g2),
         if (exists("g3b")) ggmatrix_gtable(g3b) else ggplotGrob(g3),
         if (exists("g4")) ggplotGrob(g4) else NULL,

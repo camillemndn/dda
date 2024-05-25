@@ -29,7 +29,7 @@ vnt <- vietnam_temperature |>
   filter(year %in% selected_years) |>
   filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
   arrange(region, province) |>
-  mutate(across(c(t_min, t_max), \(x) as_dd(x, lambda = 1, nbasis = 11)))
+  mutate(across(c(t_min, t_max), \(x) as_dd(x, lambda = 1, nbasis = 18)))
 
 vnt |> plot_funs(t_max, color = region)
 ```
@@ -46,11 +46,26 @@ ggpairs(as.data.frame(t_max_ics$scores),
 ```
 
 ```{r ics_outlier}
-t_max_out <- ICS_outlier(t_max, verbose = TRUE)
-ICS_outlier(as.fd(t_max), verbose = TRUE)
+t_max_out <- ICS_outlier(as_dd(vnt$t_max), verbose = TRUE)
+ICS_outlier(as.fd(vnt$t_max), index = 1:4, verbose = TRUE)
 ```
 
 ```{r checks}
-round(inprod(center.dd(t_max), t_max_ics$W) - t_max_ics$scores, 2)
-round(inprod(center.fd(t_max), ICS.fd(t_max)$W) - ICS.fd(t_max, center = T)$scores, 2)
+t_max_ics <- ICS(as_dd(vnt$t_max))
+error <- inprod(as_dd(vnt$t_max), t_max_ics$W) - t_max_ics$scores
+max(error)
 ```
+
+```{r inprod-vs-integrate}
+p <- dd(vietnam_temperature$t_max[[2]])
+
+cat("\n")
+ival <- p$basis$rangeval
+
+integrate(\(t) eval.fd(p, t), ival[1], ival[2])
+inprod(p)
+
+bspint <- inprod(p$basis)
+t(bspint) %*% p$coefs
+```
+
