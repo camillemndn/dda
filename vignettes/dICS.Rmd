@@ -43,6 +43,10 @@ ggpairs(as.data.frame(t_max_ics$scores),
   columns = c(1:3, 8:9),
   aes(label = seq_len(nrow(vnt)), color = vnt$region, shape = NA)
 ) + geom_text()
+
+p <- ncol(t_max_ics$W)
+tibble(id = 1:p, dual = as_dd(t_max_ics$W_star)) |>
+  plot_funs(dual, color = id)
 ```
 
 ```{r ics_outlier}

@@ -40,8 +40,13 @@ ICS.fd <- function(fdobj, ...) {
   changemat <- to_zbsplines(basis = fdobj$basis, inv = TRUE)
   gram <- t(changemat) %*% gram(fdobj$basis) %*% changemat
   icsobj <- ICS::ICS(crossprod(to_zbsplines(fdobj), gram), ...)
+  W <- icsobj$W
   icsobj$W <- fda::fd(
-    to_zbsplines(coefs = t(icsobj$W), basis = fdobj$basis, inv = TRUE),
+    to_zbsplines(coefs = t(W), basis = fdobj$basis, inv = TRUE),
+    fdobj$basis
+  )
+  icsobj$W_dual <- fda::fd(
+    to_zbsplines(coefs = solve(W), basis = fdobj$basis, inv = TRUE),
     fdobj$basis
   )
   class(icsobj) <- c("ICS", "fd")
