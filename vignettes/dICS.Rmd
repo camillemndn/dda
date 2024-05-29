@@ -44,8 +44,8 @@ ggpairs(as.data.frame(t_max_ics$scores),
   aes(label = seq_len(nrow(vnt)), color = vnt$region, shape = NA)
 ) + geom_text()
 
-p <- ncol(t_max_ics$W)
-tibble(id = 1:p, dual = as_dd(t_max_ics$W_star)) |>
+p <- ncol(t_max_ics$W$coefs)
+tibble(id = 1:p, dual = as_dd(t_max_ics$W_dual)) |>
   plot_funs(dual, color = id)
 ```
 

@@ -72,27 +72,23 @@ dd <- function(
 as_dd <- function(...) UseMethod("as_dd")
 
 #' @export
-as_dd.list <- function(l, merge = FALSE, ...) {
-  # A list of dd objects is merged by default.
-  if (merge || all(sapply(l, \(x) inherits(x, "dd") || inherits(x, "fd")))) {
-    coefs <- as.matrix(data.frame(lapply(l, \(x) x$coefs)))
-    sample <- lapply(l, \(x) x$sample)
-    reps <- unlist(lapply(l, \(x) x$fdnames$reps))
-    colnames(coefs) <- reps
-    fdnames <- list(
-      args = stats::setNames(lapply(l, \(x) x$fdnames$time), reps),
-      reps = reps,
-      funs = l[[1]]$fdnames$values
-    )
-    fdobj <- l[[1]]
-    fdobj$coefs <- coefs
-    fdobj$fdnames <- fdnames
-    ddobj <- dd(clr = fdobj, constant = unlist(lapply(l, \(x) x$constant)))
-    ddobj$sample <- sample
-    ddobj
-  } else {
-    lapply(l, \(x) as_dd(x, full_sample = unlist(l), ...))
-  }
+as_dd.list <- function(l, ...) {
+  ddlist <- lapply(l, \(x) as_dd(x, full_sample = unlist(l), ...))
+  structure(ddlist, class = c("ddl", "list"))
+}
+
+#' @export
+c.dd <- function(...) {
+  ddlist <- list(...)
+  fdobj <- do.call(fda:::c.fd, ddlist)
+  ddobj <- dd(clr = fdobj, constant = unlist(lapply(ddlist, \(x) x$constant)))
+  ddobj$sample <- lapply(ddlist, \(x) x$sample)
+  ddobj
+}
+
+#' @export
+c.ddl <- function(l) {
+  do.call(c.dd, l)
 }
 
 #' @export
@@ -100,21 +96,25 @@ as_dd.xts <- function(sample, ...) {
   dd(sample, ...)
 }
 #' @export
-as_dd.dd <- function(ddobj, ...) {
-  lapply(seq_len(ncol(ddobj$coefs)), \(i) {
-    di <- ddobj[i]
-    di$sample <- ddobj$sample[[i]]
-    di
-  })
-}
+as_dd.dd <- function(ddobj) ddobj
 
 #' @export
 as_dd.fd <- function(fdobj, ...) {
-  dd(clr = fdobj, basisobj = fdobj$basis)
+  dd(clr = fdobj, basisobj = fdobj$basis, ...)
 }
 #' @export
 as_dd.numeric <- function(sample, ...) {
   dd(sample, ...)
+}
+
+#' @export
+as.list.dd <- function(ddobj) {
+  ddlist <- lapply(seq_len(ncol(ddobj$coefs)), \(i) {
+    di <- ddobj[i]
+    di$sample <- ddobj$sample[[i]]
+    di
+  })
+  structure(ddlist, class = c("ddl", "list"))
 }
 
 #' @title FUNCTION_TITLE
