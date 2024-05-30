@@ -1,8 +1,8 @@
 ---
-title: "dICS"
+title: "ICS"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{dICS}
+  %\VignetteIndexEntry{ICS}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
   %\VignetteDepends{tidyverse}
@@ -25,11 +25,13 @@ library(GGally)
 data(vietnam_temperature)
 selected_years <- 2013:2016
 
-vnt <- vietnam_temperature |>
-  filter(year %in% selected_years) |>
-  filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
-  arrange(region, province) |>
-  mutate(across(c(t_min, t_max), \(x) as_dd(x, lambda = 1, nbasis = 18)))
+system.time(
+  vnt <- vietnam_temperature |>
+    filter(year %in% selected_years) |>
+    filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
+    arrange(region, province) |>
+    mutate(across(c(t_min, t_max), \(x) as_dd(x, lambda = 1, nbasis = 18, mc.cores = 16)))
+)
 
 vnt |> plot_funs(t_max, color = region)
 ```

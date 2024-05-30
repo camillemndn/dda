@@ -1,8 +1,8 @@
 ---
-title: "dANOVA"
+title: "ANOVA"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{dANOVA}
+  %\VignetteIndexEntry{ANOVA}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

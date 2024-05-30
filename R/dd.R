@@ -43,7 +43,6 @@ dd <- function(
     normalize = TRUE,
     ...) {
   if (is.numeric(sample)) {
-    cat("\r", "Sample size: ", length(sample))
     rangeval <- basis$rangeval
     # Set up initial value for wfdobj
     wfd0 <- fda::fd(matrix(0, basis$nbasis, 1), basis)
@@ -72,8 +71,15 @@ dd <- function(
 as_dd <- function(...) UseMethod("as_dd")
 
 #' @export
-as_dd.list <- function(l, ...) {
-  ddlist <- lapply(l, \(x) as_dd(x, full_sample = unlist(l), ...))
+#' @import parallel::mclapply
+as_dd.list <- function(l, mc.cores = NULL, ...) {
+  if (is.null(mc.cores)) {
+    ddlist <- lapply(l, \(x) as_dd(x, full_sample = unlist(l), ...), )
+  } else {
+    ddlist <- parallel::mclapply(l, \(x) as_dd(x, full_sample = unlist(l), ...),
+      mc.cores = mc.cores
+    )
+  }
   structure(ddlist, class = c("ddl", "list"))
 }
 
