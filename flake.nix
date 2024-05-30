@@ -29,6 +29,7 @@
           ellipse
           whitening
           memoise
+          torch
 
           ggExtra
           GGally
