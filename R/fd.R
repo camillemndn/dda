@@ -26,3 +26,9 @@ as.fd.dd <- function(ddobj, ...) {
 c.fdl <- function(l) {
   do.call(fda:::c.fd, l)
 }
+
+#' @export
+#' @method plot fdl
+plot.fdl <- function(fdlist, ...) {
+  plot_funs(data.frame(fun = I(fdlist)), fun, ...)
+}

@@ -15,10 +15,17 @@
 #' }
 #' @rdname plot.dd
 #' @export
+#' @method plot dd
 #' @importFrom ggplot2 ggplot aes geom_line labs
 #' @importFrom fda plot.fd
 plot.dd <- function(ddobj, ...) {
-  plot_funs(data.frame(fun = I(as_dd(ddobj))), fun, ...)
+  plot_funs(data.frame(fun = I(as.list(ddobj))), fun, ...)
+}
+
+#' @export
+#' @method plot ddl
+plot.ddl <- function(ddlist, ...) {
+  plot_funs(data.frame(fun = I(ddlist)), fun, ...)
 }
 
 #' @export

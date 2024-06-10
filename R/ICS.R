@@ -45,15 +45,11 @@ ICS.fd <- function(fdobj, ...) {
     to_zbsplines(coefs = t(W), basis = fdobj$basis, inv = TRUE),
     fdobj$basis
   )
-  icsobj$W_dual <- fda::fd(
-    to_zbsplines(coefs = solve(W), basis = fdobj$basis, inv = TRUE),
-    fdobj$basis
-  )
   class(icsobj) <- c("ICS", "fd")
   icsobj
 }
 
-gram <- function(bobj) {
+gram <- memoise::memoise(function(bobj) {
   rval <- bobj$rangeval
   p <- bobj$nbasis
   f <- function(t) t(fda::eval.basis(t, bobj)) %*% fda::eval.basis(t, bobj)
@@ -72,7 +68,7 @@ gram <- function(bobj) {
     }
   }
   result_matrix
-}
+})
 
 # Example usage with a basis object (replace with your actual basis object)
 # basis_obj <- create.bspline.basis(rangeval = c(0, 1), nbasis = 4)
@@ -98,6 +94,9 @@ ICS.dd <- function(...) {
   class(icsobj) <- c("ICS", "dd")
   icsobj
 }
+
+#' @export
+ICS.fdl <- function(fdlist, ...) ICS(c(fdlist), ...)
 
 #' @export
 mdist_simu_test <- memoise::memoise(ICSOutlier::dist_simu_test)
@@ -149,7 +148,6 @@ ICS_outlier.fd <- function(
     test = "agostino.test", n_eig = 10000, level_test = 0.05,
     adjust = TRUE, level_dist = 0.025, n_dist = 10000, type = "smallprop",
     n_cores = NULL, iseed = NULL, pkg = "ICSOutlier", q_type = 7,
-    plots = verbose, verbose = FALSE,
     ...) {
   # Step 1: Checks and apply ICS if necessary
   algorithm <- match.arg(ICS_algorithm)
@@ -205,19 +203,6 @@ ICS_outlier.fd <- function(
   } else {
     res_method <- list(index = index)
   }
-  if (plots) {
-    screeplot_dat <- data.frame(
-      IC = 1:p,
-      gen_kurtosis = object$gen_kurtosis,
-      selected = as.factor(ifelse(1:p %in% res_method$index, "selected", "not selected")),
-      eigenfun = I(if (inherits(X, "dd")) as_dd(object$W) else as.fd(object$W))
-    )
-    g1 <- ggplot(screeplot_dat, aes(IC, gen_kurtosis)) +
-      geom_line(aes(alpha = 0.5)) +
-      geom_point(aes(color = selected, size = selected)) +
-      ggplot2::guides(alpha = FALSE)
-    if (verbose) print(g1)
-  }
 
   # Step 3: Detecting the outliers
   if (sum(res_method$index < 0.5)) {
@@ -238,65 +223,86 @@ ICS_outlier.fd <- function(
     IC_distances <- ICSOutlier::ics_distances(object, index = res_method$index)
     outliers <- as.integer(IC_distances > IC_distances_quantile)
     names(outliers) <- row_names
-    if (plots) {
-      outlier_fact <- as.factor(ifelse(outliers == 1, "outlier", "not outlier"))
-      distances_dat <- data.frame(
-        Index = 1:n, IC_distances,
-        outlier = outlier_fact
-      )
-      screeplot_dat$IC <- as.factor(screeplot_dat$IC)
-      g2 <- screeplot_dat |>
-        filter(selected == "selected") |>
-        plot_funs(eigenfun, color = IC)
-      if (verbose) print(g2)
-
-      g3 <- ggplot(distances_dat, aes(Index, IC_distances, color = outlier)) +
-        geom_point() +
-        geom_hline(yintercept = IC_distances_quantile)
-
-      pairs_dat <- data.frame(object$scores, outlier = outlier_fact)
-
-      if (length(res_method$index) > 1) {
-        g3b <- GGally::ggpairs(pairs_dat,
-          diag = "blank",
-          columns = res_method$index,
-          aes(label = 1:n, shape = NA, color = outlier)
-        ) + geom_text()
-        if (verbose) print(g3b)
-      } else {
-        if (verbose) print(g3)
-      }
-
-      if (!inherits(X, "ICS")) {
-        f_dat <- data.frame(
-          X = I(if (inherits(X, "dd")) as_dd(X) else fda::as.fd(X)),
-          outlier = outlier_fact
-        )
-        g4 <- plot_funs(f_dat, X, color = outlier, alpha = outlier)
-        if (verbose) print(g4)
-      }
-
-      g <- gridExtra::grid.arrange(ggplotGrob(g1), ggplotGrob(g2),
-        if (exists("g3b")) ggmatrix_gtable(g3b) else ggplotGrob(g3),
-        if (exists("g4")) ggplotGrob(g4) else NULL,
-        ncol = 2
-      )
-    }
   }
   res <- list(
+    X = X,
+    scores = object$scores,
+    W = object$W,
+    gen_kurtosis = object$gen_kurtosis,
     outliers = outliers, ics_distances = IC_distances,
     ics_dist_cutoff = IC_distances_quantile, level_dist = level_dist,
     level_test = level_test, method = method, index = res_method$index,
     test = res_method$test, criterion = res_method$criterion,
     adjust = res_method$adjust, type = res_method$type, n_dist = as.integer(n_dist),
     n_eig = as.integer(n_eig), S1_label = object$S1_label,
-    S2_label = object$S2_label,
-    plots = if (plots) list(g1, g2, g3, g3b, g4, g)
+    S2_label = object$S2_label
   )
-  if (inherits(X, "dd")) {
-    class(res) <- c("ICS_Out", "dd")
-  } else {
-    class(res) <- c("ICS_Out", "fd")
-  }
+  class(res) <- "ICS_Out_fd"
   res
 }
+
+#' @export
+#' @method plot ICS_Out_fd
+plot.ICS_Out_fd <- function(object, ...) {
+  X <- object$X
+  IC_distances <- object$ics_distances
+  n <- nrow(object$scores)
+  p <- ncol(object$scores)
+
+  screeplot_dat <- data.frame(
+    IC = 1:p,
+    gen_kurtosis = object$gen_kurtosis,
+    selected = as.factor(ifelse(1:p %in% object$index, "selected", "not selected")),
+    eigenfun = I(if (inherits(X, "dd")) as.list(object$W) else as.list(object$W))
+  )
+  g1 <- ggplot(screeplot_dat, aes(IC, gen_kurtosis)) +
+    geom_line(alpha = 0.5) +
+    geom_point(aes(color = selected, size = selected))
+  plot(g1)
+  outlier_fact <- as.factor(ifelse(object$outliers == 1, "outlier", "not outlier"))
+  distances_dat <- data.frame(
+    Index = 1:n, IC_distances,
+    outlier = outlier_fact
+  )
+  screeplot_dat$IC <- as.factor(screeplot_dat$IC)
+  g2 <- screeplot_dat |>
+    filter(selected == "selected") |>
+    plot_funs(eigenfun, color = IC)
+  plot(g2)
+
+  g3 <- ggplot(distances_dat, aes(Index, IC_distances, color = outlier)) +
+    geom_point() +
+    geom_hline(yintercept = object$ics_dist_cutoff)
+
+  pairs_dat <- data.frame(object$scores, outlier = outlier_fact)
+
+  if (length(object$index) > 1) {
+    g3b <- GGally::ggpairs(pairs_dat,
+      diag = "blank",
+      columns = object$index,
+      aes(label = 1:n, shape = NA, color = outlier)
+    ) + geom_text()
+    print(g3b)
+  } else {
+    plot(g3)
+  }
+
+  if (!inherits(X, "ICS")) {
+    f_dat <- data.frame(
+      X = I(if (inherits(X, "dd")) as.list(X) else as.list(X)),
+      outlier = outlier_fact
+    )
+    g4 <- plot_funs(f_dat, X, color = outlier, alpha = outlier)
+    plot(g4)
+  }
+
+  g <- gridExtra::grid.arrange(ggplotGrob(g1), ggplotGrob(g2),
+    if (exists("g3b")) ggmatrix_gtable(g3b) else ggplotGrob(g3),
+    if (exists("g4")) ggplotGrob(g4) else NULL,
+    ncol = 2
+  )
+  plot(g)
+}
+
+#' @export
+ICS_outlier.fdl <- function(fdlist, ...) ICS_outlier(c(fdlist), ...)

@@ -62,6 +62,7 @@ dd <- function(
   if (normalize) {
     ddobj$constant <- if (is.null(constant)) normalize(ddobj) else constant
   }
+  ddobj$basis$call <- NULL
   ddobj$sample <- sample
   class(ddobj) <- c("dd", "fd")
   ddobj
@@ -71,7 +72,7 @@ dd <- function(
 as_dd <- function(...) UseMethod("as_dd")
 
 #' @export
-#' @import parallel::mclapply
+#' @importFrom parallel mclapply
 as_dd.list <- function(l, mc.cores = NULL, ...) {
   if (is.null(mc.cores)) {
     ddlist <- lapply(l, \(x) as_dd(x, full_sample = unlist(l), ...), )
@@ -80,15 +81,20 @@ as_dd.list <- function(l, mc.cores = NULL, ...) {
       mc.cores = mc.cores
     )
   }
-  structure(ddlist, class = c("ddl", "list"))
+  structure(ddlist, class = c("ddl", "fdl", "list"))
 }
 
 #' @export
 c.dd <- function(...) {
   ddlist <- list(...)
+  ddlist <- lapply(ddlist, \(x) {
+    x$basis$call <- NULL
+    x
+  })
   fdobj <- do.call(fda:::c.fd, ddlist)
   ddobj <- dd(clr = fdobj, constant = unlist(lapply(ddlist, \(x) x$constant)))
   ddobj$sample <- lapply(ddlist, \(x) x$sample)
+  if (all(sapply(ddobj$sample, is.null))) ddobj$sample <- NULL
   ddobj
 }
 
@@ -120,7 +126,7 @@ as.list.dd <- function(ddobj) {
     di$sample <- ddobj$sample[[i]]
     di
   })
-  structure(ddlist, class = c("ddl", "list"))
+  structure(ddlist, class = c("ddl", "fdl", "list"))
 }
 
 #' @title FUNCTION_TITLE

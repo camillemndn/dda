@@ -50,8 +50,6 @@ ICS_outlier(...)
   iseed = NULL,
   pkg = "ICSOutlier",
   q_type = 7,
-  plots = verbose,
-  verbose = FALSE,
   ...
 )
 }

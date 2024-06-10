@@ -86,7 +86,7 @@ density_nlm <- function(x, WfdParobj, conv = 1e-04, iterlim = 200, active = NULL
 
 
 #' @import torch
-DensityFunction <- nn_module(
+DensityFunction <- torch::nn_module(
   initialize = function(basisobj, Wfdobj, lambda, Kmat) {
     self$basisobj <- basisobj
     self$Wfdobj <- Wfdobj

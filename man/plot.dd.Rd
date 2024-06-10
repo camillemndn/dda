@@ -4,7 +4,7 @@
 \alias{plot.dd}
 \title{FUNCTION_TITLE}
 \usage{
-plot.dd(ddobj, ...)
+\method{plot}{dd}(ddobj, ...)
 }
 \arguments{
 \item{ddobj}{PARAM_DESCRIPTION}
