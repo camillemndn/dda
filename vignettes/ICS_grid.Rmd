@@ -1,0 +1,62 @@
+---
+title: "ICS on temperature distributions in Vietnam, with a grid"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICS on temperature distributions in Vietnam, with a grid}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(tidyverse)
+library(dda)
+```
+
+```{r}
+# Create a grid of parameters
+param_grid <- expand.grid(
+  lambda = 10^(seq(-10, 5, length.out = 10)),
+  nbasis = 12:18
+)
+
+# Filter the data set
+data(vietnam_temperature)
+selected_years <- 2013:2016
+
+vnt <- vietnam_temperature |>
+  filter(year %in% selected_years) |>
+  filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
+  arrange(region, province)
+
+# Define the function to call for each parameter
+smooth_ICS <- function(lambda, nbasis) {
+  vnts <- vnt |>
+    mutate(t_max = as_dd(t_max,
+      lambda = lambda, nbasis = nbasis, mc.cores = 12
+    ))
+  print(paste("lambda:", log10(lambda), "p:", nbasis))
+  as.factor(ICS_outlier(as.fd(vnts$t_max, n_cores = 12))$outliers)
+}
+
+# Smooth and detect outliers for each parameter
+system.time(
+  res <- param_grid |>
+    mutate(id = seq_len(n())) |>
+    rowwise() |>
+    mutate(outliers = list(smooth_ICS(lambda, nbasis))) |>
+    unnest_longer(outliers, indices_to = "obs_id")
+)
+
+res |> ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
+  geom_raster() +
+  scale_fill_grey(start = 1, end = 0) +
+  facet_grid(cols = vars(nbasis))
+```
+
