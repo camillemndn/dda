@@ -78,11 +78,11 @@ as_dd <- function(...) UseMethod("as_dd")
 
 #' @export
 #' @importFrom parallel mclapply
-as_dd.list <- function(l, mc.cores = NULL, ...) {
+as_dd.list <- function(l, full_sample = unlist(l), mc.cores = NULL, ...) {
   if (is.null(mc.cores)) {
     ddlist <- lapply(l, \(x) as_dd(x, full_sample = unlist(l), ...))
   } else {
-    ddlist <- parallel::mclapply(l, \(x) as_dd(x, full_sample = unlist(l), ...),
+    ddlist <- parallel::mclapply(l, \(x) as_dd(x, full_sample = full_sample, ...),
       mc.cores = mc.cores
     )
   }
