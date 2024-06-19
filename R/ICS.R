@@ -38,7 +38,7 @@ ICS <- function(...) UseMethod("ICS")
 #' @import ICS
 ICS.fd <- function(fdobj, ...) {
   changemat <- to_zbsplines(basis = fdobj$basis, inv = TRUE)
-  gram <- t(changemat) %*% gram(fdobj$basis) %*% changemat
+  gram <- t(changemat) %*% fda::inprod(fdobj$basis, fdobj$basis) %*% changemat
   icsobj <- ICS::ICS(crossprod(to_zbsplines(fdobj), gram), ...)
   W <- icsobj$W
   icsobj$W <- fda::fd(

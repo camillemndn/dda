@@ -20,12 +20,6 @@ library(dda)
 ```
 
 ```{r}
-# Create a grid of parameters
-param_grid <- expand.grid(
-  lambda = 10^(seq(-10, 5, length.out = 10)),
-  nbasis = 12:18
-)
-
 # Filter the data set
 data(vietnam_temperature)
 selected_years <- 2013:2016
@@ -35,28 +29,57 @@ vnt <- vietnam_temperature |>
   filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
   arrange(region, province)
 
+# Create a grid of parameters
+param_grid <- expand.grid(
+  knots_pos = c("quantiles", "eq_spaced"),
+  nknots = c(5:19, seq(20, nrow(vnt) - 2, 10), nrow(vnt) - 1) - 5,
+  lambda = 10^(-8:8)
+)
+
 # Define the function to call for each parameter
-smooth_ICS <- function(lambda, nbasis) {
+smooth_ICS <- function(knots_pos, nknots, lambda) {
   vnts <- vnt |>
     mutate(t_max = as_dd(t_max,
-      lambda = lambda, nbasis = nbasis, mc.cores = 12
+      lambda = lambda, nbasis = 5 + nknots, mc.cores = 14, knots_pos = knots_pos
     ))
-  print(paste("lambda:", log10(lambda), "p:", nbasis))
-  as.factor(ICS_outlier(as.fd(vnts$t_max, n_cores = 12))$outliers)
+  knots_pos_str <- ifelse(knots_pos == "quantiles",
+    "Knots at quantiles", "Equally spaced knots"
+  )
+  print(paste(
+    "# of knots:", nknots, "|",
+    "log10(lambda):", log10(lambda), "|",
+    knots_pos_str
+  ))
+
+  list(
+    dd = c(vnts$t_max),
+    ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
+    ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
+      n_cores = 14, index = 1:4
+    ), error = function(e) e)
+  )
 }
 
 # Smooth and detect outliers for each parameter
 system.time(
-  res <- param_grid |>
+  ics_grid <- param_grid |>
     mutate(id = seq_len(n())) |>
     rowwise() |>
-    mutate(outliers = list(smooth_ICS(lambda, nbasis))) |>
-    unnest_longer(outliers, indices_to = "obs_id")
+    mutate(res = list(smooth_ICS(knots_pos, nknots, lambda)))
 )
+save(ics_grid, file = "ICS_grid.RData")
 
-res |> ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
-  geom_raster() +
+load("ICS_grid.RData")
+
+ics_out <- ics_grid |>
+  filter(!(any(class(res$ics_out) == "error"))) |>
+  mutate(res = list(as.factor(res$ics_out$outliers))) |>
+  rename(outliers = res) |>
+  unnest_longer(outliers, indices_to = "obs_id")
+
+ics_out |> ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
+  geom_tile() +
   scale_fill_grey(start = 1, end = 0) +
-  facet_grid(cols = vars(nbasis))
+  facet_grid(cols = vars(nknots), rows = vars(knots_pos))
 ```
 
