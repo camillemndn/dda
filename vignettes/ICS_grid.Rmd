@@ -52,7 +52,7 @@ smooth_ICS <- function(knots_pos, nknots, lambda) {
   ))
 
   list(
-    dd = c(vnts$t_max),
+    dd = vnts$t_max,
     ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
     ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
       n_cores = 14, index = 1:4
