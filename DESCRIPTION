@@ -22,7 +22,8 @@ Suggests:
     rmarkdown,
     tidyverse
 VignetteBuilder: knitr
-Depends: 
-    R (>= 2.10)
+Depends:
+    R (>= 2.10),
+    fda
 LazyData: true
 LazyDataCompression: bzip2
