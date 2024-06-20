@@ -25,12 +25,19 @@ mean.dd <- function(ddobj, ...) {
 }
 
 #' @export
+mean.ddl <- function(ddlist, ...) as.list(mean(c(ddlist), ...))
+
+#' @export
 center <- function(...) UseMethod("center")
 
 #' @export
 center.dd <- function(ddobj, ...) {
   dd(clr = fda::center.fd(ddobj), ...)
 }
+
+
+#' @export
+center.ddl <- function(ddlist, ...) as.list(center(c(ddlist), ...))
 
 #' @title FUNCTION_TITLE
 #' @description FUNCTION_DESCRIPTION
@@ -48,7 +55,10 @@ center.dd <- function(ddobj, ...) {
 #' @rdname gmean.dd
 #' @export
 #' @importFrom fda mean.fd
-gmean.dd <- function(ddobj, ...) mean.dd(ddobj, normalize = FALSE)
+gmean.ddl <- function(ddlist, ...) as.list(gmean(c(ddlist), ...))
+
+#' @export
+gmean.dd <- function(ddlist, ...) mean.dd(ddobj, normalize = FALSE)
 
 #' @export
 `+.dd` <- function(...) dd(clr = fda::plus.fd(...))
@@ -58,6 +68,13 @@ gmean.dd <- function(ddobj, ...) mean.dd(ddobj, normalize = FALSE)
 `*.dd` <- function(...) dd(clr = fda::times.fd(...))
 #' @export
 `[.dd` <- function(...) dd(clr = fda::`[.fd`(...))
+
+#' @export
+`+.ddl` <- function(ddl1, ddl2, ...) as.list(`+.dd`(c(ddl1), c(ddl2), ...))
+#' @export
+`-.ddl` <- function(ddl1, ddl2, ...) as.list(`-.dd`(c(ddl1), c(ddl2), ...))
+#' @export
+`*.ddl` <- function(ddl1, ddl2, ...) as.list(`*.dd`(c(ddl1), c(ddl2), ...))
 
 #' @noRd
 #' @export

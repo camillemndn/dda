@@ -47,15 +47,21 @@ vnt <- vnt_present |>
     function(x) {
       as_dd(x,
         full_sample = c(unlist(t_max_present), unlist(t_max_past)),
-        lambda = 10, nbasis = 12, mc.cores = 15
+        lambda = 2, nbasis = 14, mc.cores = 15
       )
     }
   )) |>
-  mutate(t_max_diff = as.list(c(t_max_present) - c(t_max_past)))
+  mutate(t_max_diff = as.list(t_max_present - t_max_past))
 
 vnt |> plot_funs(t_max_diff, color = region) +
   facet_wrap(vars(region))
 
-vnt |> plot_funs(t_max_diff, rangeval = c(10, 35), color = region) +
+vnt |> plot_funs(t_max_diff, rangeval = c(7, 42), color = region) +
   facet_wrap(vars(region))
 ```
+
+```{r ics}
+icsout <- ICS_outlier(vnt$t_max_diff)
+plot(icsout)
+```
+
