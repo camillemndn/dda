@@ -44,7 +44,6 @@ eval.dd <- function(ddobj, t) {
 }
 
 #' @export
-#' @importFrom dplyr n
 eval_funs <- function(.data, funs, n = 101,
                       rangeval = range(lapply(
                         dplyr::pull(.data, {{ funs }}),
