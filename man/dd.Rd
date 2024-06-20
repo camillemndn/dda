@@ -9,9 +9,17 @@ dd(
   full_sample = sample,
   basis = fda::create.bspline.basis(rangeval = rangeval, nbasis = nbasis, norder =
     norder, breaks = breaks),
+  knots_pos = c("quantiles", "eq_spaced"),
   breaks = if (is.numeric(sample)) {
-     quantile(full_sample, seq(0, 1, length.out =
-    nbasis - norder + 2))
+     if (knots_pos == "quantiles") {
+        
+    quantile(full_sample, seq(0, 1, length.out = nbasis - norder + 2))
+     }
+     else
+    {
+         quantile(range(full_sample), seq(0, 1, length.out = nbasis - norder + 2))
+
+        }
  } else {
      NULL
  },
