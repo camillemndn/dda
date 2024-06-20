@@ -1,0 +1,61 @@
+---
+title: "ICS and climate change in Vietnam"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ICS and climate change in Vietnam}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(dda)
+library(tidyverse)
+
+data(vietnam_temperature)
+data(vietnam_regions)
+present_years <- 2012:2016
+past_years <- present_years - 25
+
+vietnam_temperature <- vietnam_temperature |>
+  select(!t_min) |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  mutate(region = name)
+
+vnt_present <- vietnam_temperature |>
+  filter(year %in% present_years) |>
+  rename(year_present = year, t_max_present = t_max) |>
+  arrange(region, province, year_present)
+
+vnt_past <- vietnam_temperature |>
+  filter(year %in% past_years) |>
+  rename(year_past = year, t_max_past = t_max) |>
+  arrange(region, province, year_past)
+
+vnt <- vnt_present |>
+  select(region, province, year_present, t_max_present) |>
+  left_join(vnt_past, c("region", "province"), relationship = "many-to-many") |>
+  filter(year_present - year_past == 25) |>
+  mutate(across(
+    c(t_max_present, t_max_past),
+    function(x) {
+      as_dd(x,
+        full_sample = c(unlist(t_max_present), unlist(t_max_past)),
+        lambda = 10, nbasis = 12, mc.cores = 15
+      )
+    }
+  )) |>
+  mutate(t_max_diff = as.list(c(t_max_present) - c(t_max_past)))
+
+vnt |> plot_funs(t_max_diff, color = region) +
+  facet_wrap(vars(region))
+
+vnt |> plot_funs(t_max_diff, rangeval = c(10, 35), color = region) +
+  facet_wrap(vars(region))
+```
