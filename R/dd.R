@@ -29,7 +29,7 @@ dd <- function(
       rangeval = rangeval,
       nbasis = nbasis, norder = norder, breaks = breaks
     ),
-    knots_pos = c("quantiles", "eq_spaced"),
+    knots_pos = "quantiles",
     breaks = if (is.numeric(sample)) {
       if (knots_pos == "quantiles") {
         quantile(full_sample, seq(0, 1, length.out = nbasis - norder + 2))
