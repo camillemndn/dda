@@ -96,8 +96,9 @@ c.dd <- function(...) {
     x$basis$call <- NULL
     x
   })
-  fdobj <- do.call(fda:::c.fd, ddlist)
-  ddobj <- dd(clr = fdobj, constant = unlist(lapply(ddlist, \(x) x$constant)))
+  ddobj <- do.call(fda:::c.fd, ddlist)
+  class(ddobj) <- c("dd", "fd")
+  ddobj$constant <- unlist(lapply(ddlist, \(x) x$constant))
   ddobj$sample <- lapply(ddlist, \(x) x$sample)
   if (all(sapply(ddobj$sample, is.null))) ddobj$sample <- NULL
   ddobj

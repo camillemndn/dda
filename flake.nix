@@ -41,6 +41,7 @@
           GGally
           plotly
           tidyverse
+          svglite
 
           sinew
           languageserver

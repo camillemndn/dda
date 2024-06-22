@@ -4,7 +4,7 @@
 \alias{ICS.fd}
 \title{FUNCTION_TITLE}
 \usage{
-\method{ICS}{fd}(fdobj, ...)
+\method{ICS}{fd}(fdobj, slow = FALSE, ...)
 }
 \arguments{
 \item{fdobj}{PARAM_DESCRIPTION}

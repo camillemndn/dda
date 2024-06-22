@@ -28,6 +28,9 @@ c.fdl <- function(l) {
 }
 
 #' @export
+center.fdl <- function(fdlist, ...) as.list(center(c(fdlist), ...))
+
+#' @export
 #' @method plot fdl
 plot.fdl <- function(fdlist, ...) {
   plot_funs(data.frame(fun = I(fdlist)), fun, ...)

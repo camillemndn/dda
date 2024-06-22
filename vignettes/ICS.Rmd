@@ -47,16 +47,67 @@ ggpairs(as.data.frame(t_max_ics$scores),
 ) + geom_text()
 ```
 
-```{r ics_outlier}
+```{r inprod}
 t_max_out <- ICS_outlier(vnt$t_max)
 ICS_outlier(as.fd(vnt$t_max), index = 1:4)
 ```
 
 ```{r checks}
-t_max_ics <- ICS(vnt$t_max)
-error <- inprod(as_dd(vnt$t_max), t_max_ics$W) - t_max_ics$scores
+x <- ddobj
+t_max_ics <- ICS(x)
+error <- inprod(c(x), t_max_ics$H) - t_max_ics$scores
+max(error)
+
+t_max_ics <- ICS(x, slow = TRUE)
+error <- inprod(c(x), t_max_ics$H) - t_max_ics$scores
+max(error)
+
+t_max_ics <- ICS(x, center = TRUE)
+error <- inprod(c(center(x)), t_max_ics$H) - t_max_ics$scores
+max(error)
+
+t_max_ics <- ICS(x, center = TRUE, slow = TRUE)
+error <- inprod(c(center(x)), t_max_ics$H) - t_max_ics$scores
 max(error)
 ```
+
+```{r reconstructing}
+x <- ddobj
+t_max_mean <- c(mean(x))
+t_max_ics <- ICS(x, center = TRUE, slow = TRUE)
+x <- x[1]
+h_dual <- to_zbsplines(t_max_ics$H_dual)
+basisobj <- x$basis
+
+t_max_rec <- to_zbsplines(
+  inv = TRUE,
+  coefs = t(t_max_ics$scores[1, ] %*% t(h_dual)),
+  basis = basisobj,
+)
+t_max_rec <- t_max_rec |> sweep(1, t_max_mean$coefs, "+")
+t_max_rec <- dd(clr = fd(coef = t_max_rec, basisobj = basisobj))
+
+plot(c(x) - t_max_rec)
+print(paste("True value:", c(x)$coefs))
+print(paste("Reconstructed value:", t_max_rec$coefs))
+```
+
+```{r gaussian-coefs}
+library(mvnfast)
+
+coefs <- rbind(
+  rmvn(5, mu = c(10, rep(0, 3)), sigma = diag(4)),
+  rmvn(95, mu = rep(0, 4), sigma = diag(4))
+)
+
+basisobj <- create.bspline.basis(nbasis = 4)
+
+ddobj <- dd(clr = fd(t(coefs), basisobj))
+
+plot(ICS_outlier(ddobj))
+plot(ICS_outlier(as.fd(ddobj, slow = TRUE)))
+```
+
 
 ```{r inprod-vs-integrate}
 p <- dd(vietnam_temperature$t_max[[2]])

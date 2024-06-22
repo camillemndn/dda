@@ -36,13 +36,21 @@ ICS <- function(...) UseMethod("ICS")
 #' @importFrom fda inprod fd
 #' @importFrom ICS ICS
 #' @import ICS
-ICS.fd <- function(fdobj, ...) {
+ICS.fd <- function(fdobj, slow = FALSE, ...) {
   changemat <- to_zbsplines(basis = fdobj$basis, inv = TRUE)
-  gram <- t(changemat) %*% fda::inprod(fdobj$basis, fdobj$basis) %*% changemat
+  if (slow) {
+    gram <- t(changemat) %*% gram(fdobj$basis) %*% changemat
+  } else {
+    gram <- t(changemat) %*% fda::inprod(fdobj$basis, fdobj$basis) %*% changemat
+  }
   icsobj <- ICS::ICS(crossprod(to_zbsplines(fdobj), gram), ...)
   W <- icsobj$W
-  icsobj$W <- fda::fd(
+  icsobj$H <- fda::fd(
     to_zbsplines(coefs = t(W), basis = fdobj$basis, inv = TRUE),
+    fdobj$basis
+  )
+  icsobj$H_dual <- fda::fd(
+    to_zbsplines(coefs = solve(W), basis = fdobj$basis, inv = TRUE),
     fdobj$basis
   )
   class(icsobj) <- c("ICS", "fd")
@@ -90,7 +98,8 @@ gram <- memoise::memoise(function(bobj) {
 #' @export
 ICS.dd <- function(...) {
   icsobj <- ICS.fd(...)
-  icsobj$W <- dd(clr = icsobj$W)
+  icsobj$H <- dd(clr = icsobj$H)
+  icsobj$H_dual <- dd(clr = icsobj$H_dual)
   class(icsobj) <- c("ICS", "dd")
   icsobj
 }
@@ -227,7 +236,7 @@ ICS_outlier.fd <- function(
   res <- list(
     X = X,
     scores = object$scores,
-    W = object$W,
+    H_dual = object$H_dual,
     gen_kurtosis = object$gen_kurtosis,
     outliers = outliers, ics_distances = IC_distances,
     ics_dist_cutoff = IC_distances_quantile, level_dist = level_dist,
@@ -253,7 +262,7 @@ plot.ICS_Out_fd <- function(object, ...) {
     IC = 1:p,
     gen_kurtosis = object$gen_kurtosis,
     selected = as.factor(ifelse(1:p %in% object$index, "selected", "not selected")),
-    eigenfun = I(if (inherits(X, "dd")) as.list(object$W) else as.list(object$W))
+    eigenfun = I(as.list(object$H_dual))
   )
   g1 <- ggplot(screeplot_dat, aes(IC, gen_kurtosis)) +
     geom_line(alpha = 0.5) +
@@ -276,20 +285,16 @@ plot.ICS_Out_fd <- function(object, ...) {
 
   pairs_dat <- data.frame(object$scores, outlier = outlier_fact)
 
-  if (length(object$index) > 1) {
-    g3b <- GGally::ggpairs(pairs_dat,
-      diag = "blank",
-      columns = object$index,
-      aes(label = 1:n, shape = NA, color = outlier)
-    ) + geom_text()
-    print(g3b)
-  } else {
-    plot(g3)
-  }
+  g3b <- GGally::ggpairs(pairs_dat,
+    diag = "blank",
+    columns = 1:max(max(object$index), 2),
+    aes(label = 1:n, shape = NA, color = outlier)
+  ) + geom_text()
+  print(g3b)
 
   if (!inherits(X, "ICS")) {
     f_dat <- data.frame(
-      X = I(if (inherits(X, "dd")) as.list(X) else as.list(X)),
+      X = I(as.list(X)),
       outlier = outlier_fact
     )
     g4 <- plot_funs(f_dat, X, color = outlier, alpha = outlier)

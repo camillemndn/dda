@@ -17,51 +17,89 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(dda)
 library(tidyverse)
+```
 
+```{r}
 data(vietnam_temperature)
 data(vietnam_regions)
 present_years <- 2012:2016
-past_years <- present_years - 25
+past_years <- present_years - 24
 
 vietnam_temperature <- vietnam_temperature |>
   select(!t_min) |>
-  left_join(vietnam_regions, by = c("region" = "code")) |>
-  mutate(region = name)
+  mutate(period = as.factor(1 + (year - min(year)) %/% 3))
 
+vnt <- vietnam_temperature |>
+  filter(region %in% c("RRD", "NMM")) |>
+  mutate(t_max = as_dd(t_max, lambda = 2, nbasis = 14, mc.cores = 15)) |>
+  group_by(region, province, period) |>
+  summarise(t_max = list(c(mean(t_max)))) |>
+  ungroup() |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  rename(region_name = name)
+
+class(vnt$t_max) <- c("ddl", "fdl", "list")
+
+vnt |> plot_funs(t_max, color = region) +
+  facet_grid(rows = vars(period))
+
+icsout <- ICS_outlier(as.fd(vnt$t_max), index = 1:4)
+plot(icsout)
+
+vnt <- vnt |> mutate(t_max = as.fd(t_max), outlying = as.factor(icsout$outliers), dienbien = as.factor(ifelse(1:260 == 31:35, 1, 0)))
+
+vnt |> plot_funs(t_max, color = outlying, alpha = outlying, linewidth = dienbien)
+```
+
+
+
+```{r relative}
 vnt_present <- vietnam_temperature |>
-  filter(year %in% present_years) |>
   rename(year_present = year, t_max_present = t_max) |>
   arrange(region, province, year_present)
 
 vnt_past <- vietnam_temperature |>
-  filter(year %in% past_years) |>
   rename(year_past = year, t_max_past = t_max) |>
   arrange(region, province, year_past)
+
+intersect_range <- function(vec, range) {
+  vec[vec >= range[1] & vec <= range[2]]
+}
 
 vnt <- vnt_present |>
   select(region, province, year_present, t_max_present) |>
   left_join(vnt_past, c("region", "province"), relationship = "many-to-many") |>
-  filter(year_present - year_past == 25) |>
+  filter(year_present - year_past == 9) |>
   mutate(across(
     c(t_max_present, t_max_past),
     function(x) {
       as_dd(x,
-        full_sample = c(unlist(t_max_present), unlist(t_max_past)),
+        full_sample = intersect_range(c(unlist(t_max_present), unlist(t_max_past)), c(-10, 360)),
+        knots_pos = "quantiles",
         lambda = 2, nbasis = 14, mc.cores = 15
       )
     }
   )) |>
-  mutate(t_max_diff = as.list(t_max_present - t_max_past))
+  group_by(region, province)
 
-vnt |> plot_funs(t_max_diff, color = region) +
+vnt |>
+  summarise(t_max_diff = list(gmean(c(relative(t_max_present, t_max_past)))))
+
+vnt |> plot_funs(t_max_diff, color = province) +
   facet_wrap(vars(region))
 
-vnt |> plot_funs(t_max_diff, rangeval = c(7, 42), color = region) +
-  facet_wrap(vars(region))
+vnt |> plot_funs(t_max_diff, rangeval = c(8, 42), color = province) +
+  facet_wrap(vars(region)) +
+  geom_hline(yintercept = 1 / diff(vnt$t_max_diff[[1]]$basis$rangeval))
 ```
 
 ```{r ics}
 icsout <- ICS_outlier(vnt$t_max_diff)
 plot(icsout)
+
+vnt |>
+  mutate(out = icsout$outliers) |>
+  group_by(province) |>
+  summary(province, n = sum(out))
 ```
 

@@ -68,6 +68,10 @@ gmean.dd <- function(ddlist, ...) mean.dd(ddobj, normalize = FALSE)
 `*.dd` <- function(...) dd(clr = fda::times.fd(...))
 #' @export
 `[.dd` <- function(...) dd(clr = fda::`[.fd`(...))
+#' @export
+relative <- function(...) UseMethod("relative")
+#' @export
+relative.dd <- function(...) dd(clr = fda::minus.fd(...), normalize = FALSE)
 
 #' @export
 `+.ddl` <- function(ddl1, ddl2, ...) as.list(`+.dd`(c(ddl1), c(ddl2), ...))
@@ -75,6 +79,9 @@ gmean.dd <- function(ddlist, ...) mean.dd(ddobj, normalize = FALSE)
 `-.ddl` <- function(ddl1, ddl2, ...) as.list(`-.dd`(c(ddl1), c(ddl2), ...))
 #' @export
 `*.ddl` <- function(ddl1, ddl2, ...) as.list(`*.dd`(c(ddl1), c(ddl2), ...))
+#' @export
+relative.ddl <- function(ddl1, ddl2, ...) as.list(relative.dd(c(ddl1, normalize = FALSE), c(ddl2, normalize = FALSE), ...))
+
 
 #' @noRd
 #' @export
