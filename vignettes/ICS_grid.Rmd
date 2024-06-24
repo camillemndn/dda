@@ -68,10 +68,14 @@ system.time(
     mutate(res = list(smooth_ICS(knots_pos, nknots, lambda)))
 )
 save(ics_grid, file = "ICS_grid.RData")
+```
 
+```{r}
+library(tidyverse)
 load("ICS_grid.RData")
 
 ics_out <- ics_grid |>
+  rowwise() |>
   filter(!(any(class(res$ics_out) == "error"))) |>
   mutate(res = list(as.factor(res$ics_out$outliers))) |>
   rename(outliers = res) |>
@@ -81,5 +85,14 @@ ics_out |> ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
   geom_tile() +
   scale_fill_grey(start = 1, end = 0) +
   facet_grid(cols = vars(nknots), rows = vars(knots_pos))
+```
+
+```{r details}
+library(dda)
+
+res <- ics_grid |>
+  filter(nknots == 45 & lambda == 10 & knots_pos == "eq_spaced") |>
+  pull(res)
+plot(res[[1]]$ics_out)
 ```
 
