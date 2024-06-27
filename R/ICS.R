@@ -43,6 +43,7 @@ ICS.fd <- function(fdobj, slow = FALSE, ...) {
   } else {
     gram <- t(changemat) %*% fda::inprod(fdobj$basis, fdobj$basis) %*% changemat
   }
+  # eigendecomposition to find the subspace
   icsobj <- ICS::ICS(crossprod(to_zbsplines(fdobj), gram), ...)
   W <- icsobj$W
   icsobj$H <- fda::fd(

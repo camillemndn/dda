@@ -36,6 +36,7 @@
           ellipse
           whitening
           memoise
+          sf
 
           ggExtra
           GGally

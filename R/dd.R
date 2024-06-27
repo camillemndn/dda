@@ -114,7 +114,7 @@ as_dd.xts <- function(sample, ...) {
   dd(sample, ...)
 }
 #' @export
-as_dd.dd <- function(ddobj) ddobj
+as_dd.dd <- function(ddobj, ...) ddobj
 
 #' @export
 as_dd.fd <- function(fdobj, ...) {
