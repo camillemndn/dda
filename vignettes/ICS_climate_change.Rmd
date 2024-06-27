@@ -16,41 +16,140 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(dda)
-library(tidyverse)
 ```
 
-```{r}
+We compute an average density per province per period of 3 years.
+There are 10 periods total, and only 26 provinces in the two northern
+regions of Vietnam, so 260 observations total.
+
+```{r ten_periods}
+load_all()
+library(tidyverse)
 data(vietnam_temperature)
 data(vietnam_regions)
-present_years <- 2012:2016
-past_years <- present_years - 24
 
 vietnam_temperature <- vietnam_temperature |>
   select(!t_min) |>
   mutate(period = as.factor(1 + (year - min(year)) %/% 3))
 
 vnt <- vietnam_temperature |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
   filter(region %in% c("RRD", "NMM")) |>
   mutate(t_max = as_dd(t_max, lambda = 2, nbasis = 14, mc.cores = 15)) |>
   group_by(region, province, period) |>
   summarise(t_max = list(c(mean(t_max)))) |>
   ungroup() |>
   left_join(vietnam_regions, by = c("region" = "code")) |>
-  rename(region_name = name)
+  rename(region_name = name) |>
+  arrange(region, province, period)
 
 class(vnt$t_max) <- c("ddl", "fdl", "list")
 
-vnt |> plot_funs(t_max, color = region) +
-  facet_grid(rows = vars(period))
-
-icsout <- ICS_outlier(as.fd(vnt$t_max), index = 1:4)
-plot(icsout)
-
-vnt <- vnt |> mutate(t_max = as.fd(t_max), outlying = as.factor(icsout$outliers), dienbien = as.factor(ifelse(1:260 == 31:35, 1, 0)))
-
-vnt |> plot_funs(t_max, color = outlying, alpha = outlying, linewidth = dienbien)
+vnt |> plot_funs(t_max, color = province) +
+  facet_wrap(vars(period))
 ```
 
+```{r outliers}
+icsout <- ICS_outlier(as_dd(vnt$t_max), index = 1:4, n_cores = 14)
+plot(icsout)
+```
+
+```{r interpretation}
+vnt |> print(n = 260)
+
+vnt <- vnt |> mutate(
+  t_max = as_dd(t_max),
+  outlying = as.factor(icsout$outliers),
+)
+
+vnt |> plot_funs(t_max, color = outlying, alpha = outlying) +
+  facet_wrap(vars(period))
+```
+
+```{r climate_regions}
+data(vietnam_provinces)
+
+vietnam_provinces_north <- vietnam_provinces |>
+  filter(region %in% c("RRD", "NMM")) |>
+  arrange(region, province) |>
+  mutate(climate_region = case_when(
+    province %in% c("LAICHAU", "DIENBIEN", "SONLA") ~ "S1",
+    province %in% c("LAOCAI", "YENBAI", "HAGIANG", "CAOBANG", "TUYENQUANG", "BACKAN", "THAINGUYEN", "LANGSON", "BACGIANG", "QUANGNINH") ~ "S2",
+    .default = "S3"
+  ))
+
+vietnam_provinces_north |> print(n = 26)
+
+vietnam_provinces_north |>
+  ggplot(aes(fill = climate_region, label = province)) +
+  geom_sf() +
+  geom_sf_label(size = 6)
+```
+
+
+```{r ics_climate_regions}
+data(vietnam_provinces_north)
+
+vnt <- vietnam_temperature |>
+  filter(region %in% c("RRD", "NMM")) |>
+  dplyr::select(year, province, t_max) |>
+  left_join(vietnam_provinces_north, by = "province") |>
+  st_as_sf() |>
+  dplyr::select(year, climate_region, province, t_max) |>
+  filter(climate_region == "S3") |>
+  arrange(year, province)
+
+vnt <- vnt |>
+  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15))
+class(vnt$t_max) <- c("ddl", "fdl", "list")
+
+vnt |> plot_funs(t_max, color = province) +
+  facet_wrap(vars(year))
+```
+
+```{r climate_regions_outliers}
+vnt |> print(n = 300)
+
+icsout <- ICS_outlier(as.fd(vnt$t_max), index = 3, n_cores = 14)
+plot(icsout)
+
+
+vnt <- vnt |> mutate(
+  t_max = as_dd(t_max),
+  outlying = as.factor(icsout$outliers),
+)
+vnt |> plot_funs(t_max, color = outlying, alpha = outlying) +
+  facet_wrap(vars(year))
+```
+
+If we force to 0 the B-spline coordinates of the clr, we
+project them onto the space of splines contrained to 0 on the
+borders of the interval.
+
+```{r}
+x <- c(vnt$t_max)
+b <- x$basis
+p <- b$nbasis
+
+zbsp <- fd(to_zbsplines(inv = TRUE, coefs = diag(p - 1), basis = b), b)
+plot(zbsp)
+
+y <- to_zbsplines(x)
+y[c(1, p - 1), ] <- 0
+yfd <- fd(to_zbsplines(inv = TRUE, coefs = y, basis = b), b)
+
+y_proj <- t(y[2:(p - 2), ])
+icsout <- ICS_outlier(y_proj)
+
+vnt |>
+  mutate(t_max = as.fd(t_max)) |>
+  plot_funs(t_max, color = outlying)
+
+vnt$t_max <- as.list(as_dd(yfd))
+```
+
+
+We could also work on negative perturbations.
 
 
 ```{r relative}
@@ -92,14 +191,3 @@ vnt |> plot_funs(t_max_diff, rangeval = c(8, 42), color = province) +
   facet_wrap(vars(region)) +
   geom_hline(yintercept = 1 / diff(vnt$t_max_diff[[1]]$basis$rangeval))
 ```
-
-```{r ics}
-icsout <- ICS_outlier(vnt$t_max_diff)
-plot(icsout)
-
-vnt |>
-  mutate(out = icsout$outliers) |>
-  group_by(province) |>
-  summary(province, n = sum(out))
-```
-

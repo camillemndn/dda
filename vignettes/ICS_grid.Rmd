@@ -72,6 +72,7 @@ save(ics_grid, file = "ICS_grid.RData")
 
 ```{r}
 library(tidyverse)
+load_all()
 load("ICS_grid.RData")
 
 ics_out <- ics_grid |>
@@ -91,8 +92,34 @@ ics_out |> ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
 library(dda)
 
 res <- ics_grid |>
-  filter(nknots == 45 & lambda == 10 & knots_pos == "eq_spaced") |>
-  pull(res)
-plot(res[[1]]$ics_out)
+  filter(nknots < 10) |>
+  #  filter(nknots == 45 & lambda == 10 & knots_pos == "eq_spaced") |>
+  filter(nknots == 4 & lambda == 1e8 & knots_pos == "quantiles") |>
+  sample_n(1)
+
+
+ics_out1 <- res$res[[1]]$ics_out
+
+ics_out2 <- ICS_outlier(as.fd(res$res[[1]]$dd), index = 1:4, n_cores = 14)
+all(ics_out1$outliers == ics_out2$outliers)
+plot(ics_out1)
+
+qr(cov(t(to_zbsplines(c(res$res[[1]]$dd)))))
+eigen(cov(t(to_zbsplines(c(res$res[[1]]$dd)))))$values
 ```
+
+```{r}
+ics_out |>
+  filter(outliers == 1) |>
+  group_by(obs_id) |>
+  summarise(n = n() / nrow(ics_grid)) |>
+  ggplot(aes(obs_id, n)) +
+  geom_bar(stat = "identity")
+
+tab <- ics_out |> pivot_wider(names_from = obs_id, values_from = outliers)
+tab <- apply(tab[, c(5:116)], c(1, 2), as.numeric)
+library(corrplot)
+corrplot(cor(tab))
+```
+
 
