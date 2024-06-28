@@ -8,6 +8,8 @@ vignette: >
 lightbox: true
 toc: true
 cache: true
+fig-width: 15
+fig-height: 10
 ---
 
 ```{r setup, include = FALSE}
@@ -26,7 +28,8 @@ There are 10 periods total, and only 26 provinces in the two northern
 regions of Vietnam, so 260 observations total.
 
 ```{r ten_periods}
-library(dda)
+devtools::load_all()
+# library(dda)
 library(tidyverse)
 library(sf)
 data(vietnam_temperature)
@@ -54,7 +57,8 @@ vnt |> plot_funs(t_max, color = province) +
 ```
 
 ```{r outliers}
-icsout <- ICS_outlier(as_dd(vnt$t_max), index = 1:4, n_cores = 14)
+devtools::load_all()
+icsout <- ICS_outlier(as.fd(vnt$t_max), index = 1:4, n_cores = 14)
 plot(icsout)
 ```
 
@@ -64,7 +68,7 @@ vnt <- vnt |> mutate(
   outlying = as.factor(icsout$outliers),
 )
 
-vnt |> plot_funs(t_max, color = outlying, alpha = outlying) +
+vnt |> plot_funs(t_max, color = ifelse(outlying == 1, province, "not outlying"), alpha = outlying) +
   facet_wrap(vars(period))
 ```
 
@@ -95,6 +99,11 @@ vietnam_provinces_north |>
 ```
 
 ```{r ics_climate_regions}
+# library(dda)
+library(tidyverse)
+library(sf)
+data(vietnam_temperature)
+data(vietnam_regions)
 data(vietnam_provinces_north)
 
 vnt <- vietnam_temperature |>

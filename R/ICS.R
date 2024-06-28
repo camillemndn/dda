@@ -277,7 +277,8 @@ plot.ICS_Out_fd <- function(object, ...) {
   screeplot_dat$IC <- as.factor(screeplot_dat$IC)
   g2 <- screeplot_dat |>
     filter(selected == "selected") |>
-    plot_funs(eigenfun, color = IC)
+    plot_funs(eigenfun, color = IC) +
+    if (inherits(X, "dd")) geom_hline(yintercept = 1 / diff(X$basis$rangeval))
   plot(g2)
 
   g3 <- ggplot(distances_dat, aes(Index, IC_distances, color = outlier)) +
