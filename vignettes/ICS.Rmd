@@ -54,42 +54,43 @@ ICS_outlier(as.fd(vnt$t_max), index = 1:4)
 
 ```{r checks}
 x <- ddobj
-t_max_ics <- ICS(x)
-error <- inprod(c(x), t_max_ics$H) - t_max_ics$scores
+x_ics <- ICS(x)
+error <- inprod(c(x), x_ics$H) - x_ics$scores
 max(error)
 
-t_max_ics <- ICS(x, slow = TRUE)
-error <- inprod(c(x), t_max_ics$H) - t_max_ics$scores
+x_ics <- ICS(x, slow = TRUE)
+error <- inprod(c(x), x_ics$H) - x_ics$scores
 max(error)
 
-t_max_ics <- ICS(x, center = TRUE)
-error <- inprod(c(center(x)), t_max_ics$H) - t_max_ics$scores
+x_ics <- ICS(x, center = TRUE)
+error <- inprod(c(center(x)), x_ics$H) - x_ics$scores
 max(error)
 
-t_max_ics <- ICS(x, center = TRUE, slow = TRUE)
-error <- inprod(c(center(x)), t_max_ics$H) - t_max_ics$scores
+x_ics <- ICS(x, center = TRUE, slow = TRUE)
+error <- inprod(c(center(x)), x_ics$H) - x_ics$scores
 max(error)
 ```
 
 ```{r reconstructing}
 x <- ddobj
-t_max_mean <- c(mean(x))
-t_max_ics <- ICS(x, center = TRUE, slow = TRUE)
-x <- x[1]
-h_dual <- to_zbsplines(t_max_ics$H_dual)
 basisobj <- x$basis
+p <- basisobj$nbasis
+x_mean <- c(mean(x))
+x_ics <- ICS(x, center = TRUE, slow = TRUE)
+h_dual <- to_zbsplines(x_ics$H_dual)
+h <- to_zbsplines(x_ics$H)
+all(round(t(h) %*% h_dual, 2) == diag(p - 1))
 
-t_max_rec <- to_zbsplines(
+x_rec <- to_zbsplines(
   inv = TRUE,
-  coefs = t(t_max_ics$scores[1, ] %*% t(h_dual)),
+  coefs = t(t_max_ics$scores %*% t(h_dual)),
   basis = basisobj,
 )
-t_max_rec <- t_max_rec |> sweep(1, t_max_mean$coefs, "+")
-t_max_rec <- dd(clr = fd(coef = t_max_rec, basisobj = basisobj))
+x_rec <- x_rec |> sweep(1, x_mean$coefs, "+")
+x_rec <- dd(clr = fd(coef = x_rec, basisobj = basisobj))
 
-plot(c(x) - t_max_rec)
-print(paste("True value:", c(x)$coefs))
-print(paste("Reconstructed value:", t_max_rec$coefs))
+error <- c(x) - x_rec
+print(max(error$coefs))
 ```
 
 ```{r gaussian-coefs}
@@ -122,3 +123,46 @@ bspint <- inprod(p$basis)
 t(bspint) %*% p$coefs
 ```
 
+
+We could also work on negative perturbations.
+
+
+```{r relative}
+vnt_present <- vietnam_temperature |>
+  rename(year_present = year, t_max_present = t_max) |>
+  arrange(region, province, year_present)
+
+vnt_past <- vietnam_temperature |>
+  rename(year_past = year, t_max_past = t_max) |>
+  arrange(region, province, year_past)
+
+intersect_range <- function(vec, range) {
+  vec[vec >= range[1] & vec <= range[2]]
+}
+
+vnt <- vnt_present |>
+  select(region, province, year_present, t_max_present) |>
+  left_join(vnt_past, c("region", "province"), relationship = "many-to-many") |>
+  filter(year_present - year_past == 9) |>
+  mutate(across(
+    c(t_max_present, t_max_past),
+    function(x) {
+      as_dd(x,
+        full_sample = intersect_range(c(unlist(t_max_present), unlist(t_max_past)), c(-10, 360)),
+        knots_pos = "quantiles",
+        lambda = 2, nbasis = 14, mc.cores = 15
+      )
+    }
+  )) |>
+  group_by(region, province)
+
+vnt |>
+  summarise(t_max_diff = list(gmean(c(relative(t_max_present, t_max_past)))))
+
+vnt |> plot_funs(t_max_diff, color = province) +
+  facet_wrap(vars(region))
+
+vnt |> plot_funs(t_max_diff, rangeval = c(8, 42), color = province) +
+  facet_wrap(vars(region)) +
+  geom_hline(yintercept = 1 / diff(vnt$t_max_diff[[1]]$basis$rangeval))
+```

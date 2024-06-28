@@ -5,26 +5,30 @@ vignette: >
   %\VignetteIndexEntry{ICS and climate change in Vietnam}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+lightbox: true
+toc: true
+cache: true
 ---
 
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
+  fig.width = 15,
+  fig.height = 10,
   collapse = TRUE,
   comment = "#>"
 )
 ```
 
-```{r setup}
-library(dda)
-```
+# 10 periods, 26 provinces
 
 We compute an average density per province per period of 3 years.
 There are 10 periods total, and only 26 provinces in the two northern
 regions of Vietnam, so 260 observations total.
 
 ```{r ten_periods}
-load_all()
+library(dda)
 library(tidyverse)
+library(sf)
 data(vietnam_temperature)
 data(vietnam_regions)
 
@@ -55,8 +59,6 @@ plot(icsout)
 ```
 
 ```{r interpretation}
-vnt |> print(n = 260)
-
 vnt <- vnt |> mutate(
   t_max = as_dd(t_max),
   outlying = as.factor(icsout$outliers),
@@ -66,26 +68,31 @@ vnt |> plot_funs(t_max, color = outlying, alpha = outlying) +
   facet_wrap(vars(period))
 ```
 
+# 30 years, 1 climate region (13 provinces)
+
 ```{r climate_regions}
-data(vietnam_provinces)
+tryCatch(data(vietnam_provinces_north), error = function(e) {
+  print(e)
+  data(vietnam_provinces)
 
-vietnam_provinces_north <- vietnam_provinces |>
-  filter(region %in% c("RRD", "NMM")) |>
-  arrange(region, province) |>
-  mutate(climate_region = case_when(
-    province %in% c("LAICHAU", "DIENBIEN", "SONLA") ~ "S1",
-    province %in% c("LAOCAI", "YENBAI", "HAGIANG", "CAOBANG", "TUYENQUANG", "BACKAN", "THAINGUYEN", "LANGSON", "BACGIANG", "QUANGNINH") ~ "S2",
-    .default = "S3"
-  ))
-
-vietnam_provinces_north |> print(n = 26)
+  vietnam_provinces_north <- vietnam_provinces |>
+    filter(region %in% c("RRD", "NMM")) |>
+    arrange(region, province) |>
+    mutate(climate_region = case_when(
+      province %in% c("LAICHAU", "DIENBIEN", "SONLA") ~ "S1",
+      province %in% c(
+        "LAOCAI", "YENBAI", "HAGIANG", "CAOBANG", "TUYENQUANG",
+        "BACKAN", "THAINGUYEN", "LANGSON", "BACGIANG", "QUANGNINH"
+      ) ~ "S2",
+      .default = "S3"
+    ))
+})
 
 vietnam_provinces_north |>
   ggplot(aes(fill = climate_region, label = province)) +
   geom_sf() +
-  geom_sf_label(size = 6)
+  geom_sf_label(fill = "white")
 ```
-
 
 ```{r ics_climate_regions}
 data(vietnam_provinces_north)
@@ -108,8 +115,6 @@ vnt |> plot_funs(t_max, color = province) +
 ```
 
 ```{r climate_regions_outliers}
-vnt |> print(n = 300)
-
 icsout <- ICS_outlier(as.fd(vnt$t_max), index = 3, n_cores = 14)
 plot(icsout)
 
@@ -122,72 +127,31 @@ vnt |> plot_funs(t_max, color = outlying, alpha = outlying) +
   facet_wrap(vars(year))
 ```
 
-If we force to 0 the B-spline coordinates of the clr, we
-project them onto the space of splines contrained to 0 on the
-borders of the interval.
+If we force to 0 the first and last ZB-spline coordinates of the $\operatorname{clr}$,
+we project them onto the space of splines contrained to $0$ on the
+boundaries of the interval.
 
-```{r}
-x <- c(vnt$t_max)
-b <- x$basis
-p <- b$nbasis
+```{r zero_boundary}
+boundary_to_zero <- function(x) {
+  b <- x$basis
+  p <- b$nbasis
+  zbsp <- fd(to_zbsplines(inv = TRUE, coefs = diag(p - 1), basis = b), b)
+  plot(zbsp)
 
-zbsp <- fd(to_zbsplines(inv = TRUE, coefs = diag(p - 1), basis = b), b)
-plot(zbsp)
+  y <- to_zbsplines(x)
+  y[c(1, p - 1), ] <- 0
+  yfd <- fd(to_zbsplines(inv = TRUE, coefs = y, basis = b), b)
 
-y <- to_zbsplines(x)
-y[c(1, p - 1), ] <- 0
-yfd <- fd(to_zbsplines(inv = TRUE, coefs = y, basis = b), b)
-
-y_proj <- t(y[2:(p - 2), ])
-icsout <- ICS_outlier(y_proj)
-
-vnt |>
-  mutate(t_max = as.fd(t_max)) |>
-  plot_funs(t_max, color = outlying)
-
-vnt$t_max <- as.list(as_dd(yfd))
-```
-
-
-We could also work on negative perturbations.
-
-
-```{r relative}
-vnt_present <- vietnam_temperature |>
-  rename(year_present = year, t_max_present = t_max) |>
-  arrange(region, province, year_present)
-
-vnt_past <- vietnam_temperature |>
-  rename(year_past = year, t_max_past = t_max) |>
-  arrange(region, province, year_past)
-
-intersect_range <- function(vec, range) {
-  vec[vec >= range[1] & vec <= range[2]]
+  list(dd = yfd, coefs = t(y[2:(p - 2), ]))
 }
-
-vnt <- vnt_present |>
-  select(region, province, year_present, t_max_present) |>
-  left_join(vnt_past, c("region", "province"), relationship = "many-to-many") |>
-  filter(year_present - year_past == 9) |>
-  mutate(across(
-    c(t_max_present, t_max_past),
-    function(x) {
-      as_dd(x,
-        full_sample = intersect_range(c(unlist(t_max_present), unlist(t_max_past)), c(-10, 360)),
-        knots_pos = "quantiles",
-        lambda = 2, nbasis = 14, mc.cores = 15
-      )
-    }
-  )) |>
-  group_by(region, province)
+icsout <- ICS_outlier(boundary_to_zero(c(vnt$t_max))$coefs)
 
 vnt |>
-  summarise(t_max_diff = list(gmean(c(relative(t_max_present, t_max_past)))))
-
-vnt |> plot_funs(t_max_diff, color = province) +
-  facet_wrap(vars(region))
-
-vnt |> plot_funs(t_max_diff, rangeval = c(8, 42), color = province) +
-  facet_wrap(vars(region)) +
-  geom_hline(yintercept = 1 / diff(vnt$t_max_diff[[1]]$basis$rangeval))
+  mutate(
+    t_max = as.list(as.fd(boundary_to_zero(c(t_max))$dd)),
+    outlying = as.factor(icsout$outliers)
+  ) |>
+  plot_funs(t_max, color = outlying) +
+  facet_wrap(vars(year))
 ```
+
