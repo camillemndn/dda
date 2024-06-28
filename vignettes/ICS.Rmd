@@ -79,11 +79,11 @@ x_mean <- c(mean(x))
 x_ics <- ICS(x, center = TRUE, slow = TRUE)
 h_dual <- to_zbsplines(x_ics$H_dual)
 h <- to_zbsplines(x_ics$H)
-all(round(t(h) %*% h_dual, 2) == diag(p - 1))
+all(round(inprod(x_ics$H, x_ics$H_dual), 2) == diag(p - 1))
 
 x_rec <- to_zbsplines(
   inv = TRUE,
-  coefs = t(t_max_ics$scores %*% t(h_dual)),
+  coefs = t(x_ics$scores %*% t(h_dual)),
   basis = basisobj,
 )
 x_rec <- x_rec |> sweep(1, x_mean$coefs, "+")

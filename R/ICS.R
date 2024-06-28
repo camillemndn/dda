@@ -51,7 +51,7 @@ ICS.fd <- function(fdobj, slow = FALSE, ...) {
     fdobj$basis
   )
   icsobj$H_dual <- fda::fd(
-    to_zbsplines(coefs = solve(W), basis = fdobj$basis, inv = TRUE),
+    to_zbsplines(coefs = solve(W %*% gram), basis = fdobj$basis, inv = TRUE),
     fdobj$basis
   )
   class(icsobj) <- c("ICS", "fd")
