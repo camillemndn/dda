@@ -44,6 +44,7 @@
           tidyverse
           svglite
 
+          pkgdown
           sinew
           languageserver
           viridis

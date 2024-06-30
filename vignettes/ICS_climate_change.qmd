@@ -1,25 +1,14 @@
 ---
-title: "ICS and climate change in Vietnam"
-output: rmarkdown::html_vignette
+title: ICS and climate change in Vietnam
 vignette: >
   %\VignetteIndexEntry{ICS and climate change in Vietnam}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 lightbox: true
 toc: true
-cache: true
 fig-width: 15
 fig-height: 10
 ---
-
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(
-  fig.width = 15,
-  fig.height = 10,
-  collapse = TRUE,
-  comment = "#>"
-)
-```
 
 # 10 periods, 26 provinces
 
@@ -42,7 +31,7 @@ vietnam_temperature <- vietnam_temperature |>
 vnt <- vietnam_temperature |>
   left_join(vietnam_regions, by = c("region" = "code")) |>
   filter(region %in% c("RRD", "NMM")) |>
-  mutate(t_max = as_dd(t_max, lambda = 2, nbasis = 14, mc.cores = 15)) |>
+  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15)) |>
   group_by(region, province, period) |>
   summarise(t_max = list(c(mean(t_max)))) |>
   ungroup() |>
@@ -57,8 +46,7 @@ vnt |> plot_funs(t_max, color = province) +
 ```
 
 ```{r outliers}
-devtools::load_all()
-icsout <- ICS_outlier(as.fd(vnt$t_max), index = 1:4, n_cores = 14)
+icsout <- ICS_outlier(as_dd(vnt$t_max), index = 1:4, n_cores = 14)
 plot(icsout)
 ```
 
@@ -124,16 +112,26 @@ vnt |> plot_funs(t_max, color = province) +
 ```
 
 ```{r climate_regions_outliers}
-icsout <- ICS_outlier(as.fd(vnt$t_max), index = 3, n_cores = 14)
+#| cache: false
+icsout <- ICS_outlier(as_dd(vnt$t_max), index = 1:2, n_cores = 14)
 plot(icsout)
-
 
 vnt <- vnt |> mutate(
   t_max = as_dd(t_max),
   outlying = as.factor(icsout$outliers),
 )
-vnt |> plot_funs(t_max, color = outlying, alpha = outlying) +
+vnt |> plot_funs(t_max, color = ifelse(outlying == 1, province, "not outlying"), alpha = outlying) +
   facet_wrap(vars(year))
+
+as_tibble(cbind(icsout$scores, vnt)) |>
+  mutate(province = if_else(outlying == 1, province, "not outlying")) |>
+  GGally::ggpairs(
+    diag = "blank",
+    upper = "blank",
+    legend = 3,
+    columns = 1:max(max(icsout$index), 2),
+    aes(label = year, shape = NA, color = province, alpha = outlying)
+  ) + geom_text()
 ```
 
 If we force to 0 the first and last ZB-spline coordinates of the $\operatorname{clr}$,
