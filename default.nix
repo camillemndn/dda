@@ -66,7 +66,7 @@ rec {
         HOME = ".";
 
         buildPhase = ''
-          Rscript -e "pkgdown::build_site()"
+          Rscript -e "options(pkgdown.internet = FALSE); pkgdown::build_site()"
         '';
 
         installPhase = ''
