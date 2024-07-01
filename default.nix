@@ -55,7 +55,27 @@ rec {
     ];
   };
 
-  packages = { };
+  packages.x86_64-linux = {
+    dda-website = pkgs.callPackage (
+      { stdenv, rWrapper, ... }:
+      stdenv.mkDerivation {
+        pname = "dda-website";
+        version = "0.0.0.9010";
+        src = ./.;
+        buildInputs = [ (rWrapper.override { packages = r-deps; }) ];
+        HOME = ".";
+
+        buildPhase = ''
+          Rscript -e "pkgdown::build_site()"
+        '';
+
+        installPhase = ''
+          mkdir $out
+          cp -r docs $out
+        '';
+      }
+    ) { };
+  };
 
   checks.default = {
     inherit packages;
