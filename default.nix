@@ -66,7 +66,7 @@ rec {
         version = "0.0.0.9010";
         src = ./.;
         buildInputs = [ (rWrapper.override { packages = r-deps; }) ];
-
+        HOME = ".";
         buildPhase = ''
           R CMD build . && R CMD check $(ls -t . | head -n1)
         '';
