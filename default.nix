@@ -75,8 +75,7 @@ rec {
       }:
 
       stdenv.mkDerivation {
-        pname = "dda-website";
-        version = "0.0.0.9010";
+        name = "dda-website";
         src = ./.;
         buildInputs = [ (rWrapper.override { packages = r-deps rPackages; }) ];
         HOME = ".";
