@@ -75,38 +75,21 @@
           ];
         };
 
-        packages.default = pkgs.callPackage (
+        checks.default = pkgs.callPackage (
           {
             stdenv,
             lib,
-            quarto,
-            texliveFull,
-            rPackages,
-            zip,
+            rWrapper,
             ...
           }:
           stdenv.mkDerivation {
-            pname = "thesis";
-            version = "0.1";
+            pname = "dda";
+            version = "0.0.0.9010";
             src = ./.;
-            buildInputs = [
-              (quarto.override {
-                extraRPackages = r-deps;
-                extraPythonPackages = python-deps;
-              })
-              texliveFull
-              zip
-            ];
+            buildInputs = [ (rWrapper.override { packages = r-deps; }) ];
 
             buildPhase = ''
-              HOME=. quarto render report/main.qmd
-            '';
-
-            installPhase = ''
-              mkdir $out
-              cd report 
-              cp -r *.pdf $out
-              zip -r $out/thesis-web-$version.zip *{.html,_files}
+              R CMD build . && R CMD check $(ls -t . | head -n1)
             '';
           }
         ) { };
