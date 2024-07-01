@@ -3,66 +3,83 @@ let
   system = "x86_64-linux";
   pkgs = import (inputs.nixpkgs) { inherit system; };
 
-  r-deps = with pkgs.rPackages; [
-    devtools
-    fdANOVA
-    fda
-    fda_usc
-    mvnfast
-    refund
-    robCompositions
-    compositions
-    ICS
-    ICSOutlier
-    corrplot
-    xts
-    ellipse
-    whitening
-    memoise
-    sf
+  r-deps =
+    ps: with ps; [
+      devtools
+      fdANOVA
+      fda
+      fda_usc
+      mvnfast
+      refund
+      robCompositions
+      compositions
+      ICS
+      ICSOutlier
+      corrplot
+      xts
+      ellipse
+      whitening
+      memoise
+      sf
 
-    ggExtra
-    GGally
-    plotly
-    tidyverse
-    svglite
+      ggExtra
+      GGally
+      plotly
+      tidyverse
+      svglite
 
-    pkgdown
-    sinew
-    languageserver
-    viridis
-    quarto
-    (buildRPackage {
-      name = "colorout";
-      src = pkgs.fetchFromGitHub {
-        owner = "jalvesaq";
-        repo = "colorout";
-        rev = "v1.2-2";
-        sha256 = "sha256-49avzqJNajVPcj8+Ax4/tv/2196bKSi6YeOoK3kyXec=";
-      };
-    })
-  ];
+      pkgdown
+      sinew
+      languageserver
+      viridis
+      quarto
+      (buildRPackage {
+        name = "colorout";
+        src = pkgs.fetchFromGitHub {
+          owner = "jalvesaq";
+          repo = "colorout";
+          rev = "v1.2-2";
+          sha256 = "sha256-49avzqJNajVPcj8+Ax4/tv/2196bKSi6YeOoK3kyXec=";
+        };
+      })
+    ];
 in
 rec {
   devShells.default = pkgs.mkShell {
     nativeBuildInputs = [ pkgs.bashInteractive ];
     buildInputs = with pkgs; [
-      (quarto.override { extraRPackages = r-deps; })
-      (rWrapper.override { packages = r-deps; })
-      (rstudioWrapper.override { packages = r-deps; })
+      (quarto.override { extraRPackages = r-deps pkgs.rPackages; })
+      (rWrapper.override { packages = r-deps pkgs.rPackages; })
+      (rstudioWrapper.override { packages = r-deps pkgs.rPackages; })
       texliveFull
       npins
     ];
   };
 
   packages.x86_64-linux = {
+    dda = pkgs.callPackage (
+      { rPackages, ... }:
+      rPackages.buildRPackage {
+        pname = "dda";
+        version = "0.0.0.9010";
+        src = ./.;
+        propagatedBuildInputs = r-deps rPackages;
+      }
+    ) { };
+
     dda-website = pkgs.callPackage (
-      { stdenv, rWrapper, ... }:
+      {
+        stdenv,
+        rWrapper,
+        rPackages,
+        ...
+      }:
+
       stdenv.mkDerivation {
         pname = "dda-website";
         version = "0.0.0.9010";
         src = ./.;
-        buildInputs = [ (rWrapper.override { packages = r-deps; }) ];
+        buildInputs = [ (rWrapper.override { packages = r-deps rPackages; }) ];
         HOME = ".";
 
         buildPhase = ''
@@ -79,18 +96,5 @@ rec {
 
   checks.default = {
     inherit packages;
-    r-cmd-check = pkgs.callPackage (
-      { stdenv, rWrapper, ... }:
-      stdenv.mkDerivation {
-        pname = "dda";
-        version = "0.0.0.9010";
-        src = ./.;
-        buildInputs = [ (rWrapper.override { packages = r-deps; }) ];
-        HOME = ".";
-        buildPhase = ''
-          R CMD build . && R CMD check $(ls -t . | head -n1)
-        '';
-      }
-    ) { };
   };
 }
