@@ -49,7 +49,7 @@ rec {
     nativeBuildInputs = [ pkgs.bashInteractive ];
     buildInputs = with pkgs; [
       (quarto.override { extraRPackages = r-deps pkgs.rPackages; })
-      (rWrapper.override { packages = r-deps pkgs.rPackages; })
+      (rWrapper.override { packages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
       (rstudioWrapper.override { packages = r-deps pkgs.rPackages; })
       texliveFull
       npins
@@ -60,8 +60,7 @@ rec {
     dda = pkgs.callPackage (
       { rPackages, ... }:
       rPackages.buildRPackage {
-        pname = "dda";
-        version = "0.0.0.9010";
+        name = "dda";
         src = ./.;
         propagatedBuildInputs = r-deps rPackages;
       }
