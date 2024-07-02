@@ -10,6 +10,15 @@ fig-width: 15
 fig-height: 10
 ---
 
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 15,
+  fig.height = 10
+)
+```
+
 # 10 periods, 26 provinces
 
 We compute an average density per province per period of 3 years.
@@ -17,8 +26,7 @@ There are 10 periods total, and only 26 provinces in the two northern
 regions of Vietnam, so 260 observations total.
 
 ```{r ten_periods}
-devtools::load_all()
-# library(dda)
+library(dda)
 library(tidyverse)
 library(sf)
 data(vietnam_temperature)
@@ -87,7 +95,6 @@ vietnam_provinces_north |>
 ```
 
 ```{r ics_climate_regions}
-# library(dda)
 library(tidyverse)
 library(sf)
 data(vietnam_temperature)
@@ -112,7 +119,6 @@ vnt |> plot_funs(t_max, color = province) +
 ```
 
 ```{r climate_regions_outliers}
-#| cache: false
 icsout <- ICS_outlier(as_dd(vnt$t_max), index = 1:2, n_cores = 14)
 plot(icsout)
 
