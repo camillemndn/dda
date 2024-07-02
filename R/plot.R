@@ -66,3 +66,35 @@ plot_funs <- function(.data, funs, ..., n = 401,
     ggplot2::ggplot(ggplot2::aes(x, y, group = id, ...)) +
     ggplot2::geom_line()
 }
+
+#' @export
+plot_matrix <- function(data, subset_vars, ...) {
+  # Check if subset_vars are in the data
+  if (!all(subset_vars %in% names(data))) {
+    stop("Some variables in subset_vars are not present in the data.")
+  }
+
+  # Get all possible pairs of the subset variables
+  pairs <- crossing(var1 = subset_vars, var2 = subset_vars) %>%
+    filter(var1 != var2)
+
+  # Create the long format data frame
+  long_data <- pairs %>%
+    rowwise() %>%
+    mutate(x = list(data[[var1]]), y = list(data[[var2]]), other = list(data |> dplyr::select(!subset_vars))) %>%
+    unnest(c(x, y, other))
+
+  break_by_x <- function(x) {
+    function(limits) {
+      seq(ceiling(limits[1] / x) * x, floor(limits[2] / x) * x, x)
+    }
+  }
+
+  long_data %>%
+    ggplot(aes(x = x, y = y, ...)) +
+    geom_text() +
+    facet_grid(vars(var2), vars(var1)) +
+    coord_fixed() +
+    scale_x_continuous(breaks = break_by_x(2)) +
+    scale_y_continuous(breaks = break_by_x(2))
+}
