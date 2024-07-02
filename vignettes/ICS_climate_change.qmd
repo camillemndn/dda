@@ -15,9 +15,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.width = 15,
-  fig.height = 10,
-  dev = "jpg",
-  fig.ext = "jpg"
+  fig.height = 10
 )
 ```
 
