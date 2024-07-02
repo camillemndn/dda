@@ -88,6 +88,12 @@ tryCatch(data(vietnam_provinces_north), error = function(e) {
     ))
 })
 
+vietnam_provinces |>
+  ggplot(aes(fill = region, label = province)) +
+  geom_sf() +
+  geom_sf_label(fill = "white", size = 2) +
+  theme_minimal()
+
 vietnam_provinces_north |>
   ggplot(aes(fill = climate_region, label = province)) +
   geom_sf() +
