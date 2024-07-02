@@ -97,7 +97,8 @@ vietnam_provinces |>
 vietnam_provinces_north |>
   ggplot(aes(fill = climate_region, label = province)) +
   geom_sf() +
-  geom_sf_label(fill = "white")
+  geom_sf_label(fill = "white") +
+  theme_minimal()
 ```
 
 ```{r ics_climate_regions}
