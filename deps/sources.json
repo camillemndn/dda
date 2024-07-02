@@ -1,5 +1,17 @@
 {
   "pins": {
+    "git-hooks": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "cachix",
+        "repo": "git-hooks.nix"
+      },
+      "branch": "master",
+      "revision": "0ff4381bbb8f7a52ca4a851660fc7a437a4c6e07",
+      "url": "https://github.com/cachix/git-hooks.nix/archive/0ff4381bbb8f7a52ca4a851660fc7a437a4c6e07.tar.gz",
+      "hash": "0bmgc731c5rvky6qxc4f6gvgyiic8dna5dv3j19kya86idf7wn0p"
+    },
     "nixpkgs": {
       "type": "Channel",
       "name": "nixpkgs-unstable",

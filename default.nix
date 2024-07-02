@@ -43,10 +43,14 @@ let
         };
       })
     ];
+
+  pre-commit-hook = (import inputs.git-hooks).run {
+    src = ./.;
+    hooks.commitizen.enable = true;
+  };
 in
 rec {
   devShells.default = pkgs.mkShell {
-    nativeBuildInputs = [ pkgs.bashInteractive ];
     buildInputs = with pkgs; [
       (quarto.override { extraRPackages = r-deps pkgs.rPackages; })
       (rWrapper.override { packages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
@@ -54,6 +58,9 @@ rec {
       texliveFull
       npins
     ];
+    shellHook = ''
+      ${pre-commit-hook.shellHook}
+    '';
   };
 
   packages.x86_64-linux = {
