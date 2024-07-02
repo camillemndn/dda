@@ -36,21 +36,41 @@ dd(
 \arguments{
 \item{sample}{PARAM_DESCRIPTION, Default: NULL}
 
-\item{basis}{PARAM_DESCRIPTION, Default: fda::create.bspline.basis(rangeval, nbasis)}
+\item{full_sample}{PARAM_DESCRIPTION, Default: sample}
 
-\item{rangeval}{PARAM_DESCRIPTION, Default: NULL}
+\item{basis}{PARAM_DESCRIPTION, Default: fda::create.bspline.basis(rangeval = rangeval, nbasis = nbasis,
+norder = norder, breaks = breaks)}
 
-\item{nbasis}{PARAM_DESCRIPTION, Default: NULL}
+\item{knots_pos}{PARAM_DESCRIPTION, Default: 'quantiles'}
+
+\item{breaks}{PARAM_DESCRIPTION, Default: if (is.numeric(sample)) {
+if (knots_pos == "quantiles") {
+quantile(full_sample, seq(0, 1, length.out = nbasis -
+norder + 2))
+}
+else {
+quantile(range(full_sample), seq(0, 1, length.out = nbasis -
+norder + 2))
+}
+} else {
+NULL
+}}
+
+\item{rangeval}{PARAM_DESCRIPTION, Default: if (is.numeric(sample)) range(breaks) else c(0, 1)}
+
+\item{nbasis}{PARAM_DESCRIPTION, Default: 12}
+
+\item{norder}{PARAM_DESCRIPTION, Default: 5}
 
 \item{lambda}{PARAM_DESCRIPTION, Default: 0}
 
-\item{clr}{PARAM_DESCRIPTION, Default: fda::fd(sample, basisobj = basis)}
+\item{clr}{PARAM_DESCRIPTION, Default: fda::fd(basisobj = basis)}
 
 \item{constant}{PARAM_DESCRIPTION, Default: NULL}
 
-\item{...}{PARAM_DESCRIPTION}
+\item{normalize}{PARAM_DESCRIPTION, Default: TRUE}
 
-\item{method}{PARAM_DESCRIPTION, Default: c("MPL", "kernel")}
+\item{...}{PARAM_DESCRIPTION}
 }
 \value{
 OUTPUT_DESCRIPTION
@@ -70,4 +90,5 @@ if (interactive()) {
 }
 \seealso{
 \code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[fda]{density.fd}}, \code{\link[fda]{eval.fd}}
+\code{\link[stats]{integrate}}
 }

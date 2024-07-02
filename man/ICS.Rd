@@ -2,20 +2,40 @@
 % Please edit documentation in R/ICS.R
 \name{ICS}
 \alias{ICS}
+\alias{ICS.fd}
+\alias{ICS.dd}
 \title{FUNCTION_TITLE}
 \usage{
 ICS(...)
+
+\method{ICS}{fd}(fdobj, slow = FALSE, ...)
+
+\method{ICS}{dd}(...)
 }
 \arguments{
 \item{...}{PARAM_DESCRIPTION}
+
+\item{fdobj}{PARAM_DESCRIPTION}
 }
 \value{
+OUTPUT_DESCRIPTION
+
+OUTPUT_DESCRIPTION
+
 OUTPUT_DESCRIPTION
 }
 \description{
 FUNCTION_DESCRIPTION
+
+FUNCTION_DESCRIPTION
+
+FUNCTION_DESCRIPTION
 }
 \details{
+DETAILS
+
+DETAILS
+
 DETAILS
 }
 \examples{
@@ -24,4 +44,18 @@ if (interactive()) {
   # EXAMPLE1
 }
 }
+\dontrun{
+if (interactive()) {
+  # EXAMPLE1
+}
+}
+\dontrun{
+if (interactive()) {
+  # EXAMPLE1
+}
+}
+}
+\seealso{
+\code{\link[fda]{inprod}}, \code{\link[fda]{fd}}
+\code{\link[ICS]{ICS-S3}}, \code{\link[ICS]{ics}}, \code{\link[ICS]{ICS}}
 }

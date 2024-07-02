@@ -1,13 +1,29 @@
 #' @title FUNCTION_TITLE
 #' @description FUNCTION_DESCRIPTION
 #' @param sample PARAM_DESCRIPTION, Default: NULL
-#' @param method PARAM_DESCRIPTION, Default: c("MPL", "kernel")
-#' @param basis PARAM_DESCRIPTION, Default: fda::create.bspline.basis(rangeval, nbasis)
-#' @param rangeval PARAM_DESCRIPTION, Default: NULL
-#' @param nbasis PARAM_DESCRIPTION, Default: NULL
+#' @param full_sample PARAM_DESCRIPTION, Default: sample
+#' @param basis PARAM_DESCRIPTION, Default: fda::create.bspline.basis(rangeval = rangeval, nbasis = nbasis,
+#'    norder = norder, breaks = breaks)
+#' @param knots_pos PARAM_DESCRIPTION, Default: 'quantiles'
+#' @param breaks PARAM_DESCRIPTION, Default: if (is.numeric(sample)) {
+#'    if (knots_pos == "quantiles") {
+#'        quantile(full_sample, seq(0, 1, length.out = nbasis -
+#'            norder + 2))
+#'    }
+#'    else {
+#'        quantile(range(full_sample), seq(0, 1, length.out = nbasis -
+#'            norder + 2))
+#'    }
+#' } else {
+#'    NULL
+#' }
+#' @param rangeval PARAM_DESCRIPTION, Default: if (is.numeric(sample)) range(breaks) else c(0, 1)
+#' @param nbasis PARAM_DESCRIPTION, Default: 12
+#' @param norder PARAM_DESCRIPTION, Default: 5
 #' @param lambda PARAM_DESCRIPTION, Default: 0
-#' @param clr PARAM_DESCRIPTION, Default: fda::fd(sample, basisobj = basis)
+#' @param clr PARAM_DESCRIPTION, Default: fda::fd(basisobj = basis)
 #' @param constant PARAM_DESCRIPTION, Default: NULL
+#' @param normalize PARAM_DESCRIPTION, Default: TRUE
 #' @param ... PARAM_DESCRIPTION
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
@@ -19,9 +35,11 @@
 #' }
 #' @seealso
 #'  \code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[fda]{density.fd}}, \code{\link[fda]{eval.fd}}
+#'  \code{\link[stats]{integrate}}
 #' @rdname dd
 #' @export
-#' @importFrom stats quantile
+#' @importFrom fda create.bspline.basis fd fdPar density.fd eval.fd
+#' @importFrom stats integrate
 dd <- function(
     sample = NULL,
     full_sample = sample,
@@ -73,9 +91,38 @@ dd <- function(
   ddobj
 }
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @rdname as_dd
 #' @export
 as_dd <- function(...) UseMethod("as_dd")
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param l PARAM_DESCRIPTION
+#' @param full_sample PARAM_DESCRIPTION, Default: unlist(l)
+#' @param mc.cores PARAM_DESCRIPTION, Default: NULL
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @seealso
+#'  \code{\link[parallel]{mclapply}}
+#' @rdname as_dd
 #' @export
 #' @importFrom parallel mclapply
 as_dd.list <- function(l, full_sample = unlist(l), mc.cores = NULL, ...) {
@@ -89,7 +136,22 @@ as_dd.list <- function(l, full_sample = unlist(l), mc.cores = NULL, ...) {
   structure(ddlist, class = c("ddl", "fdl", "list"))
 }
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @seealso
+#'  \code{\link[fda]{character(0)}}
+#' @rdname c
 #' @export
+#' @importFrom fda c.fd
 c.dd <- function(...) {
   ddlist <- list(...)
   ddlist <- lapply(ddlist, \(x) {
@@ -104,27 +166,103 @@ c.dd <- function(...) {
   ddobj
 }
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param l PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @rdname c
 #' @export
 c.ddl <- function(l) {
   do.call(c.dd, l)
 }
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param sample PARAM_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @rdname as_dd
 #' @export
 as_dd.xts <- function(sample, ...) {
   dd(sample, ...)
 }
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param ddobj PARAM_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @rdname as_dd
 #' @export
 as_dd.dd <- function(ddobj, ...) ddobj
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param fdobj PARAM_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @rdname as_dd
 #' @export
 as_dd.fd <- function(fdobj, ...) {
   dd(clr = fdobj, basisobj = fdobj$basis, ...)
 }
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param sample PARAM_DESCRIPTION
+#' @param ... PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @rdname as_dd
 #' @export
 as_dd.numeric <- function(sample, ...) {
   dd(sample, ...)
 }
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param ddobj PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples
+#' \dontrun{
+#' if (interactive()) {
+#'   # EXAMPLE1
+#' }
+#' }
+#' @rdname as.list
 #' @export
 as.list.dd <- function(ddobj) {
   ddlist <- lapply(seq_len(ncol(ddobj$coefs)), \(i) {

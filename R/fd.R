@@ -12,9 +12,12 @@ as.list.fd <- function(fdobj) {
   structure(fdlist, class = c("fdl", "list"))
 }
 
+#' As fd
+#' @rdname as.fd
 #' @export
 as.fd.fd <- function(fdobj) fdobj
 
+#' @rdname as.fd
 #' @export
 as.fd.dd <- function(ddobj, ...) {
   ddobj$sample <- NULL
@@ -22,6 +25,7 @@ as.fd.dd <- function(ddobj, ...) {
   structure(ddobj, class = "fd")
 }
 
+#' @rdname c
 #' @export
 c.fdl <- function(l) {
   do.call(fda:::c.fd, l)
@@ -30,6 +34,7 @@ c.fdl <- function(l) {
 #' @export
 center.fdl <- function(fdlist, ...) as.list(center(c(fdlist), ...))
 
+#' @rdname plot
 #' @export
 #' @method plot fdl
 plot.fdl <- function(fdlist, ...) {

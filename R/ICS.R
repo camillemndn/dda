@@ -31,7 +31,7 @@ ICS <- function(...) UseMethod("ICS")
 #' @seealso
 #'  \code{\link[fda]{inprod}}, \code{\link[fda]{fd}}
 #'  \code{\link[ICS]{ICS-S3}}, \code{\link[ICS]{ics}}, \code{\link[ICS]{ICS}}
-#' @rdname ICS.fd
+#' @rdname ICS
 #' @export
 #' @importFrom fda inprod fd
 #' @importFrom ICS ICS
@@ -95,7 +95,7 @@ gram <- memoise::memoise(function(bobj) {
 #'   # EXAMPLE1
 #' }
 #' }
-#' @rdname ICS.dd
+#' @rdname ICS
 #' @export
 ICS.dd <- function(...) {
   icsobj <- ICS.fd(...)

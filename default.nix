@@ -60,6 +60,7 @@ rec {
     ];
     shellHook = ''
       ${pre-commit-hook.shellHook}
+      Rscript -e "devtools::document()"
     '';
   };
 

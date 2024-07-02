@@ -11,7 +11,7 @@
 #'   # EXAMPLE1
 #' }
 #' }
-#' @rdname eval.default
+#' @rdname eval.dd
 #' @export
 eval.default <- eval
 
