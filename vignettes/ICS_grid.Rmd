@@ -140,7 +140,7 @@ ics_out_freq <- ics_out |>
 knitr::kable(ics_out_freq)
 
 ics_out_freq |>
-  ggplot(aes(obs_id, n)) +
+  ggplot(aes(obs_id, n_outlier)) +
   geom_bar(stat = "identity")
 
 tab <- ics_out |> pivot_wider(names_from = obs_id, values_from = outliers)
@@ -155,7 +155,12 @@ ics_err <- ics_grid |>
   rowwise() |>
   mutate(ics_out = list(res$ics_out), dd = list(res$dd)) |>
   filter(any(class(ics_out) == "error")) |>
-  filter(nknots == 0) |>
+  mutate(message = case_when(
+    grepl("socket", ics_out$message) ~ "socket",
+    grepl("missing values", ics_out$message) ~ "collinearity",
+    grepl("as.fd", ics_out$message) ~ "preprocessing",
+    .default = "other"
+  )) |>
   arrange(knots_pos)
 
 res <- ics_grid |>
