@@ -151,7 +151,6 @@ as_dd.list <- function(l, full_sample = unlist(l), mc.cores = NULL, ...) {
 #'  \code{\link[fda]{character(0)}}
 #' @rdname c
 #' @export
-#' @importFrom fda c.fd
 c.dd <- function(...) {
   ddlist <- list(...)
   ddlist <- lapply(ddlist, \(x) {
