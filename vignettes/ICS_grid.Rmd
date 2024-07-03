@@ -1,8 +1,8 @@
 ---
-title: "ICS on temperature distributions in Vietnam, with a grid"
+title: "Outlier detection using ICS: influence of the parameters"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{ICS on temperature distributions in Vietnam, with a grid}
+  %\VignetteIndexEntry{Outlier detection using ICS: influence of the parameters}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -10,13 +10,36 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.width = 15,
+  fig.height = 10
 )
 ```
 
-```{r setup}
-library(tidyverse)
+```{r setup, message = FALSE}
 library(dda)
+library(tidyverse)
+library(sf)
+```
+
+In this example, we filter the dataset on Vietnam temperature to
+consider only the two northern regions and two provinces from
+the south, from 2013 to 2016, for a total of 112 observations.
+
+```{r vnt_north_south_map}
+data(vietnam_provinces)
+data(vietnam_regions)
+
+vietnam_provinces |>
+  mutate(province = if_else(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU"), province, NA)) |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  select(!region) |>
+  rename(region = name) |>
+  ggplot(aes(fill = region, label = province)) +
+  geom_sf() +
+  geom_sf_label(fill = "white", size = 2) +
+  theme_minimal() +
+  labs(x = "longitude", y = "latitude")
 ```
 
 ```{r vnt_north_south}
@@ -27,6 +50,9 @@ selected_years <- 2013:2016
 vnt <- vietnam_temperature |>
   filter(year %in% selected_years) |>
   filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  select(!region) |>
+  rename(region = name) |>
   arrange(region, province)
 
 vnt |>
@@ -35,7 +61,7 @@ vnt |>
   )) |>
   plot_funs(t_max, color = region) +
   theme_minimal() +
-  labs(x = "temperature (°C)", y = "density")
+  labs(x = "temperature (deg. Celsius)", y = "density")
 ```
 
 Let us create a grid of parameters and
@@ -97,7 +123,7 @@ ics_out |> ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
   facet_grid(cols = vars(nknots), rows = vars(knots_pos))
 ```
 
-```{r details, eval = FALSE}
+```{r details, include = FALSE, eval = FALSE}
 library(dda)
 
 res <- ics_grid |>
@@ -117,7 +143,7 @@ qr(cov(t(to_zbsplines(c(res$res[[1]]$dd)))))
 eigen(cov(t(to_zbsplines(c(res$res[[1]]$dd)))))$values
 ```
 
-```{r eval = FALSE}
+```{r include = FALSE, eval = FALSE}
 ics_out |>
   filter(outliers == 1) |>
   group_by(obs_id) |>
