@@ -12,7 +12,9 @@ toc: true
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.height = 10
+  dpi = 300,
+  fig.height = 10,
+  fig.width = 15
 )
 ```
 

@@ -11,7 +11,9 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  dpi = 300
+  dpi = 300,
+  fig.height = 10,
+  fig.width = 15
 )
 ```
 
@@ -25,7 +27,7 @@ In this example, we filter the dataset on Vietnam temperature to
 consider only the two northern regions and two provinces from
 the south, from 2013 to 2016, for a total of 112 observations.
 
-```{r vnt_north_south_map}
+```{r vnt_north_south_map, fig.width = 9}
 data(vietnam_provinces)
 data(vietnam_regions)
 
