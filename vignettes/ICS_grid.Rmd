@@ -21,6 +21,7 @@ knitr::opts_chunk$set(
 library(dda)
 library(tidyverse)
 library(sf)
+set.seed(0)
 ```
 
 In this example, we filter the dataset on Vietnam temperature to
@@ -43,7 +44,7 @@ vietnam_provinces |>
   labs(x = "longitude", y = "latitude")
 ```
 
-```{r vnt_north_south}
+```{r vnt_north_south, fig.height = 6, fig.width = 8}
 # Filter the data set
 data(vietnam_temperature)
 selected_years <- 2013:2016
@@ -152,7 +153,7 @@ corrplot(cor(tab))
 ```
 
 
-```{r details, include = FALSE, eval = FALSE}
+```{r errors, include = FALSE, eval = FALSE}
 ics_err <- ics_grid |>
   rowwise() |>
   mutate(ics_out = list(res$ics_out), dd = list(res$dd)) |>
@@ -164,6 +165,12 @@ ics_err <- ics_grid |>
     .default = "other"
   )) |>
   arrange(knots_pos)
+
+ics_prob_err <- ics_out |>
+  mutate(outliers = ifelse(outliers == 1, 1, 0)) |>
+  group_by(id) |>
+  summarise(n_outlier = sum(outliers)) |>
+  arrange(desc(n_outlier))
 
 res <- ics_grid |>
   filter(nknots < 10) |>
