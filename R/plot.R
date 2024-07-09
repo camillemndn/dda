@@ -69,21 +69,21 @@ plot_funs <- function(.data, funs, ..., n = 401,
 
 #' @export
 plot_matrix <- function(data, subset_vars, ...) {
-  data <- data |> select(where(\(x) !inherits(x, "ddl")))
+  data <- data |> dplyr::select(dplyr::where(\(x) !inherits(x, "ddl")))
   # Check if subset_vars are in the data
   if (!all(subset_vars %in% names(data))) {
     stop("Some variables in subset_vars are not present in the data.")
   }
 
   # Get all possible pairs of the subset variables
-  pairs <- crossing(var1 = subset_vars, var2 = subset_vars) %>%
-    filter(var1 != var2)
+  pairs <- tidyr::crossing(var1 = subset_vars, var2 = subset_vars) %>%
+    dplyr::filter(var1 != var2)
 
   # Create the long format data frame
   long_data <- pairs %>%
-    rowwise() %>%
-    mutate(x = list(data[[var1]]), y = list(data[[var2]]), other = list(data |> dplyr::select(!subset_vars))) %>%
-    unnest(c(x, y, other))
+    dplyr::rowwise() %>%
+    dplyr::mutate(x = list(data[[var1]]), y = list(data[[var2]]), other = list(data |> dplyr::select(!subset_vars))) %>%
+    tidyr::unnest(c(x, y, other))
 
   break_by_x <- function(x) {
     function(limits) {
