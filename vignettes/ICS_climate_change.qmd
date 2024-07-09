@@ -256,6 +256,20 @@ ics_out |> ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
   geom_tile() +
   scale_fill_grey(start = 1, end = 0) +
   facet_grid(cols = vars(nknots), rows = vars(knots_pos))
+
+n_grid <- 5 * 5
+ics_out_freq <- ics_out |>
+  mutate(outliers = ifelse(outliers == 1, 1, 0)) |>
+  group_by(obs_id) |>
+  summarise(n_outlier = sum(outliers)) |>
+  left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
+  select(obs_id, province, year, n_outlier)
+
+knitr::kable(ics_out_freq)
+
+ics_out_freq |>
+  ggplot(aes(obs_id, n_outlier)) +
+  geom_bar(stat = "identity")
 ```
 
 If we force to 0 the first and last ZB-spline coordinates of the $\operatorname{clr}$,
