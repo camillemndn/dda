@@ -234,11 +234,20 @@ ICS_outlier.fd <- function(
     outliers <- as.integer(IC_distances > IC_distances_quantile)
     names(outliers) <- row_names
   }
+
+  combined <- data.frame(
+    index = names(object$gen_kurtosis),
+    gen_kurtosis = object$gen_kurtosis,
+    selected = seq_len(p) %in% res_method$index
+  )
+  combined$H <- as.list(object$H)
+  combined$H_dual <- as.list(object$H_dual)
+
   res <- list(
+    result = combined,
+    gen_kurtosis = object$gen_kurtosis,
     X = X,
     scores = object$scores,
-    H_dual = object$H_dual,
-    gen_kurtosis = object$gen_kurtosis,
     outliers = outliers, ics_distances = IC_distances,
     ics_dist_cutoff = IC_distances_quantile, level_dist = level_dist,
     level_test = level_test, method = method, index = res_method$index,
