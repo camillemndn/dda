@@ -72,6 +72,16 @@ vnts |>
   plot_funs(t_max, color = region) +
   theme_minimal() +
   labs(x = "temperature (deg. Celsius)", y = "clr(density)")
+
+vnts |>
+  mutate(
+    t_max = as.fd(t_max),
+    year = ifelse(province == "LAICHAU", year, "not LAICHAU"),
+    alpha = ifelse(province == "LAICHAU", 1, 0.85)
+  ) |>
+  plot_funs(t_max, color = year, alpha = alpha) +
+  theme_minimal() +
+  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
 ```
 
 Let us create a grid of parameters and
