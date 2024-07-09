@@ -90,56 +90,60 @@ vnts |>
 Let us create a grid of parameters and
 define the function to call for each parameter.
 
-```{r ics_grid, eval = FALSE}
-param_grid <- expand.grid(
-  knots_pos = "quantiles",
-  nknots = 7,
-  lambda = 10^c(0, 5)
-)
+```{r ics_grid}
+if (!file.exists("ICS_grid_out.RData") && !file.exists("ICS_grid.RData")) {
+  param_grid <- expand.grid(
+    knots_pos = "quantiles",
+    nknots = 7,
+    lambda = 10^c(0, 5)
+  )
 
-smooth_ICS <- function(knots_pos, nknots, lambda) {
-  vnts <- vnt |>
-    mutate(t_max = as_dd(t_max,
-      lambda = lambda, nbasis = 5 + nknots, mc.cores = 12, knots_pos = knots_pos
+  smooth_ICS <- function(knots_pos, nknots, lambda) {
+    vnts <- vnt |>
+      mutate(t_max = as_dd(t_max,
+        lambda = lambda, nbasis = 5 + nknots, mc.cores = 12, knots_pos = knots_pos
+      ))
+    knots_pos_str <- ifelse(knots_pos == "quantiles",
+      "Knots at quantiles", "Equally spaced knots"
+    )
+    print(paste(
+      "# of knots:", nknots, "|",
+      "log10(lambda):", log10(lambda), "|",
+      knots_pos_str
     ))
-  knots_pos_str <- ifelse(knots_pos == "quantiles",
-    "Knots at quantiles", "Equally spaced knots"
-  )
-  print(paste(
-    "# of knots:", nknots, "|",
-    "log10(lambda):", log10(lambda), "|",
-    knots_pos_str
-  ))
 
-  list(
-    dd = vnts$t_max,
-    ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
-    ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
-      n_cores = 12, index = 1:4
-    ), error = function(e) e)
+    list(
+      dd = vnts$t_max,
+      ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
+      ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
+        n_cores = 12, index = 1:4
+      ), error = function(e) e)
+    )
+  }
+
+  # Smooth and detect outliers for each parameter
+  system.time(
+    ics_grid <- param_grid |>
+      mutate(id = seq_len(n())) |>
+      rowwise() |>
+      mutate(res = list(smooth_ICS(knots_pos, nknots, lambda)))
   )
+  save(ics_grid, file = "ICS_grid.RData")
 }
-
-# Smooth and detect outliers for each parameter
-system.time(
-  ics_grid <- param_grid |>
-    mutate(id = seq_len(n())) |>
-    rowwise() |>
-    mutate(res = list(smooth_ICS(knots_pos, nknots, lambda)))
-)
-save(ics_grid, file = "ICS_grid.RData")
 ```
 
-```{r ics_grid_out_create, eval = FALSE}
-load("ICS_grid.RData")
+```{r ics_grid_out_create}
+if (!file.exists("ICS_grid_out.RData")) {
+  load("ICS_grid.RData")
 
-ics_out <- ics_grid |>
-  rowwise() |>
-  filter(!(any(class(res$ics_out) == "error"))) |>
-  mutate(res = list(as.factor(res$ics_out$outliers))) |>
-  rename(outliers = res) |>
-  unnest_longer(outliers, indices_to = "obs_id")
-save(ics_out, file = "ICS_grid_out.RData")
+  ics_out <- ics_grid |>
+    rowwise() |>
+    filter(!(any(class(res$ics_out) == "error"))) |>
+    mutate(res = list(as.factor(res$ics_out$outliers))) |>
+    rename(outliers = res) |>
+    unnest_longer(outliers, indices_to = "obs_id")
+  save(ics_out, file = "ICS_grid_out.RData")
+}
 ```
 
 ```{r ics_grid_out}
