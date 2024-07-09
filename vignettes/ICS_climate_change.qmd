@@ -134,7 +134,11 @@ icsout$result |> ggplot(aes(index, gen_kurtosis, group = 1)) +
 
 ```{r climate_regions_outliers}
 vnt <- vnt |>
-  mutate(outlying = as.factor(icsout$outliers)) |>
+  mutate(
+    index = seq_len(nrow(icsout$scores)),
+    outlying = as.factor(icsout$outliers),
+    distances = icsout$ics_distances
+  ) |>
   cbind(icsout$scores)
 
 vnt |>
@@ -165,6 +169,12 @@ vnt |>
   facet_wrap(vars(year)) +
   labs(x = "temperature (deg. Celsius)", y = "clr(density)")
 ```
+
+```{r climate_regions_distances}
+vnt |> ggplot(aes(index, distances, color = province, label = year)) +
+  geom_text()
+```
+
 
 ```{r climate_regions_scatter}
 vnt |>
