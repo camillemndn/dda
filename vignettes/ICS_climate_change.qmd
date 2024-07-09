@@ -107,7 +107,7 @@ data(vietnam_temperature)
 data(vietnam_regions)
 data(vietnam_provinces)
 
-vnt <- vietnam_temperature |>
+vntcr <- vietnam_temperature |>
   filter(region %in% c("RRD", "NMM")) |>
   dplyr::select(year, province, t_max) |>
   left_join(vietnam_provinces, by = "province") |>
@@ -116,14 +116,14 @@ vnt <- vietnam_temperature |>
   filter(climate_region == "S3") |>
   arrange(year, province)
 
-vnt <- vnt |>
+vnt <- vntcr |>
   mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15))
 class(vnt$t_max) <- c("ddl", "fdl", "list")
 
 vnt |> plot_funs(t_max, color = province) +
   facet_wrap(vars(year))
 
-icsout <- ICS_outlier(as_dd(vnt$t_max), index = 1:2, n_cores = 14)
+icsout <- ICS_outlier(vnt$t_max, index = 1:2, n_cores = 14)
 ```
 
 ```{r climate_regions_screeplot}
@@ -196,14 +196,15 @@ but with different smoothing parameters.
 ```{r climate_region_grid}
 param_grid <- expand.grid(
   knots_pos = "quantiles",
-  nknots = 5*1:5,
+  nknots = 5 * 1:5,
   lambda = 10^(-2:2)
 )
 
 smooth_ICS <- function(knots_pos, nknots, lambda) {
-  vnts <- vnt |>
+  vnts <- vntcr |>
     mutate(t_max = as_dd(t_max,
-      lambda = lambda, nbasis = 5 + nknots, mc.cores = 12, knots_pos = knots_pos
+      lambda = lambda, nbasis = 5 + nknots,
+      mc.cores = parallel::detectCores() - 1, knots_pos = knots_pos
     ))
   knots_pos_str <- ifelse(knots_pos == "quantiles",
     "Knots at quantiles", "Equally spaced knots"
@@ -218,7 +219,7 @@ smooth_ICS <- function(knots_pos, nknots, lambda) {
     dd = vnts$t_max,
     ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
     ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
-      n_cores = 12, index = 1:2
+      n_cores = parallel::detectCores() - 1, index = 1:2
     ), error = function(e) e)
   )
 }
@@ -243,6 +244,11 @@ ics_out <- ics_grid |>
   rename(outliers = res) |>
   unnest_longer(outliers, indices_to = "obs_id")
 save(ics_out, file = "ICS_climate_change.RData")
+
+ics_out |> ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
+  geom_tile() +
+  scale_fill_grey(start = 1, end = 0) +
+  facet_grid(cols = vars(nknots), rows = vars(knots_pos))
 ```
 If we force to 0 the first and last ZB-spline coordinates of the $\operatorname{clr}$,
 we project them onto the space of splines contrained to $0$ on the
