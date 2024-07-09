@@ -190,6 +190,60 @@ icsout$result |>
   labs(x = "temperature (deg. Celsius)", y = "density")
 ```
 
+Now let us apply ICS for outlier detection on the same dataset
+but with different smoothing parameters.
+
+```{r climate_region_grid}
+param_grid <- expand.grid(
+  knots_pos = "quantiles",
+  nknots = 5*1:5,
+  lambda = 10^(-2:2)
+)
+
+smooth_ICS <- function(knots_pos, nknots, lambda) {
+  vnts <- vnt |>
+    mutate(t_max = as_dd(t_max,
+      lambda = lambda, nbasis = 5 + nknots, mc.cores = 12, knots_pos = knots_pos
+    ))
+  knots_pos_str <- ifelse(knots_pos == "quantiles",
+    "Knots at quantiles", "Equally spaced knots"
+  )
+  print(paste(
+    "# of knots:", nknots, "|",
+    "log10(lambda):", log10(lambda), "|",
+    knots_pos_str
+  ))
+
+  list(
+    dd = vnts$t_max,
+    ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
+    ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
+      n_cores = 12, index = 1:2
+    ), error = function(e) e)
+  )
+}
+
+# Smooth and detect outliers for each parameter
+system.time(
+  ics_grid <- param_grid |>
+    mutate(id = seq_len(n())) |>
+    rowwise() |>
+    mutate(res = list(smooth_ICS(knots_pos, nknots, lambda)))
+)
+save(ics_grid, file = "ICS_climate_change.RData")
+```
+
+```{r ics_grid_out_create, eval = FALSE}
+load("ICS_climate_change.RData")
+
+ics_out <- ics_grid |>
+  rowwise() |>
+  filter(!(any(class(res$ics_out) == "error"))) |>
+  mutate(res = list(as.factor(res$ics_out$outliers))) |>
+  rename(outliers = res) |>
+  unnest_longer(outliers, indices_to = "obs_id")
+save(ics_out, file = "ICS_climate_change.RData")
+```
 If we force to 0 the first and last ZB-spline coordinates of the $\operatorname{clr}$,
 we project them onto the space of splines contrained to $0$ on the
 boundaries of the interval.

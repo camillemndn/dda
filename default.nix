@@ -98,6 +98,34 @@ rec {
         '';
       }
     ) { };
+
+    dda-vignette-ics-climate-change = pkgs.callPackage (
+      {
+        stdenv,
+        rWrapper,
+        rPackages,
+        ...
+      }:
+
+      stdenv.mkDerivation {
+        name = "dda-vignette-ics-climate-change";
+        src = ./.;
+        buildInputs = [ (rWrapper.override { packages = r-deps rPackages; }) ];
+        HOME = ".";
+
+        buildPhase = ''
+          (
+            cd vignettes
+            Rscript -e "devtools::load_all(); rmarkdown::render('ICS_climate_change.qmd')"
+          )
+        '';
+
+        installPhase = ''
+          mkdir $out
+          cp -r vignettes $out
+        '';
+      }
+    ) { };
   };
 
   checks.default = {
