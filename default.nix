@@ -126,9 +126,39 @@ rec {
         '';
       }
     ) { };
+
+    dda-vignette-ics-grid = pkgs.callPackage (
+      {
+        stdenv,
+        rWrapper,
+        rPackages,
+        ...
+      }:
+
+      stdenv.mkDerivation {
+        name = "dda-vignette-ics-grid";
+        src = ./.;
+        buildInputs = [ (rWrapper.override { packages = r-deps rPackages; }) ];
+        HOME = ".";
+
+        buildPhase = ''
+          (
+            cd vignettes
+            Rscript -e "devtools::load_all(); rmarkdown::render('ICS_grid.Rmd')"
+          )
+        '';
+
+        installPhase = ''
+          mkdir $out
+          cp -r vignettes $out
+        '';
+      }
+    ) { };
   };
 
   checks.default = {
-    inherit packages;
+    packages.x86_64-linux = {
+      inherit (packages.x86_64-linux) dda-vignette-ics-grid dda dda-website;
+    };
   };
 }
