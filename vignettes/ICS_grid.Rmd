@@ -57,13 +57,21 @@ vnt <- vietnam_temperature |>
   rename(region = name) |>
   arrange(region, province)
 
-vnt |>
+vnts <- vnt |>
   mutate(t_max = as_dd(t_max,
     lambda = 1, nbasis = 12, mc.cores = 12
-  )) |>
+  ))
+
+vnts |>
   plot_funs(t_max, color = region) +
   theme_minimal() +
   labs(x = "temperature (deg. Celsius)", y = "density")
+
+vnts |>
+  mutate(t_max = as.fd(t_max)) |>
+  plot_funs(t_max, color = region) +
+  theme_minimal() +
+  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
 ```
 
 Let us create a grid of parameters and
