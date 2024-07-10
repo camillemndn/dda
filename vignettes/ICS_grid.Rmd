@@ -96,12 +96,14 @@ if (!file.exists("ICS_grid_out.RData") && !file.exists("ICS_grid.RData")) {
     knots_pos = c("quantiles", "eq_spaced"),
     nknots = c(5:19, seq(20, nrow(vnt) - 2, 10), nrow(vnt) - 1) - 5,
     lambda = 10^(-8:8)
-  )
+  ) |>
+    arrange(knots_pos, nknots, lambda)
 
   smooth_ICS <- function(knots_pos, nknots, lambda) {
     vnts <- vnt |>
       mutate(t_max = as_dd(t_max,
-        lambda = lambda, nbasis = 5 + nknots, mc.cores = 12, knots_pos = knots_pos
+        lambda = lambda, nbasis = 5 + nknots, knots_pos = knots_pos,
+        mc.cores = parallel::detectCores() - 1
       ))
     knots_pos_str <- ifelse(knots_pos == "quantiles",
       "Knots at quantiles", "Equally spaced knots"
@@ -116,7 +118,7 @@ if (!file.exists("ICS_grid_out.RData") && !file.exists("ICS_grid.RData")) {
       dd = vnts$t_max,
       ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
       ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
-        n_cores = 12, index = 1:4
+        n_cores = parallel::detectCores() - 1, index = 1:4
       ), error = function(e) e)
     )
   }
