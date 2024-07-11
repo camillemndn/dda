@@ -116,7 +116,7 @@ rec {
         buildPhase = ''
           (
             cd vignettes
-            Rscript -e "devtools::load_all(); rmarkdown::render('ICS_climate_change.qmd')"
+            Rscript -e "devtools::load_all(); source(knitr::purl('ICS_climate_change.Rmd', quiet=TRUE))"
           )
         '';
 
@@ -144,7 +144,7 @@ rec {
         buildPhase = ''
           (
             cd vignettes
-            Rscript -e "devtools::load_all(); rmarkdown::render('ICS_grid.Rmd')"
+            Rscript -e "devtools::load_all(); source(knitr::purl('ICS_grid.Rmd', quiet=TRUE))"
           )
         '';
 
