@@ -138,42 +138,50 @@ if (!file.exists("ICS_grid_out.RData") && !file.exists("ICS_grid.RData")) {
 if (!file.exists("ICS_grid_out.RData")) {
   load("ICS_grid.RData")
 
-  ics_out <- ics_grid |>
+  ics_grid_out <- ics_grid |>
     rowwise() |>
     filter(!(any(class(res$ics_out) == "error"))) |>
-    mutate(res = list(as.factor(res$ics_out$outliers))) |>
-    rename(outliers = res) |>
-    unnest_longer(outliers, indices_to = "obs_id")
-  save(ics_out, file = "ICS_grid_out.RData")
+    mutate(res = list(data.frame(
+      obs_id = seq_len(length((res$ics_out$outliers))),
+      outlying = res$ics_out$outliers == 1,
+      distance = res$ics_out$ics_distances
+    ))) |>
+    unnest(res)
+
+  save(ics_grid_out, file = "ICS_grid_out.RData")
 }
 ```
 
 ```{r ics_grid_out}
 load("ICS_grid_out.RData")
 
-ics_out |> ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
+ics_grid_out |> ggplot(aes(log10(lambda), obs_id, fill = outlying)) +
   geom_tile() +
   scale_fill_grey(start = 1, end = 0) +
   facet_grid(cols = vars(nknots), rows = vars(knots_pos))
 ```
 
-```{r summary}
+```{r ics_grid_summary}
 n_grid <- 2 * 17 * 26
 
-ics_out_freq <- ics_out |>
-  mutate(outliers = ifelse(outliers == 1, 1, 0)) |>
+ics_grid_summary <- ics_grid_out |>
+  mutate(outlying = ifelse(outlying, 1, 0)) |>
   group_by(obs_id) |>
-  summarise(n_outlier = sum(outliers)) |>
+  summarise(n_outlying = sum(outlying), mean_distance = mean(distance)) |>
   left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
-  select(obs_id, province, year, n_outlier)
+  select(obs_id, province, year, n_outlying, mean_distance)
 
-knitr::kable(ics_out_freq)
+knitr::kable(ics_grid_summary)
 
-ics_out_freq |>
-  ggplot(aes(obs_id, n_outlier)) +
+ics_grid_summary |>
+  ggplot(aes(obs_id, n_outlying)) +
   geom_bar(stat = "identity")
 
-tab <- ics_out |> pivot_wider(names_from = obs_id, values_from = outliers)
+ics_grid_summary |>
+  ggplot(aes(obs_id, mean_distance)) +
+  geom_bar(stat = "identity")
+
+tab <- ics_grid_out |> pivot_wider(names_from = obs_id, values_from = outlying)
 tab <- apply(tab[, c(5:116)], c(1, 2), as.numeric)
 library(corrplot)
 corrplot(cor(tab))
@@ -193,11 +201,11 @@ ics_err <- ics_grid |>
   )) |>
   arrange(knots_pos)
 
-ics_prob_err <- ics_out |>
-  mutate(outliers = ifelse(outliers == 1, 1, 0)) |>
+ics_prob_err <- ics_grid_out |>
+  mutate(outlying = ifelse(outlying == 1, 1, 0)) |>
   group_by(id) |>
-  summarise(n_outlier = sum(outliers)) |>
-  arrange(desc(n_outlier))
+  summarise(n_outlying = sum(outlying)) |>
+  arrange(desc(n_outlying))
 
 res <- ics_grid |>
   filter(nknots < 10) |>

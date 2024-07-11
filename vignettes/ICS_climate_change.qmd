@@ -142,17 +142,17 @@ vnt <- vnt |>
   cbind(icsout$scores)
 
 vnt |>
-  mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
-  plot_funs(t_max, color = province, alpha = outlying) +
+  mutate(year = ifelse(outlying == 1, year, "not outlying")) |>
+  plot_funs(t_max, color = year, alpha = outlying) +
   labs(x = "temperature (deg. Celsius)", y = "density")
 
 vnt |>
   mutate(
-    t_max = as.fd(t_max),
-    province = ifelse(outlying == 1, province, "not outlying")
+    t_max = as.fd(center(t_max)),
+    year = ifelse(outlying == 1, year, "not outlying")
   ) |>
-  plot_funs(t_max, color = province, alpha = outlying) +
-  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
+  plot_funs(t_max, color = year, alpha = outlying) +
+  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
 
 vnt |>
   mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
@@ -162,17 +162,18 @@ vnt |>
 
 vnt |>
   mutate(
-    t_max = as.fd(t_max),
+    t_max = as.fd(center(t_max)),
     province = ifelse(outlying == 1, province, "not outlying")
   ) |>
   plot_funs(t_max, color = province, alpha = outlying) +
   facet_wrap(vars(year)) +
-  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
+  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
 ```
 
 ```{r climate_regions_distances}
 vnt |> ggplot(aes(index, distances, color = province, label = year)) +
-  geom_text()
+  geom_text() +
+  geom_hline(yintercept = icsout$ics_dist_cutoff)
 ```
 
 
@@ -187,7 +188,15 @@ vnt |>
 icsout$result |>
   filter(selected) |>
   plot_funs(H_dual, color = index) +
+  geom_hline(yintercept = 1 / diff(icsout$result$H_dual[[1]]$basis$rangeval)) +
   labs(x = "temperature (deg. Celsius)", y = "density")
+
+icsout$result |>
+  mutate(H_dual = as.fd(H_dual)) |>
+  filter(selected) |>
+  plot_funs(H_dual, color = index) +
+  geom_hline(yintercept = 0) +
+  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
 ```
 
 Now let us apply ICS for outlier detection on the same dataset
@@ -247,6 +256,7 @@ if (!file.exists("ICS_climate_change_out.RData")) {
     rename(outliers = res) |>
     unnest_longer(outliers, indices_to = "obs_id")
   save(ics_out, file = "ICS_climate_change_out.RData")
+
 }
 ```
 
@@ -268,8 +278,11 @@ ics_out_freq <- ics_out |>
 knitr::kable(ics_out_freq)
 
 ics_out_freq |>
-  ggplot(aes(obs_id, n_outlier)) +
-  geom_bar(stat = "identity")
+  ggplot(aes(province, n_outlier)) +
+  geom_bar(stat = "identity") +
+  facet_grid(cols = vars(year)) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
 ```
 
 If we force to 0 the first and last ZB-spline coordinates of the $\operatorname{clr}$,
