@@ -12,8 +12,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   dpi = 300,
-  fig.height = 10,
-  fig.width = 15,
+  fig.height = 6,
+  fig.width = 8,
   fig.ext = "jpg",
   dev = "jpeg",
   dev.args = list(bg = "white")
@@ -47,7 +47,7 @@ vietnam_provinces |>
   labs(x = "longitude", y = "latitude")
 ```
 
-```{r vnt_north_south, fig.height = 6, fig.width = 8}
+```{r vnt_north_south}
 # Filter the data set
 data(vietnam_temperature)
 selected_years <- 2013:2016
@@ -71,10 +71,10 @@ vnts |>
   labs(x = "temperature (deg. Celsius)", y = "density")
 
 vnts |>
-  mutate(t_max = as.fd(t_max)) |>
+  mutate(t_max = as.fd(center(t_max))) |>
   plot_funs(t_max, color = region) +
   theme_minimal() +
-  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
+  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
 
 vnts |>
   mutate(
@@ -152,7 +152,7 @@ if (!file.exists("ICS_grid_out.RData")) {
 }
 ```
 
-```{r ics_grid_out}
+```{r ics_grid_out, fig.height = 10, fig.width = 15}
 load("ICS_grid_out.RData")
 
 ics_grid_out |> ggplot(aes(log10(lambda), obs_id, fill = outlying)) +
@@ -161,7 +161,7 @@ ics_grid_out |> ggplot(aes(log10(lambda), obs_id, fill = outlying)) +
   facet_grid(cols = vars(nknots), rows = vars(knots_pos))
 ```
 
-```{r ics_grid_summary}
+```{r ics_grid_summary, fig.height = 10, fig.width = 15}
 n_grid <- 2 * 17 * 26
 
 ics_grid_summary <- ics_grid_out |>
