@@ -207,10 +207,12 @@ if (!file.exists("ICS_climate_change_out.RData") && !file.exists("ICS_climate_ch
   param_grid <- expand.grid(
     knots_pos = "quantiles",
     nknots = 5 * 1:5,
-    lambda = 10^(-2:2)
-  )
+    lambda = 10^(-2:2),
+    index = c(2, NULL)
+  ) |>
+    arrange(nknots, knots_pos, lambda)
 
-  smooth_ICS <- function(knots_pos, nknots, lambda) {
+  smooth_ICS <- function(knots_pos, nknots, lambda, index) {
     vnts <- vntcr |>
       mutate(t_max = as_dd(t_max,
         lambda = lambda, nbasis = 5 + nknots,
@@ -219,19 +221,34 @@ if (!file.exists("ICS_climate_change_out.RData") && !file.exists("ICS_climate_ch
     knots_pos_str <- ifelse(knots_pos == "quantiles",
       "Knots at quantiles", "Equally spaced knots"
     )
+    index_str <- ifelse(is.null(index), "Auto selection of components",
+      paste("# of components:", index)
+    )
+
     print(paste(
       "# of knots:", nknots, "|",
       "log10(lambda):", log10(lambda), "|",
-      knots_pos_str
+      knots_pos_str, "|",
+      index_str
     ))
 
-    list(
-      dd = vnts$t_max,
-      ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
-      ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
-        n_cores = parallel::detectCores() - 1, index = 1:2
-      ), error = function(e) e)
-    )
+    if (is.null(index)) {
+      list(
+        dd = vnts$t_max,
+        ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
+        ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
+          n_cores = parallel::detectCores() - 1
+        ), error = function(e) e)
+      )
+    } else {
+      list(
+        dd = vnts$t_max,
+        ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
+        ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
+          n_cores = parallel::detectCores() - 1, index = seq_len(index)
+        ), error = function(e) e)
+      )
+    }
   }
 
   # Smooth and detect outliers for each parameter
@@ -239,7 +256,7 @@ if (!file.exists("ICS_climate_change_out.RData") && !file.exists("ICS_climate_ch
     ics_grid <- param_grid |>
       mutate(id = seq_len(n())) |>
       rowwise() |>
-      mutate(res = list(smooth_ICS(knots_pos, nknots, lambda)))
+      mutate(res = list(smooth_ICS(knots_pos, nknots, lambda, index)))
   )
   save(ics_grid, file = "ICS_climate_change.RData")
 }
@@ -256,7 +273,6 @@ if (!file.exists("ICS_climate_change_out.RData")) {
     rename(outliers = res) |>
     unnest_longer(outliers, indices_to = "obs_id")
   save(ics_out, file = "ICS_climate_change_out.RData")
-
 }
 ```
 

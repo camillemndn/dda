@@ -94,10 +94,10 @@ define the function to call for each parameter.
 if (!file.exists("ICS_grid_out.RData") && !file.exists("ICS_grid.RData")) {
   param_grid <- expand.grid(
     knots_pos = c("quantiles", "eq_spaced"),
-    nknots = c(5:19, seq(20, nrow(vnt) - 2, 10), nrow(vnt) - 1) - 5,
+    nknots = c(5:19, seq(20, 40, 10)) - 5,
     lambda = 10^(-8:8)
   ) |>
-    arrange(knots_pos, nknots, lambda)
+    arrange(nknots, knots_pos, lambda)
 
   smooth_ICS <- function(knots_pos, nknots, lambda) {
     vnts <- vnt |>

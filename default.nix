@@ -116,7 +116,7 @@ rec {
         buildPhase = ''
           (
             cd vignettes
-            Rscript -e "devtools::load_all(); source(knitr::purl('ICS_climate_change.Rmd', quiet=TRUE))"
+            Rscript -e "devtools::load_all(); source(knitr::purl('ICS_climate_change.qmd', quiet=TRUE))"
           )
         '';
 
@@ -157,8 +157,6 @@ rec {
   };
 
   checks.default = {
-    packages.x86_64-linux = {
-      inherit (packages.x86_64-linux) dda-vignette-ics-grid dda dda-website;
-    };
+    inherit packages;
   };
 }
