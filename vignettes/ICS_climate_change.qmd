@@ -295,14 +295,6 @@ ics_out |>
   scale_fill_grey(start = 1, end = 0) +
   facet_grid(cols = vars(nknots), rows = vars(index))
 
-ics_grid |>
-  filter(is.na(index)) |>
-  mutate(index = max(res$ics_out$index)) |>
-  ggplot(aes(log10(lambda), index)) +
-  geom_bar(stat = "identity") +
-  facet_grid(cols = vars(nknots)) +
-  theme_minimal()
-
 n_grid <- 5 * 5
 ics_out_freq <- ics_out |>
   mutate(outliers = ifelse(outliers == 1, 1, 0)) |>
@@ -310,6 +302,14 @@ ics_out_freq <- ics_out |>
   summarise(n_outlier = sum(outliers)) |>
   left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
   select(obs_id, province, year, n_outlier)
+
+ics_grid |>
+  filter(is.na(index)) |>
+  mutate(index = max(res$ics_out$index)) |>
+  ggplot(aes(log10(lambda), index)) +
+  geom_bar(stat = "identity") +
+  facet_grid(cols = vars(nknots)) +
+  theme_minimal()
 
 knitr::kable(ics_out_freq)
 

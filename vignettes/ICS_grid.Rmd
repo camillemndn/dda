@@ -31,7 +31,7 @@ In this example, we filter the dataset on Vietnam temperature to
 consider only the two northern regions and two provinces from
 the south, from 2013 to 2016, for a total of 112 observations.
 
-```{r vnt_north_south_map, fig.width = 9}
+```{r vnt_north_south_map, fig.width = 9, fig.height = 10}
 data(vietnam_provinces)
 data(vietnam_regions)
 
