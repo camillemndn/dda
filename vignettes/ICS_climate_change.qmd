@@ -35,14 +35,7 @@ We compute an average density per province per period of 3 years.
 There are 10 periods total, and only 26 provinces in the two northern
 regions of Vietnam, so 260 observations total.
 
-```{r, include = FALSE}
-if (file.exists("ICS_climate_change_ten_periods.RData")) {
-  load("ICS_climate_change_ten_periods.RData")
-}
-```
-
-
-```{r vnt_ten_periods_preprocessing, eval = FALSE}
+```{r vnt_ten_periods_preprocessing}
 data(vietnam_temperature)
 data(vietnam_regions)
 
@@ -50,17 +43,21 @@ vietnam_temperature <- vietnam_temperature |>
   select(!t_min) |>
   mutate(period = as.factor(1 + (year - min(year)) %/% 3))
 
-vnt <- vietnam_temperature |>
-  filter(region %in% c("RRD", "NMM")) |>
-  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15)) |>
-  group_by(region, province, period) |>
-  summarise(t_max = list(c(mean(t_max)))) |>
-  ungroup() |>
-  left_join(vietnam_regions, by = c("region" = "code")) |>
-  rename(region_name = name) |>
-  arrange(region, province, period)
+if (file.exists("ICS_climate_change_ten_periods.RData")) {
+  load("ICS_climate_change_ten_periods.RData")
+} else {
+  vnt <- vietnam_temperature |>
+    filter(region %in% c("RRD", "NMM")) |>
+    mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15)) |>
+    group_by(region, province, period) |>
+    summarise(t_max = list(c(mean(t_max)))) |>
+    ungroup() |>
+    left_join(vietnam_regions, by = c("region" = "code")) |>
+    rename(region_name = name) |>
+    arrange(region, province, period)
 
-class(vnt$t_max) <- c("ddl", "fdl", "list")
+  class(vnt$t_max) <- c("ddl", "fdl", "list")
+}
 ```
 
 ```{r vnt_ten_periods}
@@ -68,12 +65,15 @@ vnt |> plot_funs(t_max, color = province) +
   facet_wrap(vars(period))
 ```
 
-```{r vnt_ten_periods_out_compute, eval = FALSE}
-icsout <- ICS_outlier(vnt$t_max, index = 1:4, n_cores = 14)
+```{r vnt_ten_periods_out_compute}
+if (!(file.exists("ICS_climate_change_ten_periods.RData"))) {
+  icsout <- ICS_outlier(vnt$t_max, index = 1:4, n_cores = 14)
 
-vnt <- vnt |>
-  mutate(outlying = as.factor(icsout$outliers)) |>
-  cbind(icsout$scores)
+  vnt <- vnt |>
+    mutate(outlying = as.factor(icsout$outliers)) |>
+    cbind(icsout$scores)
+  save(icsout, vnt, file = "ICS_climate_change_ten_periods.RData")
+}
 ```
 
 ```{r vnt_ten_periods_out}
@@ -85,10 +85,6 @@ vnt |> plot_matrix(paste0("IC.", 1:4),
 
 vnt |> plot_funs(t_max, color = ifelse(outlying == 1, province, "not outlying"), alpha = outlying) +
   facet_wrap(vars(period))
-```
-
-```{r, include = FALSE, eval = FALSE}
-save(icsout, vnt, file = "ICS_climate_change_ten_periods.RData")
 ```
 
 
@@ -294,10 +290,14 @@ if (!file.exists("ICS_climate_change_out.RData")) {
 
 ```{r climate_regions_grid_out}
 load("ICS_climate_change_out.RData")
-ics_out |> ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
+ics_out |>
+  mutate(index = ifelse(is.na(index), "Auto selection of components",
+    paste("# of components:", index)
+  )) |>
+  ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
   geom_tile() +
   scale_fill_grey(start = 1, end = 0) +
-  facet_grid(cols = vars(nknots), rows = vars(knots_pos))
+  facet_grid(cols = vars(nknots), rows = vars(index))
 
 n_grid <- 5 * 5
 ics_out_freq <- ics_out |>
