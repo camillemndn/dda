@@ -199,7 +199,7 @@ ics_err <- ics_grid |>
     grepl("as.fd", ics_out$message) ~ "preprocessing",
     .default = "other"
   )) |>
-  arrange(knots_pos)
+  arrange(knots_pos, nknots, lambda)
 
 ics_prob_err <- ics_grid_out |>
   mutate(outlying = ifelse(outlying == 1, 1, 0)) |>
