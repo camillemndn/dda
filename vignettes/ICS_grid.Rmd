@@ -91,39 +91,48 @@ Let us create a grid of parameters and
 define the function to call for each parameter.
 
 ```{r ics_grid}
-if (!file.exists("ICS_grid_out.RData") && !file.exists("ICS_grid.RData")) {
-  param_grid <- expand.grid(
-    knots_pos = c("quantiles", "eq_spaced"),
-    nknots = c(5:19, seq(20, 40, 10)) - 5,
-    lambda = 10^(-8:8)
-  ) |>
-    arrange(nknots, knots_pos, lambda)
+knots_pos_seq <- c("quantiles", "eq_spaced")
+nknots_seq <- c(5:19, seq(20, 40, 10)) - 5
+lambda_seq <- 10^(-8:8)
 
-  smooth_ICS <- function(knots_pos, nknots, lambda) {
-    vnts <- vnt |>
-      mutate(t_max = as_dd(t_max,
-        lambda = lambda, nbasis = 5 + nknots, knots_pos = knots_pos,
-        mc.cores = parallel::detectCores() - 1
-      ))
-    knots_pos_str <- ifelse(knots_pos == "quantiles",
-      "Knots at quantiles", "Equally spaced knots"
-    )
-    print(paste(
-      "# of knots:", nknots, "|",
-      "log10(lambda):", log10(lambda), "|",
-      knots_pos_str
+param_grid <- expand.grid(
+  knots_pos = knots_pos_seq,
+  nknots = nknots_seq,
+  lambda = lambda_seq
+) |>
+  arrange(nknots, knots_pos, lambda)
+
+print(paste("# of knots positions:", length(knots_pos_seq)))
+print(paste("# of # of knots:", length(nknots_seq)))
+print(paste("# of values for lambda:", length(lambda_seq)))
+print(paste("Total grid size:", nrow(param_grid)))
+
+smooth_ICS <- function(knots_pos, nknots, lambda) {
+  vnts <- vnt |>
+    mutate(t_max = as_dd(t_max,
+      lambda = lambda, nbasis = 5 + nknots, knots_pos = knots_pos,
+      mc.cores = parallel::detectCores() - 1
     ))
+  knots_pos_str <- ifelse(knots_pos == "quantiles",
+    "Knots at quantiles", "Equally spaced knots"
+  )
+  print(paste(
+    "# of knots:", nknots, "|",
+    "log10(lambda):", log10(lambda), "|",
+    knots_pos_str
+  ))
 
-    list(
-      dd = vnts$t_max,
-      ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
-      ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
-        n_cores = parallel::detectCores() - 1, index = 1:4
-      ), error = function(e) e)
-    )
-  }
+  list(
+    dd = vnts$t_max,
+    ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
+    ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
+      n_cores = parallel::detectCores() - 1, index = 1:4
+    ), error = function(e) e)
+  )
+}
 
-  # Smooth and detect outliers for each parameter
+# Smooth and detect outliers for each parameter
+if (!file.exists("ICS_grid_out.RData") && !file.exists("ICS_grid.RData")) {
   system.time(
     ics_grid <- param_grid |>
       mutate(id = seq_len(n())) |>
@@ -162,8 +171,6 @@ ics_grid_out |> ggplot(aes(log10(lambda), obs_id, fill = outlying)) +
 ```
 
 ```{r ics_grid_summary, fig.height = 10, fig.width = 15}
-n_grid <- 2 * 17 * 26
-
 ics_grid_summary <- ics_grid_out |>
   mutate(outlying = ifelse(outlying, 1, 0)) |>
   group_by(obs_id) |>

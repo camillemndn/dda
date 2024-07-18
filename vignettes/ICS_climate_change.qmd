@@ -215,55 +215,67 @@ Now let us apply ICS for outlier detection on the same dataset
 but with different smoothing parameters.
 
 ```{r climate_regions_grid}
-if (!file.exists("ICS_climate_change.RData")) {
-  param_grid <- expand.grid(
-    knots_pos = "quantiles",
-    nknots = 5 * 1:5,
-    lambda = 10^(-2:2),
-    index = c(2, NA)
-  ) |>
-    arrange(nknots, knots_pos, lambda)
+knots_pos_seq <- "quantiles"
+nknots_seq <- 5 * 1:5
+lambda_seq <- 10^(-2:2)
+index_seq <- c(2, NA)
 
-  smooth_ICS <- function(knots_pos, nknots, lambda, index) {
-    vnts <- vntcr |>
-      mutate(t_max = as_dd(t_max,
-        lambda = lambda, nbasis = 5 + nknots,
-        mc.cores = parallel::detectCores() - 1, knots_pos = knots_pos
-      ))
-    knots_pos_str <- ifelse(knots_pos == "quantiles",
-      "Knots at quantiles", "Equally spaced knots"
-    )
-    index_str <- ifelse(is.na(index), "Auto selection of components",
-      paste("# of components:", index)
-    )
+param_grid <- expand.grid(
+  knots_pos = knots_pos_seq,
+  nknots = nknots_seq,
+  lambda = lambda_seq,
+  index = index_seq
+) |>
+  arrange(nknots, knots_pos, lambda)
 
-    print(paste(
-      "# of knots:", nknots, "|",
-      "log10(lambda):", log10(lambda), "|",
-      knots_pos_str, "|",
-      index_str
+print(paste("# of knots positions:", length(knots_pos_seq)))
+print(paste("# of # of knots:", length(nknots_seq)))
+print(paste("# of values for lambda:", length(lambda_seq)))
+print(paste("# of # of components:", length(lambda_seq)))
+print(paste("# of values for index:", length(index_seq)))
+print(paste("Total grid size:", nrow(param_grid)))
+
+smooth_ICS <- function(knots_pos, nknots, lambda, index) {
+  vnts <- vntcr |>
+    mutate(t_max = as_dd(t_max,
+      lambda = lambda, nbasis = 5 + nknots,
+      mc.cores = parallel::detectCores() - 1, knots_pos = knots_pos
     ))
+  knots_pos_str <- ifelse(knots_pos == "quantiles",
+    "Knots at quantiles", "Equally spaced knots"
+  )
+  index_str <- ifelse(is.na(index), "Auto selection of components",
+    paste("# of components:", index)
+  )
 
-    if (is.na(index)) {
-      list(
-        dd = vnts$t_max,
-        ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
-        ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
-          n_cores = parallel::detectCores() - 1
-        ), error = function(e) e)
-      )
-    } else {
-      list(
-        dd = vnts$t_max,
-        ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
-        ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
-          n_cores = parallel::detectCores() - 1, index = seq_len(index)
-        ), error = function(e) e)
-      )
-    }
+  print(paste(
+    "# of knots:", nknots, "|",
+    "log10(lambda):", log10(lambda), "|",
+    knots_pos_str, "|",
+    index_str
+  ))
+
+  if (is.na(index)) {
+    list(
+      dd = vnts$t_max,
+      ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
+      ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
+        n_cores = parallel::detectCores() - 1
+      ), error = function(e) e)
+    )
+  } else {
+    list(
+      dd = vnts$t_max,
+      ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
+      ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
+        n_cores = parallel::detectCores() - 1, index = seq_len(index)
+      ), error = function(e) e)
+    )
   }
+}
 
-  # Smooth and detect outliers for each parameter
+# Smooth and detect outliers for each parameter
+if (!file.exists("ICS_climate_change.RData")) {
   system.time(
     ics_grid <- param_grid |>
       mutate(id = seq_len(n())) |>
@@ -295,14 +307,6 @@ ics_out |>
   scale_fill_grey(start = 1, end = 0) +
   facet_grid(cols = vars(nknots), rows = vars(index))
 
-n_grid <- 5 * 5
-ics_out_freq <- ics_out |>
-  mutate(outliers = ifelse(outliers == 1, 1, 0)) |>
-  group_by(obs_id) |>
-  summarise(n_outlier = sum(outliers)) |>
-  left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
-  select(obs_id, province, year, n_outlier)
-
 ics_grid |>
   filter(is.na(index)) |>
   mutate(index = max(res$ics_out$index)) |>
@@ -310,11 +314,20 @@ ics_grid |>
   geom_bar(stat = "identity") +
   facet_grid(cols = vars(nknots)) +
   theme_minimal()
+```
+
+```{r climate_regions_grid_summary}
+ics_out_freq <- ics_out |>
+  mutate(outliers = ifelse(outliers == 1, 1, 0)) |>
+  group_by(obs_id) |>
+  summarise(n_outlying = sum(outliers)) |>
+  left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
+  select(obs_id, province, year, n_outlying)
 
 knitr::kable(ics_out_freq)
 
 ics_out_freq |>
-  ggplot(aes(province, n_outlier)) +
+  ggplot(aes(province, n_outlying)) +
   geom_bar(stat = "identity") +
   facet_grid(cols = vars(year)) +
   theme_minimal() +
