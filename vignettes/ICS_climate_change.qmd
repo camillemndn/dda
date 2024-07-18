@@ -215,7 +215,7 @@ Now let us apply ICS for outlier detection on the same dataset
 but with different smoothing parameters.
 
 ```{r climate_regions_grid}
-if (!file.exists("ICS_climate_change_out.RData") && !file.exists("ICS_climate_change.RData")) {
+if (!file.exists("ICS_climate_change.RData")) {
   param_grid <- expand.grid(
     knots_pos = "quantiles",
     nknots = 5 * 1:5,
@@ -275,21 +275,17 @@ if (!file.exists("ICS_climate_change_out.RData") && !file.exists("ICS_climate_ch
 ```
 
 ```{r climate_regions_grid_out_create}
-if (!file.exists("ICS_climate_change_out.RData")) {
-  load("ICS_climate_change.RData")
+load("ICS_climate_change.RData")
 
-  ics_out <- ics_grid |>
-    rowwise() |>
-    filter(!(any(class(res$ics_out) == "error"))) |>
-    mutate(res = list(as.factor(res$ics_out$outliers))) |>
-    rename(outliers = res) |>
-    unnest_longer(outliers, indices_to = "obs_id")
-  save(ics_out, file = "ICS_climate_change_out.RData")
-}
+ics_out <- ics_grid |>
+  rowwise() |>
+  filter(!(any(class(res$ics_out) == "error"))) |>
+  mutate(res = list(as.factor(res$ics_out$outliers))) |>
+  rename(outliers = res) |>
+  unnest_longer(outliers, indices_to = "obs_id")
 ```
 
 ```{r climate_regions_grid_out}
-load("ICS_climate_change_out.RData")
 ics_out |>
   mutate(index = ifelse(is.na(index), "Auto selection of components",
     paste("# of components:", index)
@@ -298,6 +294,14 @@ ics_out |>
   geom_tile() +
   scale_fill_grey(start = 1, end = 0) +
   facet_grid(cols = vars(nknots), rows = vars(index))
+
+ics_grid |>
+  filter(is.na(index)) |>
+  mutate(index = max(res$ics_out$index)) |>
+  ggplot(aes(log10(lambda), index)) +
+  geom_bar(stat = "identity") +
+  facet_grid(cols = vars(nknots)) +
+  theme_minimal()
 
 n_grid <- 5 * 5
 ics_out_freq <- ics_out |>
