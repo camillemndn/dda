@@ -74,7 +74,7 @@ rec {
       }
     ) { };
 
-    dda-website = pkgs.callPackage (
+    website = pkgs.callPackage (
       {
         stdenv,
         rWrapper,
@@ -93,7 +93,6 @@ rec {
         '';
 
         installPhase = ''
-          mkdir $out
           cp -r docs $out
         '';
       }
