@@ -1,7 +1,7 @@
 let
   inputs = import ./deps;
   system = "x86_64-linux";
-  pkgs = import (inputs.nixpkgs) { inherit system; };
+  pkgs = import inputs.nixpkgs { inherit system; };
 
   r-deps =
     ps: with ps; [
