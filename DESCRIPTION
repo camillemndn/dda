@@ -1,6 +1,6 @@
 Package: dda
 Title: Distributional Data Analysis
-Version: 0.0.0.9010
+Version: 0.0.0.9011
 Authors@R:
     person("Camille", "Mondon", email = "camille.mondon@tse-fr.eu", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0007-4569-990X"))
