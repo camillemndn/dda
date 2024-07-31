@@ -91,19 +91,24 @@ rec {
     website = pkgs.callPackage (
       {
         stdenv,
-        rWrapper,
+        image_optim,
         rPackages,
+        rWrapper,
         ...
       }:
 
       stdenv.mkDerivation {
         name = "dda-website";
         src = builtins.fetchGit ./.;
-        buildInputs = [ (rWrapper.override { packages = r-dev-deps rPackages; }) ];
+        buildInputs = [
+          image_optim
+          (rWrapper.override { packages = r-dev-deps rPackages; })
+        ];
         HOME = ".";
 
         buildPhase = ''
           Rscript -e "options(pkgdown.internet = FALSE); pkgdown::build_site()"
+          image_optim --recursive docs
         '';
 
         installPhase = ''
