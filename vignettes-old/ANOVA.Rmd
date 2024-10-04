@@ -25,15 +25,45 @@ data(vietnam_regions)
 ```{r preprocessing}
 selected_years <- c(1987:1989, 2014:2016)
 
-vn_temp <- vietnam_temperature |>
+vnt <- vietnam_temperature |>
   filter(year %in% selected_years) |>
   mutate(period = if_else(year >= 2000, "Present", "Past")) |>
-  select(period, region, province, t_max) |>
-  nest_by(period, region, province, .key = "t_max") |>
-  ungroup()
+  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15)) |>
+  group_by(region, province, period) |>
+  summarise(t_max = list(c(mean(t_max)))) |>
+  ungroup() |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  rename(region_name = name) |>
+  arrange(region, province, period)
+class(vnt$t_max) <- c("ddl", "fdl", "list")
 
-vn_temp <- vn_temp |>
-  mutate(t_max = dd(t_max, lambda = 1, nbasis = 15))
+vntr <- vnt |>
+  select(!province) |>
+  nest_by(period, region, region_name, .key = "t_max") |>
+  mutate(t_max = list(c(mean(t_max[[1]]))))
+class(vntr$t_max) <- c("ddl", "fdl", "list")
+
+vntr |> plot_funs(t_max, color = region_name) + facet_wrap(vars(period))
+```
+
+```{r covariance}
+vnt_per <- vnt |> filter(period == "Past" & region == "MDR")
+plot(as.fd(vnt_per$t_max))
+
+vnt_var <- var.fd(c(as.fd(vnt_per$t_max)))
+tt <- seq(vnt_var$sbasis$rangeval[1], vnt_var$sbasis$rangeval[2], length.out = 400)
+
+z <- cor.fd(tt, c(as.fd(vnt_per$t_max)))
+z <- eval.bifd(tt, tt, vnt_var)
+df <- data.frame(
+  x = rep(tt, each = length(tt)),
+  y = rep(tt, times = length(tt)),
+  z = as.vector(z)
+)
+ggplot(df, aes(x = x, y = y, z = z)) +
+  geom_contour_filled() +
+  labs(title = "Filled Contour Plot", fill = "Legend") +
+  theme_minimal()
 ```
 
 ```{r group_by_region}
