@@ -1,0 +1,200 @@
+---
+title: "ICS on climate change for JÉS 2024"
+vignette: >
+  %\VignetteIndexEntry{ICS on climate change for JÉS 2024}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+lightbox: true
+toc: true
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  dpi = 300,
+  fig.height = 10,
+  fig.width = 15,
+  fig.ext = "jpg",
+  dev = "jpeg",
+  dev.args = list(bg = "white")
+)
+```
+
+```{r setup, message = FALSE}
+library(dda)
+library(tidyverse)
+library(sf)
+set.seed(0)
+```
+
+# Northern regions and 2 provinces from the South
+
+```{r vnt_north_south_map, fig.width = 9, fig.height = 10}
+data(vietnam_provinces)
+data(vietnam_regions)
+
+vietnam_provinces |>
+  mutate(province = if_else(region %in% c("NMM", "RRD") | province %in% c("HOCHIMINH", "DONGNAI"), province, NA)) |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  select(!region) |>
+  rename(region = name) |>
+  ggplot(aes(fill = region, label = province)) +
+  geom_sf() +
+  geom_sf_label(fill = "white", size = 2) +
+  theme_minimal() +
+  labs(x = "longitude", y = "latitude")
+```
+
+```{r vnt_north_south}
+# Filter the data set
+data(vietnam_temperature)
+selected_years <- 2013:2016
+
+vnt <- vietnam_temperature |>
+  filter(year %in% selected_years) |>
+  filter(region %in% c("NMM", "RRD") | province %in% c("HOCHIMINH", "DONGNAI")) |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  select(!region) |>
+  rename(region = name) |>
+  arrange(region, province)
+
+vnts <- vnt |>
+  mutate(t_max = as_dd(t_max,
+    lambda = 1, nbasis = 12, mc.cores = 12
+  ))
+
+vnts |>
+  plot_funs(t_max, color = region) +
+  theme_minimal() +
+  labs(x = "temperature (deg. Celsius)", y = "density")
+
+vnts |>
+  mutate(t_max = as.fd(center(t_max))) |>
+  plot_funs(t_max, color = region) +
+  theme_minimal() +
+  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
+```
+
+# 30 years, 1 climate region (10 provinces)
+
+```{r climate_regions_map}
+vietnam_provinces <- vietnam_provinces |>
+  arrange(region, province) |>
+  mutate(climate_region = case_when(
+    province %in% c("LAICHAU", "DIENBIEN", "SONLA") ~ "S1",
+    province %in% c(
+      "LAOCAI", "YENBAI", "HAGIANG", "CAOBANG", "TUYENQUANG",
+      "BACKAN", "THAINGUYEN", "LANGSON", "BACGIANG", "QUANGNINH"
+    ) ~ "S2",
+    region %in% c("NMM", "RRD") ~ "S3",
+    .default = NA
+  ))
+
+vietnam_provinces |>
+  filter(region %in% c("RRD", "NMM")) |>
+  ggplot(aes(fill = climate_region, label = province)) +
+  geom_sf() +
+  geom_sf_label(fill = "white") +
+  theme_minimal() +
+  labs(x = "longitude", y = "latitude")
+```
+
+```{r climate_regions}
+library(tidyverse)
+library(sf)
+data(vietnam_temperature)
+data(vietnam_regions)
+data(vietnam_provinces)
+
+vntcr <- vietnam_temperature |>
+  filter(region %in% c("RRD", "NMM")) |>
+  dplyr::select(year, province, t_max) |>
+  left_join(vietnam_provinces, by = "province") |>
+  st_as_sf() |>
+  dplyr::select(year, climate_region, province, t_max) |>
+  filter(climate_region == "S2") |>
+  arrange(year, province)
+
+vnt <- vntcr |>
+  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15))
+class(vnt$t_max) <- c("ddl", "fdl", "list")
+
+vnt |> plot_funs(t_max, color = province) +
+  facet_wrap(vars(year))
+
+icsout <- ICS_outlier(vnt$t_max, index = 1:2, n_cores = 14)
+```
+
+```{r climate_regions_screeplot}
+icsout$result |> ggplot(aes(index, gen_kurtosis, group = 1)) +
+  geom_line(alpha = 0.5) +
+  geom_point(aes(color = selected, size = selected))
+```
+
+```{r climate_regions_outliers}
+vnt <- vnt |>
+  mutate(
+    index = seq_len(nrow(icsout$scores)),
+    outlying = as.factor(icsout$outliers),
+    distances = icsout$ics_distances
+  ) |>
+  cbind(icsout$scores)
+
+vnt |>
+  mutate(year = ifelse(outlying == 1, year, "not outlying")) |>
+  plot_funs(t_max, color = year, alpha = outlying) +
+  labs(x = "temperature (deg. Celsius)", y = "density")
+
+vnt |>
+  mutate(
+    t_max = as.fd(center(t_max)),
+    year = ifelse(outlying == 1, year, "not outlying")
+  ) |>
+  plot_funs(t_max, color = year, alpha = outlying) +
+  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
+
+vnt |>
+  mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
+  plot_funs(t_max, color = province, alpha = outlying) +
+  facet_wrap(vars(year)) +
+  labs(x = "temperature (deg. Celsius)", y = "density")
+
+vnt |>
+  mutate(
+    t_max = as.fd(center(t_max)),
+    province = ifelse(outlying == 1, province, "not outlying")
+  ) |>
+  plot_funs(t_max, color = province, alpha = outlying) +
+  facet_wrap(vars(year)) +
+  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
+```
+
+```{r climate_regions_distances}
+vnt |> ggplot(aes(index, distances, color = province, label = year)) +
+  geom_text() +
+  geom_hline(yintercept = icsout$ics_dist_cutoff)
+```
+
+
+```{r climate_regions_scatter}
+vnt |>
+  mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
+  ggplot(aes(IC.1, IC.2)) +
+  geom_text(aes(color = province, label = year))
+```
+
+```{r climate_regions_eigendensities}
+icsout$result |>
+  filter(selected) |>
+  plot_funs(H_dual, color = index) +
+  geom_hline(yintercept = 1 / diff(icsout$result$H_dual[[1]]$basis$rangeval)) +
+  labs(x = "temperature (deg. Celsius)", y = "density")
+
+icsout$result |>
+  mutate(H_dual = as.fd(H_dual)) |>
+  filter(selected) |>
+  plot_funs(H_dual, color = index) +
+  geom_hline(yintercept = 0) +
+  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
+```
