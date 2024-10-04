@@ -123,7 +123,7 @@ class(vnt$t_max) <- c("ddl", "fdl", "list")
 vnt |> plot_funs(t_max, color = province) +
   facet_wrap(vars(year))
 
-icsout <- ICS_outlier(vnt$t_max, index = 1:2, n_cores = 14)
+icsout <- ICS_outlier(vnt$t_max, index = 1, n_cores = 14)
 ```
 
 ```{r climate_regions_screeplot}
