@@ -19,8 +19,6 @@ knitr::opts_chunk$set(
   dev = "jpeg",
   dev.args = list(bg = "white")
 )
-
-Sys.setlocale("LC_CTYPE","fr_FR.UTF-8")
 ```
 
 ```{r setup, message = FALSE}
@@ -36,7 +34,9 @@ set.seed(0)
 data(vietnam_provinces)
 data(vietnam_regions)
 
-vietnam_regions$name <- c("Nord", "NCC", "CHR", "Sud-est", "MDR", "Delta du Fleuve Rouge")
+vietnam_regions$name <- c(
+  "Nord", "NCC", "CHR", "Sud-est", "MDR", "Delta du Fleuve Rouge"
+)
 
 vietnam_provinces |>
   mutate(province = if_else(region %in% c("NMM", "RRD") | province %in% c("HOCHIMINH", "DONGNAI"), province, NA)) |>
@@ -46,7 +46,7 @@ vietnam_provinces |>
   ggplot(aes(fill = region, label = province)) +
   geom_sf() +
   geom_sf_label(fill = "white", size = 2) +
-  theme_minimal() +
+  theme_minimal() + scale_color_grey() +
   labs(x = "longitude", y = "latitude")
 ```
 
@@ -70,14 +70,14 @@ vnts <- vnt |>
 
 vnts |>
   plot_funs(t_max, color = region) +
-  theme_minimal() +
-  labs(x = "température (deg. Celsius)", y = "densité")
+  theme_minimal() + scale_color_grey() +
+  labs(x = "temperature (deg. Celsius)", y = "densite")
 
 vnts |>
   mutate(t_max = as.fd(center(t_max))) |>
   plot_funs(t_max, color = region) +
-  theme_minimal() +
-  labs(x = "température (deg. Celsius)", y = "clr(densité) centrée")
+  theme_minimal() + scale_color_grey() +
+  labs(x = "temperature (deg. Celsius)", y = "clr(densite) centree")
 ```
 
 # 30 years, 1 climate region (10 provinces)
@@ -100,8 +100,8 @@ vietnam_provinces |>
   ggplot(aes(fill = climate_region, label = province)) +
   geom_sf() +
   geom_sf_label(fill = "white") +
-  theme_minimal() +
-  labs(x = "longitude", y = "latitude")
+  theme_minimal() + scale_color_grey() +
+  labs(x = "longitude", y = "latitude", fill = "region climatique")
 ```
 
 ```{r climate_regions}
@@ -148,7 +148,7 @@ vnt <- vnt |>
 vnt |>
   mutate(year = ifelse(outlying == 1, year, "non atypique")) |>
   plot_funs(t_max, color = year, alpha = outlying) +
-  labs(x = "température (deg. Celsius)", y = "densité")
+  labs(x = "temperature (deg. Celsius)", y = "densite")
 
 vnt |>
   mutate(
@@ -156,13 +156,13 @@ vnt |>
     year = ifelse(outlying == 1, year, "non atypique")
   ) |>
   plot_funs(t_max, color = year, alpha = outlying) +
-  labs(x = "température (deg. Celsius)", y = "clr(densité) centrée")
+  labs(x = "temperature (deg. Celsius)", y = "clr(densite) centree")
 
 vnt |>
   mutate(province = ifelse(outlying == 1, province, "non atypique")) |>
   plot_funs(t_max, color = province, alpha = outlying) +
   facet_wrap(vars(year)) +
-  labs(x = "température (deg. Celsius)", y = "densité")
+  labs(x = "temperature (deg. Celsius)", y = "densite")
 
 vnt |>
   mutate(
@@ -171,7 +171,7 @@ vnt |>
   ) |>
   plot_funs(t_max, color = province, alpha = outlying) +
   facet_wrap(vars(year)) +
-  labs(x = "température (deg. Celsius)", y = "clr(densité) centrée")
+  labs(x = "temperature (deg. Celsius)", y = "clr(densite) centree")
 ```
 
 ```{r climate_regions_distances}
@@ -193,12 +193,12 @@ icsout$result |>
   filter(selected) |>
   plot_funs(H_dual, color = index) +
   geom_hline(yintercept = 1 / diff(icsout$result$H_dual[[1]]$basis$rangeval)) +
-  labs(x = "température (deg. Celsius)", y = "densité")
+  labs(x = "temperature (deg. Celsius)", y = "densite")
 
 icsout$result |>
   mutate(H_dual = as.fd(H_dual)) |>
   filter(selected) |>
   plot_funs(H_dual, color = index) +
   geom_hline(yintercept = 0) +
-  labs(x = "température (deg. Celsius)", y = "clr(densité)")
+  labs(x = "temperature (deg. Celsius)", y = "clr(densite)")
 ```
