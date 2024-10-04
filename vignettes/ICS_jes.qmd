@@ -19,6 +19,8 @@ knitr::opts_chunk$set(
   dev = "jpeg",
   dev.args = list(bg = "white")
 )
+
+Sys.setlocale("LC_CTYPE","fr_FR.UTF-8")
 ```
 
 ```{r setup, message = FALSE}
@@ -75,7 +77,7 @@ vnts |>
   mutate(t_max = as.fd(center(t_max))) |>
   plot_funs(t_max, color = region) +
   theme_minimal() +
-  labs(x = "température (deg. Celsius)", y = "centered clr(density)")
+  labs(x = "température (deg. Celsius)", y = "clr(densité) centrée")
 ```
 
 # 30 years, 1 climate region (10 provinces)
@@ -154,7 +156,7 @@ vnt |>
     year = ifelse(outlying == 1, year, "non atypique")
   ) |>
   plot_funs(t_max, color = year, alpha = outlying) +
-  labs(x = "température (deg. Celsius)", y = "centered clr(density)")
+  labs(x = "température (deg. Celsius)", y = "clr(densité) centrée")
 
 vnt |>
   mutate(province = ifelse(outlying == 1, province, "non atypique")) |>
@@ -169,7 +171,7 @@ vnt |>
   ) |>
   plot_funs(t_max, color = province, alpha = outlying) +
   facet_wrap(vars(year)) +
-  labs(x = "température (deg. Celsius)", y = "centered clr(density)")
+  labs(x = "température (deg. Celsius)", y = "clr(densité) centrée")
 ```
 
 ```{r climate_regions_distances}
