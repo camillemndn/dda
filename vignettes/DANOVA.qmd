@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r setup, message = FALSE}
 library(dda)
 library(fda.usc)
 library(tidyverse)
@@ -56,7 +56,7 @@ vnt |> plot_funs(t_max, color = region_name) +
   labs(
     title = "Density of maximum temperature per province",
     x = "Temperature (deg. Celsius)",
-    y = "Yearly density",
+    y = "Mean density",
     color = "Region"
   )
 ```
@@ -85,7 +85,7 @@ vntr |> plot_funs(t_max, color = region_name) + facet_wrap(vars(period)) +
   labs(
     title = "Mean density of maximum temperature per region",
     x = "Temperature (deg. Celsius)",
-    y = "Yearly density",
+    y = "Mean density",
     color = "Region"
   )
 ```
@@ -104,7 +104,7 @@ vnt_var <- var.fd(c(as.fd(vnt_per$t_max)))
 tt <- seq(
   vnt_var$sbasis$rangeval[1],
   vnt_var$sbasis$rangeval[2],
-  length.out = 400
+  length.out = 401
 )
 
 z <- eval.bifd(tt, tt, vnt_var) # Covariance
@@ -131,38 +131,53 @@ ggplot(df, aes(x = x, y = y, z = z)) +
 ## Pointwise F-test
 
 ```{r pointwise}
-vnt_ftest <- vnt |>
-  eval_funs(t_max, n = 401) |>
-  nest_by(period, x) |>
-  mutate(ftest = anova(lm(y ~ region, data))$F[1])
+vnte <- vnt |>
+  eval_funs(t_max, n = 1401) |>
+  nest_by(period, x)
 
-vnt_ftest |>
-  ggplot(aes(x, ftest)) +
+vntf <- vnte |>
+  mutate(F = anova(lm(y ~ region, data))$F[1])
+
+vntf |>
+  ggplot(aes(x, F)) +
   geom_line() +
+  labs(
+    title = "Pointwise F-statistic",
+    x = "Temperature (deg. Celsius)"
+  ) +
   facet_grid(rows = vars(period))
-
-vnt_ssr <- vnt |>
-  eval_funs(t_max, n = 401) |>
-  group_by(x, region) |>
-  mutate(within = (y - mean(y))^2 / (n() - 6))
 ```
 
 ## Global $F_\text{max}$ and GPF tests
 
 ```{r global}
+max(vntf$F)
 
+f_max_test <- function(vnte, id) {
+  vtnf <- vnte |>
+    mutate(data = list(slice(data, id))) |>
+    mutate(F = anova(lm(y ~ region, data))$F[1])
+  max(vntf$F)
+}
+
+system.time(
+  f_max_dist <- boot(vnte, f_max_test, 10,
+    parallel = "multicore",
+    ncpus = parallel::detectCores() - 1
+  )
+)
 ```
 
 # DANOVA on the regional mean negative perturbations between 1987-1989 and 2014-2016
+
+## Pointwise F-test
 
 ```{r change_pointwise}
 
 ```
 
+## Global $F_\text{max}$ and GPF tests
+
 ```{r change_global}
 
 ```
-
-
-
-
