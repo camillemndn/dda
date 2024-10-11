@@ -1,0 +1,146 @@
+---
+title: DANOVA on regional mean distributions of maximum temperature in Vietnam
+vignette: >
+  %\VignetteIndexEntry{DANOVA on regional mean distributions of maximum temperature in Vietnam}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+lightbox: true
+toc: true
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  dpi = 300,
+  fig.height = 10,
+  fig.width = 15,
+  fig.ext = "jpg",
+  dev = "jpeg",
+  dev.args = list(bg = "white")
+)
+```
+
+```{r setup}
+library(dda)
+library(fda.usc)
+library(tidyverse)
+library(boot)
+data(vietnam_temperature)
+data(vietnam_regions)
+```
+
+# Preprocessing into density data
+
+```{r preprocessing}
+selected_years <- c(1987:1989, 2014:2016)
+
+vnt <- vietnam_temperature |>
+  filter(year %in% selected_years) |>
+  mutate(period = if_else(year >= 2000, "2014-2016", "1987-1989")) |>
+  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15)) |>
+  group_by(region, province, period) |>
+  summarise(t_max = list(c(mean(t_max)))) |>
+  ungroup() |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  rename(region_name = name) |>
+  arrange(region, province, period)
+class(vnt$t_max) <- c("ddl", "fdl", "list")
+```
+
+# Exploratory analysis by region
+
+```{r regional_means}
+vntr <- vnt |>
+  select(!province) |>
+  nest_by(period, region, region_name, .key = "t_max") |>
+  mutate(t_max = list(c(mean(t_max[[1]]))))
+class(vntr$t_max) <- c("ddl", "fdl", "list")
+
+vntg <- vnt |>
+  select(!c(province, region, region_name)) |>
+  nest_by(period, .key = "t_max") |>
+  mutate(t_max = list(c(mean(t_max[[1]]))))
+
+class(vntr$t_max) <- c("ddl", "fdl", "list")
+vntr |> plot_funs(t_max, color = region_name) + facet_wrap(vars(period)) +
+  labs(x = "Temperature (°C)", y = "Yearly density", color = "Region") +
+  ggtitle("Mean density of temperature by region")
+```
+
+```{r lr_plots}
+```
+
+# Preliminary study: homogeneity of variances
+
+```{r variance_homogeneity}
+vnt_per <- vnt |> filter(period == "2014-2016" & region == "MDR")
+plot(as.fd(vnt_per$t_max))
+
+vnt_var <- var.fd(c(as.fd(vnt_per$t_max)))
+
+tt <- seq(
+  vnt_var$sbasis$rangeval[1],
+  vnt_var$sbasis$rangeval[2],
+  length.out = 400
+)
+
+z <- eval.bifd(tt, tt, vnt_var) # Covariance
+z <- cor.fd(tt, c(as.fd(vnt_per$t_max))) # Correlation
+
+df <- data.frame(
+  x = rep(tt, each = length(tt)),
+  y = rep(tt, times = length(tt)),
+  z = as.vector(z)
+)
+
+ggplot(df, aes(x = x, y = y, z = z)) +
+  geom_contour_filled() +
+  labs(
+    title = "Correlation function within the MDR region (2014-2016)",
+    fill = "Correlation",
+    x = "Temperature (deg. Celsius)", y = "Temperature (deg. Celsius)"
+  ) +
+  theme_minimal()
+```
+
+# DANOVA on the regional mean densities of temperature
+
+## Pointwise F-test
+
+```{r pointwise}
+vnt_ftest <- vnt |>
+  eval_funs(t_max, n = 401) |>
+  nest_by(period, x) |>
+  mutate(ftest = anova(lm(y ~ region, data))$F[1])
+
+vnt_ftest |>
+  ggplot(aes(x, ftest)) +
+  geom_line() +
+  facet_grid(rows = vars(period))
+
+vnt_ssr <- vnt |>
+  eval_funs(t_max, n = 401) |>
+  group_by(x, region) |>
+  mutate(within = (y - mean(y))^2 / (n() - 6))
+```
+
+## Global $F_\text{max}$ and GPF tests
+
+```{r global}
+
+```
+
+# DANOVA on the regional mean negative perturbations between 1987-1989 and 2014-2016
+
+```{r change_pointwise}
+
+```
+
+```{r change_global}
+
+```
+
+
+
+
