@@ -26,13 +26,17 @@ library(dda)
 library(fda.usc)
 library(tidyverse)
 library(boot)
-data(vietnam_temperature)
-data(vietnam_regions)
+library(sf)
+set.seed(0)
 ```
 
 # Preprocessing into density data
 
 ```{r preprocessing}
+data(vietnam_temperature)
+data(vietnam_regions)
+data(vietnam_provinces)
+
 selected_years <- c(1987:1989, 2014:2016)
 
 vnt <- vietnam_temperature |>
@@ -46,9 +50,29 @@ vnt <- vietnam_temperature |>
   rename(region_name = name) |>
   arrange(region, province, period)
 class(vnt$t_max) <- c("ddl", "fdl", "list")
+
+vnt |> plot_funs(t_max, color = region_name) +
+  facet_grid(vars(period), vars(region_name)) +
+  labs(
+    title = "Density of maximum temperature per province",
+    x = "Temperature (deg. Celsius)",
+    y = "Yearly density",
+    color = "Region"
+  )
 ```
 
 # Exploratory analysis by region
+
+```{r regions_map}
+vietnam_provinces |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  rename(region_name = name) |>
+  ggplot(aes(fill = region_name)) +
+  geom_sf() +
+  theme_minimal() +
+  labs(x = "Longitude", y = "Latitude", fill = "Region")
+```
+
 
 ```{r regional_means}
 vntr <- vnt |>
@@ -57,15 +81,13 @@ vntr <- vnt |>
   mutate(t_max = list(c(mean(t_max[[1]]))))
 class(vntr$t_max) <- c("ddl", "fdl", "list")
 
-vntg <- vnt |>
-  select(!c(province, region, region_name)) |>
-  nest_by(period, .key = "t_max") |>
-  mutate(t_max = list(c(mean(t_max[[1]]))))
-
-class(vntr$t_max) <- c("ddl", "fdl", "list")
 vntr |> plot_funs(t_max, color = region_name) + facet_wrap(vars(period)) +
-  labs(x = "Temperature (°C)", y = "Yearly density", color = "Region") +
-  ggtitle("Mean density of temperature by region")
+  labs(
+    title = "Mean density of maximum temperature per region",
+    x = "Temperature (deg. Celsius)",
+    y = "Yearly density",
+    color = "Region"
+  )
 ```
 
 ```{r lr_plots}
