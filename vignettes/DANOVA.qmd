@@ -32,17 +32,24 @@ set.seed(0)
 
 # Preprocessing into density data
 
-```{r preprocessing}
+```{r preprocessing_mpl, eval = FALSE}
 data(vietnam_temperature)
+vietnam_temperature_dd <- vietnam_temperature |>
+  filter(year %in% selected_years) |>
+  mutate(period = if_else(year >= 2000, "2014-2016", "1987-1989")) |>
+  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15))
+```
+
+```{r preprocessing_hist}
+data(vietnam_temperature_dd)
 data(vietnam_regions)
 data(vietnam_provinces)
 
 selected_years <- c(1987:1989, 2014:2016)
 
-vnt <- vietnam_temperature |>
+vnt <- vietnam_temperature_dd |>
   filter(year %in% selected_years) |>
   mutate(period = if_else(year >= 2000, "2014-2016", "1987-1989")) |>
-  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15)) |>
   group_by(region, province, period) |>
   summarise(t_max = list(c(mean(t_max)))) |>
   ungroup() |>
