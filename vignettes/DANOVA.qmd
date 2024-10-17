@@ -27,7 +27,7 @@ library(fda.usc)
 library(tidyverse)
 library(boot)
 library(sf)
-set.seed(0)
+set.seed(10983)
 ```
 
 # Preprocessing into density data
@@ -60,6 +60,15 @@ class(vnt$t_max) <- c("ddl", "fdl", "list")
 
 vnt |> plot_funs(t_max, color = region_name) +
   facet_grid(vars(period), vars(region_name)) +
+  labs(
+    title = "Density of maximum temperature per province",
+    x = "Temperature (deg. Celsius)",
+    y = "Mean density",
+    color = "Region"
+  )
+
+vnt |> plot_funs(t_max, color = region_name) +
+  facet_wrap(vars(period)) +
   labs(
     title = "Density of maximum temperature per province",
     x = "Temperature (deg. Celsius)",
@@ -139,18 +148,24 @@ ggplot(df, aes(x = x, y = y, z = z)) +
 
 ```{r pointwise}
 vnte <- vnt |>
+  mutate(t_max = as.fd(t_max)) |>
   eval_funs(t_max, n = 1401) |>
-  nest_by(period, x)
+  group_by(period, x) |>
+  nest() |>
+  ungroup()
 
 vntf <- vnte |>
+  rowwise() |>
   mutate(F = anova(lm(y ~ region, data))$F[1])
 
 vntf |>
   ggplot(aes(x, F)) +
   geom_line() +
+  geom_hline(yintercept = qf(0.95, 5, 57), color = "red", linetype = "dashed") +
   labs(
     title = "Pointwise F-statistic",
-    x = "Temperature (deg. Celsius)"
+    x = "Temperature (deg. Celsius)",
+    yintercept = "Critical value"
   ) +
   facet_grid(rows = vars(period))
 ```
@@ -158,21 +173,44 @@ vntf |>
 ## Global $F_\text{max}$ and GPF tests
 
 ```{r global}
-max(vntf$F)
+vntf |>
+  group_by(period) |>
+  summarise(F_max = max(F))
 
-f_max_test <- function(vnte, id) {
-  vtnf <- vnte |>
-    mutate(data = list(slice(data, id))) |>
-    mutate(F = anova(lm(y ~ region, data))$F[1])
-  max(vntf$F)
+f_max_statistic <- function(x = NULL, indices = 1:63) {
+  vnte |>
+    mutate(data = map(data, ~ .x |>
+      slice(indices) |>
+      mutate(region = sample(region, length(indices))))) |>
+    mutate(F = map_dbl(data, ~ anova(lm(y ~ region, data = .x))$F[1])) |>
+    group_by(period) |>
+    summarise(F_max = max(F)) |>
+    pull(F_max, name = period)
 }
 
+# Optimized bootstrapping with multicore processing
 system.time(
-  f_max_dist <- boot(vnte, f_max_test, 10,
+  f_max_dist <- boot(1:63, f_max_statistic,
+    R = 10,
     parallel = "multicore",
     ncpus = parallel::detectCores() - 1
-  )
+  )$t
 )
+
+colnames(f_max_dist) <- names(f_max_statistic())
+f_max_dist <- f_max_dist |>
+  as_tibble() |>
+  pivot_longer(1:2,
+    names_to = "period", values_to = "F_max"
+  )
+
+f_max_dist |> ggplot(aes(F_max)) +
+  geom_density() +
+  facet_wrap(vars(period))
+
+f_max_dist |>
+  group_by(period) |>
+  summarise(quantile(F_max, 0.95))
 ```
 
 # DANOVA on the regional mean negative perturbations between 1987-1989 and 2014-2016
