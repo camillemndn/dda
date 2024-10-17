@@ -191,7 +191,7 @@ f_max_statistic <- function(x = NULL, indices = 1:63) {
 # Optimized bootstrapping with multicore processing
 system.time(
   f_max_dist <- boot(1:63, f_max_statistic,
-    R = 10,
+    R = 1000,
     parallel = "multicore",
     ncpus = parallel::detectCores() - 1
   )$t
