@@ -78,101 +78,86 @@ rec {
     '';
   };
 
-  packages.x86_64-linux = {
-    dda = pkgs.callPackage (
-      { rPackages, ... }:
-      rPackages.buildRPackage {
-        name = "dda";
-        src = builtins.fetchGit ./.;
-        propagatedBuildInputs = r-import-deps rPackages;
-      }
-    ) { };
+  packages.x86_64-linux =
+    let
+      buildVignette =
+        {
+          file,
+          name,
+          stdenv,
+          rWrapper,
+          rPackages,
+          ...
+        }:
+        stdenv.mkDerivation {
+          inherit name;
+          src = builtins.fetchGit ./.;
 
-    website = pkgs.callPackage (
-      {
-        stdenv,
-        image_optim,
-        rPackages,
-        rWrapper,
-        ...
-      }:
+          buildInputs = [ (rWrapper.override { packages = r-dev-deps rPackages; }) ];
+          HOME = ".";
 
-      stdenv.mkDerivation {
-        name = "dda-website";
-        src = builtins.fetchGit ./.;
-        buildInputs = [
-          image_optim
-          (rWrapper.override { packages = r-dev-deps rPackages; })
-        ];
-        HOME = ".";
+          buildPhase = ''
+            (
+              cd vignettes
+              Rscript -e "devtools::load_all(); source(knitr::purl('${file}', quiet=TRUE))"
+            )
+          '';
 
-        buildPhase = ''
-          Rscript -e "options(pkgdown.internet = FALSE); pkgdown::build_site()"
-          image_optim --recursive docs
-        '';
+          installPhase = ''
+            mkdir -p $out
+            cp -r vignettes $out
+          '';
+        };
 
-        installPhase = ''
-          cp -r docs $out
-        '';
-      }
-    ) { };
+      vignettes = builtins.filter (file: builtins.match "^.*\\.(Rmd|qmd)$" file != null) (
+        builtins.attrNames (builtins.readDir ./vignettes)
+      );
+    in
+    {
+      dda = pkgs.callPackage (
+        { rPackages, ... }:
+        rPackages.buildRPackage {
+          name = "dda";
+          src = builtins.fetchGit ./.;
+          propagatedBuildInputs = r-import-deps rPackages;
+        }
+      ) { };
 
-    dda-vignette-ics-climate-change = pkgs.callPackage (
-      {
-        stdenv,
-        rWrapper,
-        rPackages,
-        ...
-      }:
+      website = pkgs.callPackage (
+        {
+          stdenv,
+          image_optim,
+          rPackages,
+          rWrapper,
+          ...
+        }:
 
-      stdenv.mkDerivation {
-        name = "dda-vignette-ics-climate-change";
-        src = builtins.fetchGit ./.;
-        buildInputs = [ (rWrapper.override { packages = r-dev-deps rPackages; }) ];
-        HOME = ".";
+        stdenv.mkDerivation {
+          name = "dda-website";
+          src = builtins.fetchGit ./.;
+          buildInputs = [
+            image_optim
+            (rWrapper.override { packages = r-dev-deps rPackages; })
+          ];
+          HOME = ".";
 
-        buildPhase = ''
-          (
-            cd vignettes
-            Rscript -e "devtools::load_all(); source(knitr::purl('ICS_climate_change.qmd', quiet=TRUE))"
-          )
-        '';
+          buildPhase = ''
+            Rscript -e "options(pkgdown.internet = FALSE); pkgdown::build_site()"
+            image_optim --recursive docs
+          '';
 
-        installPhase = ''
-          mkdir $out
-          cp -r vignettes $out
-        '';
-      }
-    ) { };
-
-    dda-vignette-ics-grid = pkgs.callPackage (
-      {
-        stdenv,
-        rWrapper,
-        rPackages,
-        ...
-      }:
-
-      stdenv.mkDerivation {
-        name = "dda-vignette-ics-grid";
-        src = builtins.fetchGit ./.;
-        buildInputs = [ (rWrapper.override { packages = r-dev-deps rPackages; }) ];
-        HOME = ".";
-
-        buildPhase = ''
-          (
-            cd vignettes
-            Rscript -e "devtools::load_all(); source(knitr::purl('ICS_grid.Rmd', quiet=TRUE))"
-          )
-        '';
-
-        installPhase = ''
-          mkdir $out
-          cp -r vignettes $out
-        '';
-      }
-    ) { };
-  };
+          installPhase = ''
+            cp -r docs $out
+          '';
+        }
+      ) { };
+    }
+    // builtins.listToAttrs (
+      map (file: rec {
+        name = "dda-vignette-" + builtins.elemAt (pkgs.lib.splitString "." file) 0;
+        value = pkgs.callPackage buildVignette { inherit file name; };
+      }) vignettes
+    );
 
   checks.default = {
     inherit packages;
