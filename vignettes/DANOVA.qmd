@@ -189,7 +189,7 @@ f_max_statistic(vnte)
 system.time(
   f_max_dist <- boot(vnte,
     function(vnte, indices) f_max_statistic(vnte, indices)$F_max,
-    R = 100,
+    R = 1000,
     parallel = "multicore",
     ncpus = parallel::detectCores() - 1
   )$t
