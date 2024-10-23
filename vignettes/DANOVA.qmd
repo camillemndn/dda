@@ -186,22 +186,29 @@ f_max_statistic <- function(vnte, indices = NULL) {
 
 f_max_statistic(vnte)
 
-system.time(
-  f_max_dist <- boot(vnte,
-    function(vnte, indices) f_max_statistic(vnte, indices)$F_max,
-    R = 1000,
-    parallel = "multicore",
-    ncpus = parallel::detectCores() - 1
-  )$t
-)
-
-colnames(f_max_dist) <- f_max_statistic(vnte)$period
-
-f_max_dist <- f_max_dist |>
-  as_tibble() |>
-  pivot_longer(1:2,
-    names_to = "period", values_to = "F_max"
+if (file.exists("DANOVA.RData")) {
+  load("DANOVA.RData")
+} else {
+  system.time(
+    f_max_dist <- boot(vnte,
+      function(vnte, indices) f_max_statistic(vnte, indices)$F_max,
+      R = 5000,
+      parallel = "multicore",
+      ncpus = parallel::detectCores() - 1
+    )$t
   )
+
+  colnames(f_max_dist) <- f_max_statistic(vnte)$period
+
+  f_max_dist <- f_max_dist |>
+    as_tibble() |>
+    pivot_longer(1:2,
+      names_to = "period", values_to = "F_max"
+    )
+
+  save(f_max_dist, file = "DANOVA.RData")
+}
+
 
 f_max_dist |> ggplot(aes(F_max)) +
   geom_density() +
