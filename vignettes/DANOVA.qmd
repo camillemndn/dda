@@ -242,7 +242,30 @@ f_max_dist |>
 ## Pointwise F-test
 
 ```{r change_pointwise}
+library(fdANOVA)
 
+vnte <- vnt |>
+  filter(period == "1987-1989") |>
+  mutate(t_max = as.fd(t_max)) |>
+  eval_funs(t_max, n = 1401) |>
+  select(province, x, y) |>
+  pivot_wider(names_from = province, values_from = y) |>
+  column_to_rownames("x")
+
+plotFANOVA(vnte, vietnam_provinces$region, separately = TRUE)
+
+system.time(
+  res <- fanova.tests(vnte, vietnam_provinces$region, params = list(
+    paramFP = list(B.FP = 100, basis = "b-spline"),
+    paramCH = 100,
+    paramCS = 100,
+    paramL2b = 100,
+    paramFb = 100,
+    paramFmaxb = 100,
+    paramTRP = list(B.TRP = 100)
+  ), parallel = TRUE, nslaves = parallel::detectCores() - 1)
+)
+save(res, file = "DANOVA.RData")
 ```
 
 ## Global $F_\text{max}$ and GPF tests
