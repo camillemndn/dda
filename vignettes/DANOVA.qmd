@@ -180,15 +180,13 @@ vntf |>
 f_max_statistic <- function(x = NULL, indices = 1:63) {
   vnte |>
     mutate(data = map(data, ~ .x |>
-      slice(indices) |>
-      mutate(region = sample(region, length(indices))))) |>
+      mutate(y = y[indices]))) |> # Resampling only y
     mutate(F = map_dbl(data, ~ anova(lm(y ~ region, data = .x))$F[1])) |>
     group_by(period) |>
     summarise(F_max = max(F)) |>
     pull(F_max, name = period)
 }
 
-# Optimized bootstrapping with multicore processing
 system.time(
   f_max_dist <- boot(1:63, f_max_statistic,
     R = 1000,
