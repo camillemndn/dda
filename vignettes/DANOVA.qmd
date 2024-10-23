@@ -150,15 +150,21 @@ ggplot(df, aes(x = x, y = y, z = z)) +
 vnte <- vnt |>
   mutate(t_max = as.fd(t_max)) |>
   eval_funs(t_max, n = 1401) |>
-  group_by(period, x) |>
-  nest() |>
-  ungroup()
+  nest_by(across(-c(x, y, id))) |>
+  group_by(period)
 
-vntf <- vnte |>
-  rowwise() |>
-  mutate(F = anova(lm(y ~ region, data))$F[1])
+f_statistic <- function(vnte, indices = NULL) {
+  if (!is.null(indices)) vnte$data <- vnte$data[indices]
 
-vntf |>
+  vnte |>
+    unnest(data) |>
+    group_by(period, x, region) |>
+    mutate(mean = mean(y), var = (n() - 1) / n() * var(y)) |>
+    group_by(period, x) |>
+    summarise(F = (n() - 1) / n() * var(mean) / mean(var) * (n() - length(unique(region))) / (length(unique(region)) - 1), .groups = "drop_last")
+}
+
+f_statistic(vnte) |>
   ggplot(aes(x, F)) +
   geom_line() +
   geom_hline(yintercept = qf(0.95, 5, 57), color = "red", linetype = "dashed") +
@@ -173,29 +179,24 @@ vntf |>
 ## Global $F_\text{max}$ and GPF tests
 
 ```{r global}
-vntf |>
-  group_by(period) |>
-  summarise(F_max = max(F))
-
-f_max_statistic <- function(x = NULL, indices = 1:63) {
-  vnte |>
-    mutate(data = map(data, ~ .x |>
-      mutate(y = y[indices]))) |> # Resampling only y
-    mutate(F = map_dbl(data, ~ anova(lm(y ~ region, data = .x))$F[1])) |>
-    group_by(period) |>
-    summarise(F_max = max(F)) |>
-    pull(F_max, name = period)
+f_max_statistic <- function(vnte, indices = NULL) {
+  f_statistic(vnte, indices) |>
+    summarise(F_max = max(F))
 }
 
+f_max_statistic(vnte)
+
 system.time(
-  f_max_dist <- boot(1:63, f_max_statistic,
-    R = 1000,
+  f_max_dist <- boot(vnte,
+    function(vnte, indices) f_max_statistic(vnte, indices)$F_max,
+    R = 100,
     parallel = "multicore",
     ncpus = parallel::detectCores() - 1
   )$t
 )
 
-colnames(f_max_dist) <- names(f_max_statistic())
+colnames(f_max_dist) <- f_max_statistic(vnte)$period
+
 f_max_dist <- f_max_dist |>
   as_tibble() |>
   pivot_longer(1:2,
