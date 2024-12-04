@@ -13,8 +13,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   dpi = 300,
-  fig.height = 10,
-  fig.width = 15,
+  fig.height = 8,
+  fig.width = 12,
   fig.ext = "jpg",
   dev = "jpeg",
   dev.args = list(bg = "white")
@@ -58,12 +58,17 @@ vnt <- vietnam_temperature_dd |>
   arrange(region, province, period)
 class(vnt$t_max) <- c("ddl", "fdl", "list")
 
+vnt <- vnt |>
+  pivot_wider(names_from = period, values_from = t_max) |>
+  mutate(evolution = `2014-2016` - `1987-1989`) |>
+  pivot_longer(cols = c("2014-2016", "1987-1989", "evolution"), names_to = "period", values_to = "t_max")
+
 vnt |> plot_funs(t_max, color = region_name) +
   facet_grid(vars(period), vars(region_name)) +
   labs(
     title = "Density of maximum temperature per province",
     x = "Temperature (deg. Celsius)",
-    y = "Mean density",
+    y = "Density",
     color = "Region"
   )
 
@@ -72,8 +77,32 @@ vnt |> plot_funs(t_max, color = region_name) +
   labs(
     title = "Density of maximum temperature per province",
     x = "Temperature (deg. Celsius)",
-    y = "Mean density",
+    y = "Density",
     color = "Region"
+  )
+
+vnt |>
+  filter(period == "evolution") |>
+  pull(t_max) |>
+  mean() |>
+  as.fd() |>
+  plot() +
+  labs(
+    title = "Centered log-ratio transform of the mean negative perturbation of maximum temperature distribution between 1987-1989 and 2014-2016",
+    x = "Temperature (deg. Celsius)",
+    y = "Density"
+  )
+
+vnt |>
+  filter(period == "evolution") |>
+  pull(t_max) |>
+  mean() |>
+  plot() +
+  geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), color = "red") +
+  labs(
+    title = "Mean negative perturbation of maximum temperature distribution between 1987-1989 and 2014-2016",
+    x = "Temperature (deg. Celsius)",
+    y = "Density"
   )
 ```
 
@@ -144,9 +173,9 @@ ggplot(df, aes(x = x, y = y, z = z)) +
 
 # DANOVA on the regional mean densities of temperature
 
-## Pointwise F-test
+## Pointwise F-tests
 
-```{r pointwise}
+```{r danova_pointwise}
 vnte <- vnt |>
   mutate(t_max = as.fd(t_max)) |>
   eval_funs(t_max, n = 1401) |>
@@ -178,7 +207,7 @@ f_statistic(vnte) |>
 
 ## Global $F_\text{max}$ and GPF tests
 
-```{r global}
+```{r danova_global}
 f_max_statistic <- function(vnte, indices = NULL) {
   f_statistic(vnte, indices) |>
     summarise(
@@ -237,11 +266,9 @@ f_max_dist |>
   select(period, statistic, value, `quantile(value, 0.95)`)
 ```
 
-# DANOVA on the regional mean negative perturbations between 1987-1989 and 2014-2016
+## Other global tests
 
-## Pointwise F-test
-
-```{r change_pointwise}
+```{r danova_global_other, eval = FALSE}
 library(fdANOVA)
 
 vnte <- vnt |>
@@ -268,8 +295,56 @@ system.time(
 save(res, file = "DANOVA.RData")
 ```
 
-## Global $F_\text{max}$ and GPF tests
+# One-sample tests on the regional mean negative perturbations between 1987-1989 and 2014-2016
 
-```{r change_global}
+## Pointwise t-test
+
+```{r one-sample_pointwise}
+vnte <- vnt |>
+  filter(period == "evolution") |>
+  mutate(t_max = as.fd(t_max)) |>
+  eval_funs(t_max, n = 1401) |>
+  nest_by(across(-c(x, y, id)))
+
+t_statistic <- function(vnte, indices = NULL) {
+  if (!is.null(indices)) vnte$data <- vnte$data[indices]
+
+  vnte |>
+    unnest(data) |>
+    group_by(period, x) |>
+    summarise(t = mean(y) / sqrt(var(y) / n()), .groups = "drop_last")
+}
+
+t_statistic(vnte) |>
+  ggplot(aes(x, t)) +
+  geom_line() +
+  geom_hline(yintercept = qt(0.975, nrow(vnt) - 1), color = "red", linetype = "dashed") +
+  geom_hline(yintercept = qt(0.025, nrow(vnt) - 1), color = "red", linetype = "dashed") +
+  labs(
+    title = "Pointwise t-statistic",
+    x = "Temperature (deg. Celsius)",
+    yintercept = "Critical value"
+  )
+```
+
+## Global $t_\text{norm}$
+
+```{r one-sample_global}
 
 ```
+
+# Pairwise two-sample tests
+
+## Pointwise Welch's t-tests
+
+```{r two-sample_pointwise}
+
+```
+
+## Global tests
+
+
+```{r two-sample_global}
+
+```
+
