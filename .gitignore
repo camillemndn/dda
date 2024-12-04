@@ -62,3 +62,6 @@ docs
 
 # Pre-commit config 
 .pre-commit-config.yaml
+
+# Nix
+result*
