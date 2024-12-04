@@ -178,8 +178,15 @@ c.dd <- function(...) {
 #' }
 #' @rdname c
 #' @export
-c.ddl <- function(l) {
-  do.call(c.dd, l)
+c.ddl <- function(...) {
+  l <- list(...)
+  lddobj <- lapply(l, function(ddlobj) do.call(c.dd, ddlobj))
+  ddobj <- do.call(c.dd, lddobj)
+  if (length(l) > 1) {
+    return(as.list(ddobj))
+  } else {
+    return(ddobj)
+  }
 }
 
 #' @title FUNCTION_TITLE

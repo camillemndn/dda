@@ -8,7 +8,7 @@
 \usage{
 \method{c}{dd}(...)
 
-\method{c}{ddl}(l)
+\method{c}{ddl}(...)
 
 \method{c}{fdl}(l)
 }
