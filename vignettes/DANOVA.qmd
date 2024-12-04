@@ -24,6 +24,7 @@ knitr::opts_chunk$set(
 ```{r setup, message = FALSE}
 library(dda)
 library(fda.usc)
+library(fdANOVA)
 library(tidyverse)
 library(boot)
 library(sf)
@@ -269,8 +270,6 @@ f_max_dist |>
 ## Other global tests
 
 ```{r danova_global_other, eval = FALSE}
-library(fdANOVA)
-
 vnte <- vnt |>
   filter(period == "1987-1989") |>
   mutate(t_max = as.fd(t_max)) |>

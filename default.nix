@@ -39,6 +39,7 @@ let
         };
       })
       devtools
+      fdANOVA
       languageserver
       pkgdown
       quarto
@@ -52,7 +53,6 @@ let
     r-dev-deps ps
     ++ [
       compositions
-      fdANOVA
       mvnfast
       robCompositions
       xts
