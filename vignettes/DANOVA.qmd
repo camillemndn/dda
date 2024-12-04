@@ -13,8 +13,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   dpi = 300,
-  fig.height = 8,
-  fig.width = 12,
+  fig.height = 10,
+  fig.width = 15,
   fig.ext = "jpg",
   dev = "jpeg",
   dev.args = list(bg = "white")
@@ -28,8 +28,18 @@ library(fdANOVA)
 library(tidyverse)
 library(boot)
 library(sf)
+
 set.seed(10983)
+theme_set(theme_minimal(base_size = 18))
+theme_legend_inside <- theme(
+  legend.position = "inside",
+  legend.position.inside = c(.05, .95),
+  legend.justification = c("left", "top"),
+  legend.box.just = "left",
+  legend.margin = margin(6, 6, 6, 6)
+)
 ```
+
 
 # Preprocessing into density data
 
@@ -41,7 +51,9 @@ vietnam_temperature_dd <- vietnam_temperature |>
   mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15))
 ```
 
-```{r preprocessing_hist}
+```{r fig-preprocessing_hist}
+#| fig-cap: Density of maximum temperature per province.
+
 data(vietnam_temperature_dd)
 data(vietnam_regions)
 data(vietnam_provinces)
@@ -65,9 +77,10 @@ vnt <- vnt |>
   pivot_longer(cols = c("2014-2016", "1987-1989", "evolution"), names_to = "period", values_to = "t_max")
 
 vnt |> plot_funs(t_max, color = region_name) +
-  facet_grid(vars(period), vars(region_name)) +
+  facet_grid(vars(period), vars(str_wrap(region_name, 20))) +
+  ylim(0, 0.85) +
+  theme(legend.position = "none", axis.title.y = element_text(angle = -90)) +
   labs(
-    title = "Density of maximum temperature per province",
     x = "Temperature (deg. Celsius)",
     y = "Density",
     color = "Region"
@@ -75,11 +88,28 @@ vnt |> plot_funs(t_max, color = region_name) +
 
 vnt |> plot_funs(t_max, color = region_name) +
   facet_wrap(vars(period)) +
+  ylim(0, 0.85) + theme_legend_inside +
   labs(
-    title = "Density of maximum temperature per province",
     x = "Temperature (deg. Celsius)",
     y = "Density",
     color = "Region"
+  )
+```
+
+```{r fig-mean_negative_perturbation}
+#| fig-cap:
+#|  - Mean negative perturbation of maximum temperature distribution between 1987-1989 and 2014-2016.
+#|  - Centered log-ratio transform of the mean negative perturbation of maximum temperature distribution between 1987-1989 and 2014-2016.
+
+vnt |>
+  filter(period == "evolution") |>
+  pull(t_max) |>
+  mean() |>
+  plot() +
+  geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), color = "red") +
+  labs(
+    x = "Temperature (deg. Celsius)",
+    y = "Density"
   )
 
 vnt |>
@@ -89,47 +119,38 @@ vnt |>
   as.fd() |>
   plot() +
   labs(
-    title = "Centered log-ratio transform of the mean negative perturbation of maximum temperature distribution between 1987-1989 and 2014-2016",
-    x = "Temperature (deg. Celsius)",
-    y = "Density"
-  )
-
-vnt |>
-  filter(period == "evolution") |>
-  pull(t_max) |>
-  mean() |>
-  plot() +
-  geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), color = "red") +
-  labs(
-    title = "Mean negative perturbation of maximum temperature distribution between 1987-1989 and 2014-2016",
     x = "Temperature (deg. Celsius)",
     y = "Density"
   )
 ```
 
+
 # Exploratory analysis by region
 
-```{r regions_map}
+```{r fig-regions_map}
+#| fig-cap: Map of Vietnam by region.
+
 vietnam_provinces |>
   left_join(vietnam_regions, by = c("region" = "code")) |>
   rename(region_name = name) |>
   ggplot(aes(fill = region_name)) +
   geom_sf() +
-  theme_minimal() +
+  scale_x_continuous(breaks = seq(from = -180, to = 180, by = 2)) +
   labs(x = "Longitude", y = "Latitude", fill = "Region")
 ```
 
+```{r fig-regions_mean}
+#| fig-cap: Mean density of maximum temperature per region.
 
-```{r regional_means}
 vntr <- vnt |>
   select(!province) |>
   nest_by(period, region, region_name, .key = "t_max") |>
   mutate(t_max = list(c(mean(t_max[[1]]))))
 class(vntr$t_max) <- c("ddl", "fdl", "list")
 
-vntr |> plot_funs(t_max, color = region_name) + facet_wrap(vars(period)) +
+vntr |> plot_funs(t_max, color = region_name) + facet_grid(rows = vars(period)) +
+  theme_legend_inside +
   labs(
-    title = "Mean density of maximum temperature per region",
     x = "Temperature (deg. Celsius)",
     y = "Mean density",
     color = "Region"
@@ -139,11 +160,13 @@ vntr |> plot_funs(t_max, color = region_name) + facet_wrap(vars(period)) +
 ```{r lr_plots}
 ```
 
+
 # Preliminary study: homogeneity of variances
 
-```{r variance_homogeneity}
+```{r fig-variance_homogeneity}
+#| fig-cap: Correlation function within the MDR region (2014-2016).
+
 vnt_per <- vnt |> filter(period == "2014-2016" & region == "MDR")
-plot(as.fd(vnt_per$t_max))
 
 vnt_var <- var.fd(c(as.fd(vnt_per$t_max)))
 
@@ -165,18 +188,19 @@ df <- data.frame(
 ggplot(df, aes(x = x, y = y, z = z)) +
   geom_contour_filled() +
   labs(
-    title = "Correlation function within the MDR region (2014-2016)",
     fill = "Correlation",
     x = "Temperature (deg. Celsius)", y = "Temperature (deg. Celsius)"
-  ) +
-  theme_minimal()
+  )
 ```
+
 
 # DANOVA on the regional mean densities of temperature
 
 ## Pointwise F-tests
 
-```{r danova_pointwise}
+```{r fig-danova_pointwise}
+#| fig-cap: Pointwise F-statistic.
+
 vnte <- vnt |>
   mutate(t_max = as.fd(t_max)) |>
   eval_funs(t_max, n = 1401) |>
@@ -197,18 +221,28 @@ f_statistic <- function(vnte, indices = NULL) {
 f_statistic(vnte) |>
   ggplot(aes(x, F)) +
   geom_line() +
+  geom_tile(
+    aes(x,
+      y = 1.1 * max(f_statistic(vnte)$F) / 2,
+      fill = ifelse(F < qf(0.95, 5, 57), "accepted", "rejected")
+    ),
+    height = 1.1 * max(f_statistic(vnte)$F), alpha = 0.2
+  ) +
+  scale_fill_manual(values = c("red", "white")) +
   geom_hline(yintercept = qf(0.95, 5, 57), color = "red", linetype = "dashed") +
   labs(
-    title = "Pointwise F-statistic",
     x = "Temperature (deg. Celsius)",
-    yintercept = "Critical value"
+    yintercept = "Critical value",
+    fill = "Null hypothesis"
   ) +
   facet_grid(rows = vars(period))
 ```
 
 ## Global $F_\text{max}$ and GPF tests
 
-```{r danova_global}
+```{r fig-danova_global}
+#| fig-cap: "Null distributions of the global DANOVA tests (black: bootstrap, red: Welch–Satterthwaite approximation)."
+
 f_max_statistic <- function(vnte, indices = NULL) {
   f_statistic(vnte, indices) |>
     summarise(
@@ -258,7 +292,7 @@ f_max_dist |> ggplot(aes(value, linetype = statistic)) +
   geom_density() +
   geom_function(fun = ~ 1 / beta_w * dchisq(.x / beta_w, d_w), color = "red", linetype = "dotted") +
   labs(y = "density") +
-  facet_wrap(vars(period))
+  facet_grid(rows = vars(period))
 
 f_max_dist |>
   group_by(period, statistic) |>
@@ -294,11 +328,14 @@ system.time(
 save(res, file = "DANOVA.RData")
 ```
 
+
 # One-sample tests on the regional mean negative perturbations between 1987-1989 and 2014-2016
 
 ## Pointwise t-test
 
-```{r one-sample_pointwise}
+```{r fig-one-sample_pointwise}
+#| fig-cap: Pointwise t-statistic.
+
 vnte <- vnt |>
   filter(period == "evolution") |>
   mutate(t_max = as.fd(t_max)) |>
@@ -320,17 +357,17 @@ t_statistic(vnte) |>
   geom_hline(yintercept = qt(0.975, nrow(vnt) - 1), color = "red", linetype = "dashed") +
   geom_hline(yintercept = qt(0.025, nrow(vnt) - 1), color = "red", linetype = "dashed") +
   labs(
-    title = "Pointwise t-statistic",
     x = "Temperature (deg. Celsius)",
     yintercept = "Critical value"
   )
 ```
 
-## Global $t_\text{norm}$
+## Global $t_\text{norm}$ test
 
 ```{r one-sample_global}
 
 ```
+
 
 # Pairwise two-sample tests
 

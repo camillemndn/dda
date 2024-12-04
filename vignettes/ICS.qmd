@@ -1,7 +1,7 @@
 ---
-title: ICS and climate change in Vietnam
+title: Outlier detection using ICS and climate change in Vietnam
 vignette: >
-  %\VignetteIndexEntry{ICS and climate change in Vietnam}
+  %\VignetteIndexEntry{Outlier detection using ICS and climate change in Vietnam}
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 lightbox: true
@@ -25,7 +25,16 @@ knitr::opts_chunk$set(
 library(dda)
 library(tidyverse)
 library(sf)
+
 set.seed(0)
+theme_set(theme_minimal(base_size = 18))
+theme_legend_inside <- theme(
+  legend.position = "inside",
+  legend.position.inside = c(.05, .95),
+  legend.justification = c("left", "top"),
+  legend.box.just = "left",
+  legend.margin = margin(6, 6, 6, 6)
+)
 ```
 
 
@@ -81,7 +90,7 @@ vnt |> plot_matrix(paste0("IC.", 1:4),
   label = period,
   color = ifelse(outlying == 1, province, "not outlying"),
   alpha = outlying
-)
+) + labs(color = "province")
 
 vnt |> plot_funs(t_max, color = ifelse(outlying == 1, province, "not outlying"), alpha = outlying) +
   facet_wrap(vars(period))
@@ -108,7 +117,7 @@ vietnam_provinces |>
   ggplot(aes(fill = climate_region, label = province)) +
   geom_sf() +
   geom_sf_label(fill = "white") +
-  theme_minimal() +
+  scale_x_continuous(breaks = seq(from = -180, to = 180, by = 2)) +
   labs(x = "longitude", y = "latitude")
 ```
 
@@ -312,8 +321,7 @@ ics_grid |>
   mutate(index = max(res$ics_out$index)) |>
   ggplot(aes(log10(lambda), index)) +
   geom_bar(stat = "identity") +
-  facet_grid(cols = vars(nknots)) +
-  theme_minimal()
+  facet_grid(cols = vars(nknots))
 ```
 
 ```{r climate_regions_grid_summary}
@@ -330,7 +338,6 @@ ics_out_freq |>
   ggplot(aes(province, n_outlying)) +
   geom_bar(stat = "identity") +
   facet_grid(cols = vars(year)) +
-  theme_minimal() +
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
 ```
 
@@ -360,5 +367,207 @@ vnt |>
   ) |>
   plot_funs(t_max, color = outlying) +
   facet_wrap(vars(year))
+```
+
+# Influence of preprocessing parameters
+
+In this example, we filter the dataset on Vietnam temperature to
+consider only the two northern regions and two provinces from
+the south, from 2013 to 2016, for a total of 112 observations.
+
+```{r vnt_north_south_map, fig.width = 9, fig.height = 10}
+data(vietnam_provinces)
+data(vietnam_regions)
+
+vietnam_provinces |>
+  mutate(province = if_else(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU"), province, NA)) |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  select(!region) |>
+  rename(region = name) |>
+  ggplot(aes(fill = region, label = province)) +
+  geom_sf() +
+  geom_sf_label(fill = "white", size = 3) +
+  scale_x_continuous(breaks = seq(from = -180, to = 180, by = 2)) +
+  labs(x = "longitude", y = "latitude")
+```
+
+```{r vnt_north_south}
+# Filter the data set
+data(vietnam_temperature)
+selected_years <- 2013:2016
+
+vnt <- vietnam_temperature |>
+  filter(year %in% selected_years) |>
+  filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  select(!region) |>
+  rename(region = name) |>
+  arrange(region, province)
+
+vnts <- vnt |>
+  mutate(t_max = as_dd(t_max,
+    lambda = 1, nbasis = 12, mc.cores = 12
+  ))
+
+vnts |>
+  plot_funs(t_max, color = region) +
+  labs(x = "temperature (deg. Celsius)", y = "density")
+
+vnts |>
+  mutate(t_max = as.fd(center(t_max))) |>
+  plot_funs(t_max, color = region) +
+  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
+
+vnts |>
+  mutate(
+    t_max = as.fd(t_max),
+    year = ifelse(province == "LAICHAU", year, "not LAICHAU"),
+    alpha = ifelse(province == "LAICHAU", 1, 0.85)
+  ) |>
+  plot_funs(t_max, color = year, alpha = alpha) +
+  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
+```
+
+Let us create a grid of parameters and
+define the function to call for each parameter.
+
+```{r ics_grid}
+knots_pos_seq <- c("quantiles", "eq_spaced")
+nknots_seq <- c(5:19, seq(20, 40, 10)) - 5
+lambda_seq <- 10^(-8:8)
+
+param_grid <- expand.grid(
+  knots_pos = knots_pos_seq,
+  nknots = nknots_seq,
+  lambda = lambda_seq
+) |>
+  arrange(nknots, knots_pos, lambda)
+
+print(paste("# of knots positions:", length(knots_pos_seq)))
+print(paste("# of # of knots:", length(nknots_seq)))
+print(paste("# of values for lambda:", length(lambda_seq)))
+print(paste("Total grid size:", nrow(param_grid)))
+
+smooth_ICS <- function(knots_pos, nknots, lambda) {
+  vnts <- vnt |>
+    mutate(t_max = as_dd(t_max,
+      lambda = lambda, nbasis = 5 + nknots, knots_pos = knots_pos,
+      mc.cores = parallel::detectCores() - 1
+    ))
+  knots_pos_str <- ifelse(knots_pos == "quantiles",
+    "Knots at quantiles", "Equally spaced knots"
+  )
+  print(paste(
+    "# of knots:", nknots, "|",
+    "log10(lambda):", log10(lambda), "|",
+    knots_pos_str
+  ))
+
+  list(
+    dd = vnts$t_max,
+    ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
+    ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
+      n_cores = parallel::detectCores() - 1, index = 1:4
+    ), error = function(e) e)
+  )
+}
+
+# Smooth and detect outliers for each parameter
+if (!file.exists("ICS_grid_out.RData") && !file.exists("ICS_grid.RData")) {
+  system.time(
+    ics_grid <- param_grid |>
+      mutate(id = seq_len(n())) |>
+      rowwise() |>
+      mutate(res = list(smooth_ICS(knots_pos, nknots, lambda)))
+  )
+  save(ics_grid, file = "ICS_grid.RData")
+}
+```
+
+```{r ics_grid_out_create}
+if (!file.exists("ICS_grid_out.RData")) {
+  load("ICS_grid.RData")
+
+  ics_grid_out <- ics_grid |>
+    rowwise() |>
+    filter(!(any(class(res$ics_out) == "error"))) |>
+    mutate(res = list(data.frame(
+      obs_id = seq_len(length((res$ics_out$outliers))),
+      outlying = res$ics_out$outliers == 1,
+      distance = res$ics_out$ics_distances
+    ))) |>
+    unnest(res)
+
+  save(ics_grid_out, file = "ICS_grid_out.RData")
+}
+```
+
+```{r ics_grid_out, fig.height = 10, fig.width = 15}
+load("ICS_grid_out.RData")
+
+ics_grid_out |> ggplot(aes(log10(lambda), obs_id, fill = outlying)) +
+  geom_tile() +
+  scale_fill_grey(start = 1, end = 0) +
+  theme_minimal() +
+  facet_grid(cols = vars(nknots), rows = vars(knots_pos))
+```
+
+```{r ics_grid_summary, fig.height = 10, fig.width = 15}
+ics_grid_summary <- ics_grid_out |>
+  mutate(outlying = ifelse(outlying, 1, 0)) |>
+  group_by(obs_id) |>
+  summarise(n_outlying = sum(outlying), mean_distance = mean(distance)) |>
+  left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
+  select(obs_id, province, year, n_outlying, mean_distance)
+
+knitr::kable(ics_grid_summary)
+
+ics_grid_summary |>
+  ggplot(aes(obs_id, n_outlying)) +
+  geom_bar(stat = "identity")
+
+ics_grid_summary |>
+  ggplot(aes(obs_id, mean_distance)) +
+  geom_bar(stat = "identity")
+
+tab <- ics_grid_out |> pivot_wider(names_from = obs_id, values_from = outlying)
+tab <- apply(tab[, c(5:116)], c(1, 2), as.numeric)
+library(corrplot)
+corrplot(cor(tab))
+```
+
+```{r errors, include = FALSE, eval = FALSE}
+ics_err <- ics_grid |>
+  rowwise() |>
+  mutate(ics_out = list(res$ics_out), dd = list(res$dd)) |>
+  filter(any(class(ics_out) == "error")) |>
+  mutate(message = case_when(
+    grepl("socket", ics_out$message) ~ "socket",
+    grepl("missing values", ics_out$message) ~ "collinearity",
+    grepl("as.fd", ics_out$message) ~ "preprocessing",
+    .default = "other"
+  )) |>
+  arrange(knots_pos, nknots, lambda)
+
+ics_prob_err <- ics_grid_out |>
+  mutate(outlying = ifelse(outlying == 1, 1, 0)) |>
+  group_by(id) |>
+  summarise(n_outlying = sum(outlying)) |>
+  arrange(desc(n_outlying))
+
+res <- ics_grid |>
+  filter(nknots < 10) |>
+  #  filter(nknots == 45 & lambda == 10 & knots_pos == "eq_spaced") |>
+  filter(nknots == 4 & lambda == 1e8 & knots_pos == "quantiles") |>
+  sample_n(1)
+
+ics_out1 <- res$res[[1]]$ics_out
+
+ics_out2 <- ICS_outlier(as.fd(res$res[[1]]$dd), index = 1:4, n_cores = 14)
+all(ics_out1$outliers == ics_out2$outliers)
+plot(ics_out1)
+
+qr(cov(t(to_zbsplines(c(res$res[[1]]$dd)))))
+eigen(cov(t(to_zbsplines(c(res$res[[1]]$dd)))))$values
 ```
 

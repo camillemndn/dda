@@ -66,9 +66,9 @@ in
 rec {
   devShells.default = pkgs.mkShell {
     buildInputs = with pkgs; [
-      (quarto.override { extraRPackages = r-deps pkgs.rPackages; })
+      (quarto.override { extraRPackages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
       (rWrapper.override { packages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
-      (rstudioWrapper.override { packages = r-deps pkgs.rPackages; })
+      (rstudioWrapper.override { packages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
       texliveFull
       npins
     ];
