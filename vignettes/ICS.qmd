@@ -12,6 +12,7 @@ toc: true
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
+  warning = FALSE,
   dpi = 300,
   fig.height = 10,
   fig.width = 15,
@@ -19,15 +20,9 @@ knitr::opts_chunk$set(
   dev = "jpeg",
   dev.args = list(bg = "white")
 )
-```
 
-```{r setup, message = FALSE}
-library(dda)
-library(tidyverse)
-library(sf)
-
-set.seed(0)
-theme_set(theme_minimal(base_size = 18))
+library(ggplot2)
+theme_set(theme_minimal(base_size = 16))
 theme_legend_inside <- theme(
   legend.position = "inside",
   legend.position.inside = c(.05, .95),
@@ -35,217 +30,106 @@ theme_legend_inside <- theme(
   legend.box.just = "left",
   legend.margin = margin(6, 6, 6, 6)
 )
+theme_legend_inside_right <- theme(
+  legend.position = "inside",
+  legend.position.inside = c(.95, .95),
+  legend.justification = c("right", "top"),
+  legend.box.just = "right",
+  legend.margin = margin(6, 6, 6, 6)
+)
+```
+
+```{r setup, message = FALSE}
+library(dda)
+library(tidyverse)
+library(sf)
+set.seed(0)
 ```
 
 
-# 10 periods, 26 provinces
+# 4 years, 2 regions and 2 outliers (28 provinces)
 
-We compute an average density per province per period of 3 years.
-There are 10 periods total, and only 26 provinces in the two northern
-regions of Vietnam, so 260 observations total.
+In this toy example, we filter the dataset on Vietnam temperature to
+consider only the two northern regions and two provinces from
+the south, from 2013 to 2016, for a total of 112 observations.
+The aim is to study the influence of the preprocessing parameters.
 
-```{r vnt_ten_periods_preprocessing}
-data(vietnam_temperature)
+## Data presentation
+
+```{r fig-north_south_map}
+#| fig-cap: Map of Vietnam showing the 63 provinces, color-coded by region. The 28 provinces included in the toy example are labeled.
+
+data(vietnam_provinces)
 data(vietnam_regions)
 
-vietnam_temperature <- vietnam_temperature |>
-  select(!t_min) |>
-  mutate(period = as.factor(1 + (year - min(year)) %/% 3))
-
-if (file.exists("ICS_climate_change_ten_periods.RData")) {
-  load("ICS_climate_change_ten_periods.RData")
-} else {
-  vnt <- vietnam_temperature |>
-    filter(region %in% c("RRD", "NMM")) |>
-    mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15)) |>
-    group_by(region, province, period) |>
-    summarise(t_max = list(c(mean(t_max)))) |>
-    ungroup() |>
-    left_join(vietnam_regions, by = c("region" = "code")) |>
-    rename(region_name = name) |>
-    arrange(region, province, period)
-
-  class(vnt$t_max) <- c("ddl", "fdl", "list")
-}
-```
-
-```{r vnt_ten_periods}
-vnt |> plot_funs(t_max, color = province) +
-  facet_wrap(vars(period))
-```
-
-```{r vnt_ten_periods_out_compute}
-if (!(file.exists("ICS_climate_change_ten_periods.RData"))) {
-  icsout <- ICS_outlier(vnt$t_max, index = 1:4, n_cores = 14)
-
-  vnt <- vnt |>
-    mutate(outlying = as.factor(icsout$outliers)) |>
-    cbind(icsout$scores)
-  save(icsout, vnt, file = "ICS_climate_change_ten_periods.RData")
-}
-```
-
-```{r vnt_ten_periods_out}
-vnt |> plot_matrix(paste0("IC.", 1:4),
-  label = period,
-  color = ifelse(outlying == 1, province, "not outlying"),
-  alpha = outlying
-) + labs(color = "province")
-
-vnt |> plot_funs(t_max, color = ifelse(outlying == 1, province, "not outlying"), alpha = outlying) +
-  facet_wrap(vars(period))
-```
-
-
-# 30 years, 1 climate region (13 provinces)
-
-```{r climate_regions_map}
-vietnam_provinces <- vietnam_provinces |>
-  arrange(region, province) |>
-  mutate(climate_region = case_when(
-    province %in% c("LAICHAU", "DIENBIEN", "SONLA") ~ "S1",
-    province %in% c(
-      "LAOCAI", "YENBAI", "HAGIANG", "CAOBANG", "TUYENQUANG",
-      "BACKAN", "THAINGUYEN", "LANGSON", "BACGIANG", "QUANGNINH"
-    ) ~ "S2",
-    region %in% c("NMM", "RRD") ~ "S3",
-    .default = NA
-  ))
-
 vietnam_provinces |>
-  filter(region %in% c("RRD", "NMM")) |>
-  ggplot(aes(fill = climate_region, label = province)) +
+  mutate(province = if_else(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU"), province, NA)) |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  select(!region) |>
+  rename(region = name) |>
+  ggplot(aes(fill = region, label = province)) +
   geom_sf() +
-  geom_sf_label(fill = "white") +
+  geom_sf_label(fill = "white", size = 3) +
   scale_x_continuous(breaks = seq(from = -180, to = 180, by = 2)) +
   labs(x = "longitude", y = "latitude")
 ```
 
-```{r climate_regions}
-library(tidyverse)
-library(sf)
+```{r fig-north_south}
+#| fig-cap:
+#|  - Densities of maximum temperature over 28 provinces of Vietnam and during the years 2013-2016, color-coded by region.
+#|  - Centered log-ratio transform of the centered densities of maximum temperature over 28 provinces of Vietnam and during the years 2013-2016, color-coded by region.
+#|  - Centered log-ratio transform of the densities of maximum temperature over 28 provinces of Vietnam and during the years 2013-2016. The case of LAICHAU.
+#| fig-width: 7.5
+#| fig-height: 5
+#| layout-ncol: 2
+
+# Filter the data set
 data(vietnam_temperature)
-data(vietnam_regions)
-data(vietnam_provinces)
+selected_years <- 2013:2016
 
-vntcr <- vietnam_temperature |>
-  filter(region %in% c("RRD", "NMM")) |>
-  dplyr::select(year, province, t_max) |>
-  left_join(vietnam_provinces, by = "province") |>
-  st_as_sf() |>
-  dplyr::select(year, climate_region, province, t_max) |>
-  filter(climate_region == "S3") |>
-  arrange(year, province)
+vnt <- vietnam_temperature |>
+  filter(year %in% selected_years) |>
+  filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  select(!region) |>
+  rename(region = name) |>
+  arrange(region, province)
 
-vnt <- vntcr |>
-  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15))
-class(vnt$t_max) <- c("ddl", "fdl", "list")
+vnts <- vnt |>
+  mutate(t_max = as_dd(t_max,
+    lambda = 1, nbasis = 12, mc.cores = 12
+  ))
 
-vnt |> plot_funs(t_max, color = province) +
-  facet_wrap(vars(year))
-
-icsout <- ICS_outlier(vnt$t_max, index = 1:2, n_cores = 14)
-```
-
-```{r climate_regions_screeplot}
-icsout$result |> ggplot(aes(index, gen_kurtosis, group = 1)) +
-  geom_line(alpha = 0.5) +
-  geom_point(aes(color = selected, size = selected))
-```
-
-```{r climate_regions_outliers}
-vnt <- vnt |>
-  mutate(
-    index = seq_len(nrow(icsout$scores)),
-    outlying = as.factor(icsout$outliers),
-    distances = icsout$ics_distances
-  ) |>
-  cbind(icsout$scores)
-
-vnt |>
-  mutate(year = ifelse(outlying == 1, year, "not outlying")) |>
-  plot_funs(t_max, color = year, alpha = outlying) +
+vnts |>
+  plot_funs(t_max, color = region) +
+  theme_legend_inside +
   labs(x = "temperature (deg. Celsius)", y = "density")
 
-vnt |>
-  mutate(
-    t_max = as.fd(center(t_max)),
-    year = ifelse(outlying == 1, year, "not outlying")
-  ) |>
-  plot_funs(t_max, color = year, alpha = outlying) +
+vnts |>
+  mutate(t_max = as.fd(center(t_max))) |>
+  plot_funs(t_max, color = region) +
+  theme(legend.position = "none") +
   labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
 
-vnt |>
-  mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
-  plot_funs(t_max, color = province, alpha = outlying) +
-  facet_wrap(vars(year)) +
-  labs(x = "temperature (deg. Celsius)", y = "density")
-
-vnt |>
+vnts |>
   mutate(
-    t_max = as.fd(center(t_max)),
-    province = ifelse(outlying == 1, province, "not outlying")
+    t_max = as.fd(t_max),
+    year = ifelse(province == "LAICHAU", year, "not LAICHAU"),
+    alpha = ifelse(province == "LAICHAU", 1, 0.85)
   ) |>
-  plot_funs(t_max, color = province, alpha = outlying) +
-  facet_wrap(vars(year)) +
-  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
+  plot_funs(t_max, color = year, alpha = alpha) +
+  labs(x = "temperature (deg. Celsius)", y = "clr(density)") +
+  guides(alpha = "none")
 ```
 
-```{r climate_regions_distances}
-vnt |> ggplot(aes(index, distances, color = province, label = year)) +
-  geom_text() +
-  geom_hline(yintercept = icsout$ics_dist_cutoff)
-```
+## Influence of the preprocessing parameters
 
+Let us create a grid of parameters and
+define the function to call for each parameter.
 
-```{r climate_regions_scatter}
-vnt |>
-  mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
-  ggplot(aes(IC.1, IC.2)) +
-  geom_text(aes(color = province, label = year))
-```
-
-```{r climate_regions_eigendensities}
-icsout$result |>
-  filter(selected) |>
-  plot_funs(H_dual, color = index) +
-  geom_hline(yintercept = 1 / diff(icsout$result$H_dual[[1]]$basis$rangeval)) +
-  labs(x = "temperature (deg. Celsius)", y = "density")
-
-icsout$result |>
-  mutate(H_dual = as.fd(H_dual)) |>
-  filter(selected) |>
-  plot_funs(H_dual, color = index) +
-  geom_hline(yintercept = 0) +
-  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
-```
-
-Now let us apply ICS for outlier detection on the same dataset
-but with different smoothing parameters.
-
-```{r climate_regions_grid}
-knots_pos_seq <- "quantiles"
-nknots_seq <- 5 * 1:5
-lambda_seq <- 10^(-2:2)
-index_seq <- c(2, NA)
-
-param_grid <- expand.grid(
-  knots_pos = knots_pos_seq,
-  nknots = nknots_seq,
-  lambda = lambda_seq,
-  index = index_seq
-) |>
-  arrange(nknots, knots_pos, lambda)
-
-print(paste("# of knots positions:", length(knots_pos_seq)))
-print(paste("# of # of knots:", length(nknots_seq)))
-print(paste("# of values for lambda:", length(lambda_seq)))
-print(paste("# of # of components:", length(lambda_seq)))
-print(paste("# of values for index:", length(index_seq)))
-print(paste("Total grid size:", nrow(param_grid)))
-
-smooth_ICS <- function(knots_pos, nknots, lambda, index) {
-  vnts <- vntcr |>
+```{r ics_grid}
+smooth_ICS <- function(vnt, knots_pos, nknots, lambda, index) {
+  vnts <- vnt |>
     mutate(t_max = as_dd(t_max,
       lambda = lambda, nbasis = 5 + nknots,
       mc.cores = parallel::detectCores() - 1, knots_pos = knots_pos
@@ -282,211 +166,47 @@ smooth_ICS <- function(knots_pos, nknots, lambda, index) {
     )
   }
 }
-
-# Smooth and detect outliers for each parameter
-if (!file.exists("ICS_climate_change.RData")) {
-  system.time(
-    ics_grid <- param_grid |>
-      mutate(id = seq_len(n())) |>
-      rowwise() |>
-      mutate(res = list(smooth_ICS(knots_pos, nknots, lambda, index)))
-  )
-  save(ics_grid, file = "ICS_climate_change.RData")
-}
 ```
 
-```{r climate_regions_grid_out_create}
-load("ICS_climate_change.RData")
+```{r tbl-north_south_grid}
+#| tbl-cap: Dimensions of the grid of preprocessing parameters.
 
-ics_out <- ics_grid |>
-  rowwise() |>
-  filter(!(any(class(res$ics_out) == "error"))) |>
-  mutate(res = list(as.factor(res$ics_out$outliers))) |>
-  rename(outliers = res) |>
-  unnest_longer(outliers, indices_to = "obs_id")
-```
-
-```{r climate_regions_grid_out}
-ics_out |>
-  mutate(index = ifelse(is.na(index), "Auto selection of components",
-    paste("# of components:", index)
-  )) |>
-  ggplot(aes(log10(lambda), obs_id, fill = outliers)) +
-  geom_tile() +
-  scale_fill_grey(start = 1, end = 0) +
-  facet_grid(cols = vars(nknots), rows = vars(index))
-
-ics_grid |>
-  filter(is.na(index)) |>
-  mutate(index = max(res$ics_out$index)) |>
-  ggplot(aes(log10(lambda), index)) +
-  geom_bar(stat = "identity") +
-  facet_grid(cols = vars(nknots))
-```
-
-```{r climate_regions_grid_summary}
-ics_out_freq <- ics_out |>
-  mutate(outliers = ifelse(outliers == 1, 1, 0)) |>
-  group_by(obs_id) |>
-  summarise(n_outlying = sum(outliers)) |>
-  left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
-  select(obs_id, province, year, n_outlying)
-
-knitr::kable(ics_out_freq)
-
-ics_out_freq |>
-  ggplot(aes(province, n_outlying)) +
-  geom_bar(stat = "identity") +
-  facet_grid(cols = vars(year)) +
-  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
-```
-
-If we force to 0 the first and last ZB-spline coordinates of the $\operatorname{clr}$,
-we project them onto the space of splines contrained to $0$ on the
-boundaries of the interval.
-
-```{r zero_boundary}
-boundary_to_zero <- function(x) {
-  b <- x$basis
-  p <- b$nbasis
-  zbsp <- fd(to_zbsplines(inv = TRUE, coefs = diag(p - 1), basis = b), b)
-  plot(zbsp)
-
-  y <- to_zbsplines(x)
-  y[c(1, p - 1), ] <- 0
-  yfd <- fd(to_zbsplines(inv = TRUE, coefs = y, basis = b), b)
-
-  list(dd = yfd, coefs = t(y[2:(p - 2), ]))
-}
-icsout <- ICS_outlier(boundary_to_zero(c(vnt$t_max))$coefs)
-
-vnt |>
-  mutate(
-    t_max = as.list(as.fd(boundary_to_zero(c(t_max))$dd)),
-    outlying = as.factor(icsout$outliers)
-  ) |>
-  plot_funs(t_max, color = outlying) +
-  facet_wrap(vars(year))
-```
-
-# Influence of preprocessing parameters
-
-In this example, we filter the dataset on Vietnam temperature to
-consider only the two northern regions and two provinces from
-the south, from 2013 to 2016, for a total of 112 observations.
-
-```{r vnt_north_south_map, fig.width = 9, fig.height = 10}
-data(vietnam_provinces)
-data(vietnam_regions)
-
-vietnam_provinces |>
-  mutate(province = if_else(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU"), province, NA)) |>
-  left_join(vietnam_regions, by = c("region" = "code")) |>
-  select(!region) |>
-  rename(region = name) |>
-  ggplot(aes(fill = region, label = province)) +
-  geom_sf() +
-  geom_sf_label(fill = "white", size = 3) +
-  scale_x_continuous(breaks = seq(from = -180, to = 180, by = 2)) +
-  labs(x = "longitude", y = "latitude")
-```
-
-```{r vnt_north_south}
-# Filter the data set
-data(vietnam_temperature)
-selected_years <- 2013:2016
-
-vnt <- vietnam_temperature |>
-  filter(year %in% selected_years) |>
-  filter(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU")) |>
-  left_join(vietnam_regions, by = c("region" = "code")) |>
-  select(!region) |>
-  rename(region = name) |>
-  arrange(region, province)
-
-vnts <- vnt |>
-  mutate(t_max = as_dd(t_max,
-    lambda = 1, nbasis = 12, mc.cores = 12
-  ))
-
-vnts |>
-  plot_funs(t_max, color = region) +
-  labs(x = "temperature (deg. Celsius)", y = "density")
-
-vnts |>
-  mutate(t_max = as.fd(center(t_max))) |>
-  plot_funs(t_max, color = region) +
-  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
-
-vnts |>
-  mutate(
-    t_max = as.fd(t_max),
-    year = ifelse(province == "LAICHAU", year, "not LAICHAU"),
-    alpha = ifelse(province == "LAICHAU", 1, 0.85)
-  ) |>
-  plot_funs(t_max, color = year, alpha = alpha) +
-  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
-```
-
-Let us create a grid of parameters and
-define the function to call for each parameter.
-
-```{r ics_grid}
-knots_pos_seq <- c("quantiles", "eq_spaced")
+knots_pos_seq <- c("quantiles", "equally spaced")
 nknots_seq <- c(5:19, seq(20, 40, 10)) - 5
 lambda_seq <- 10^(-8:8)
+index_seq <- 4
 
 param_grid <- expand.grid(
   knots_pos = knots_pos_seq,
   nknots = nknots_seq,
-  lambda = lambda_seq
+  lambda = lambda_seq,
+  index = index_seq
 ) |>
   arrange(nknots, knots_pos, lambda)
 
-print(paste("# of knots positions:", length(knots_pos_seq)))
-print(paste("# of # of knots:", length(nknots_seq)))
-print(paste("# of values for lambda:", length(lambda_seq)))
-print(paste("Total grid size:", nrow(param_grid)))
-
-smooth_ICS <- function(knots_pos, nknots, lambda) {
-  vnts <- vnt |>
-    mutate(t_max = as_dd(t_max,
-      lambda = lambda, nbasis = 5 + nknots, knots_pos = knots_pos,
-      mc.cores = parallel::detectCores() - 1
-    ))
-  knots_pos_str <- ifelse(knots_pos == "quantiles",
-    "Knots at quantiles", "Equally spaced knots"
+knitr::kable(
+  tibble(
+    `# of knots positions` = length(knots_pos_seq),
+    `# of # of knots` = length(nknots_seq),
+    `# of values for lambda` = length(lambda_seq),
+    `# of # of components` = length(lambda_seq),
+    `# of values for index` = length(index_seq),
+    `Total grid size` = nrow(param_grid)
   )
-  print(paste(
-    "# of knots:", nknots, "|",
-    "log10(lambda):", log10(lambda), "|",
-    knots_pos_str
-  ))
+)
 
-  list(
-    dd = vnts$t_max,
-    ics = tryCatch(ICS(as.fd(vnts$t_max)), error = function(e) e),
-    ics_out = tryCatch(ICS_outlier(as.fd(vnts$t_max),
-      n_cores = parallel::detectCores() - 1, index = 1:4
-    ), error = function(e) e)
-  )
-}
-
-# Smooth and detect outliers for each parameter
-if (!file.exists("ICS_grid_out.RData") && !file.exists("ICS_grid.RData")) {
+if (!file.exists("ICS_north_south_outliers.RData") && !file.exists("ICS_north_south.RData")) {
   system.time(
     ics_grid <- param_grid |>
       mutate(id = seq_len(n())) |>
       rowwise() |>
-      mutate(res = list(smooth_ICS(knots_pos, nknots, lambda)))
+      mutate(res = list(smooth_ICS(vnt, knots_pos, nknots, lambda, index)))
   )
-  save(ics_grid, file = "ICS_grid.RData")
+  save(ics_grid, file = "ICS_north_south.RData")
 }
-```
 
-```{r ics_grid_out_create}
-if (!file.exists("ICS_grid_out.RData")) {
-  load("ICS_grid.RData")
+if (!file.exists("ICS_north_south_outliers.RData")) {
+  load("ICS_north_south.RData")
 
   ics_grid_out <- ics_grid |>
     rowwise() |>
@@ -498,21 +218,28 @@ if (!file.exists("ICS_grid_out.RData")) {
     ))) |>
     unnest(res)
 
-  save(ics_grid_out, file = "ICS_grid_out.RData")
+  save(ics_grid_out, file = "ICS_north_south_outliers.RData")
 }
+
+load("ICS_north_south_outliers.RData")
 ```
 
-```{r ics_grid_out, fig.height = 10, fig.width = 15}
-load("ICS_grid_out.RData")
+```{r fig-north_south_grid_outliers}
+#| fig-cap: "Outlier detection using ICS on 28 provinces of Vietnam, during the years 2013-2016, over a grid of preprocessing parameters. Top: setting knots at quantiles; bottom: using equally spaced knots. Columns correspond to the number of inside knots (0-35). Outliers are marked as black squares."
 
-ics_grid_out |> ggplot(aes(log10(lambda), obs_id, fill = outlying)) +
+ics_grid_out |>
+  filter(nknots %% 2 == 0 | nknots > 20) |>
+  ggplot(aes(log10(lambda), obs_id, fill = outlying)) +
   geom_tile() +
   scale_fill_grey(start = 1, end = 0) +
-  theme_minimal() +
-  facet_grid(cols = vars(nknots), rows = vars(knots_pos))
+  facet_grid(cols = vars(nknots), rows = vars(knots_pos)) +
+  theme_grey(base_size = 16) +
+  labs(y = "observation index")
 ```
 
-```{r ics_grid_summary, fig.height = 10, fig.width = 15}
+```{r tbl-north_south_grid_summary}
+#| tbl-cap: Outlier detection using ICS on 28 provinces of Vietnam, during the years 2013-2016, over a grid of preprocessing parameters.
+
 ics_grid_summary <- ics_grid_out |>
   mutate(outlying = ifelse(outlying, 1, 0)) |>
   group_by(obs_id) |>
@@ -520,23 +247,24 @@ ics_grid_summary <- ics_grid_out |>
   left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
   select(obs_id, province, year, n_outlying, mean_distance)
 
-knitr::kable(ics_grid_summary)
+rmarkdown::paged_table(ics_grid_summary)
+```
+
+```{r fig-north_south_grid_summary}
+#| fig-cap: Outlier detection using ICS on 28 provinces of Vietnam, during the years 2013-2016, over a grid of preprocessing parameters.
 
 ics_grid_summary |>
   ggplot(aes(obs_id, n_outlying)) +
-  geom_bar(stat = "identity")
+  geom_bar(stat = "identity") +
+  labs(x = "observation index", y = "outlier count")
 
 ics_grid_summary |>
   ggplot(aes(obs_id, mean_distance)) +
-  geom_bar(stat = "identity")
-
-tab <- ics_grid_out |> pivot_wider(names_from = obs_id, values_from = outlying)
-tab <- apply(tab[, c(5:116)], c(1, 2), as.numeric)
-library(corrplot)
-corrplot(cor(tab))
+  geom_bar(stat = "identity") +
+  labs(x = "observation index", y = "mean ICS distance")
 ```
 
-```{r errors, include = FALSE, eval = FALSE}
+```{r north_south_errors, include = FALSE, eval = FALSE}
 ics_err <- ics_grid |>
   rowwise() |>
   mutate(ics_out = list(res$ics_out), dd = list(res$dd)) |>
@@ -557,7 +285,6 @@ ics_prob_err <- ics_grid_out |>
 
 res <- ics_grid |>
   filter(nknots < 10) |>
-  #  filter(nknots == 45 & lambda == 10 & knots_pos == "eq_spaced") |>
   filter(nknots == 4 & lambda == 1e8 & knots_pos == "quantiles") |>
   sample_n(1)
 
@@ -571,3 +298,375 @@ qr(cov(t(to_zbsplines(c(res$res[[1]]$dd)))))
 eigen(cov(t(to_zbsplines(c(res$res[[1]]$dd)))))$values
 ```
 
+
+# 30 years, 1 climate region (13 provinces)
+
+## Data presentation
+
+```{r fig-climate_regions_map}
+#| fig-cap: The three climate regions of northern Vietnam.
+#| fig-width: 11.25
+#| fig-height: 7.5
+
+vietnam_provinces <- vietnam_provinces |>
+  arrange(region, province) |>
+  mutate(climate_region = case_when(
+    province %in% c("LAICHAU", "DIENBIEN", "SONLA") ~ "S1",
+    province %in% c(
+      "LAOCAI", "YENBAI", "HAGIANG", "CAOBANG", "TUYENQUANG",
+      "BACKAN", "THAINGUYEN", "LANGSON", "BACGIANG", "QUANGNINH"
+    ) ~ "S2",
+    region %in% c("NMM", "RRD") ~ "S3",
+    .default = NA
+  ))
+
+vietnam_provinces |>
+  filter(region %in% c("RRD", "NMM")) |>
+  ggplot(aes(fill = climate_region, label = province)) +
+  geom_sf() +
+  geom_sf_label(fill = "white") +
+  labs(x = "longitude", y = "latitude", fill = "climate region")
+```
+
+```{r fig-climate_regions}
+#| fig-cap: Densities of maximum temperatures in the 13 provinces of the S3 climate region in Vietnam over 30 years.
+
+library(tidyverse)
+library(sf)
+data(vietnam_temperature)
+data(vietnam_regions)
+data(vietnam_provinces)
+
+vntcr <- vietnam_temperature |>
+  filter(region %in% c("RRD", "NMM")) |>
+  dplyr::select(year, province, t_max) |>
+  left_join(vietnam_provinces, by = "province") |>
+  st_as_sf() |>
+  dplyr::select(year, climate_region, province, t_max) |>
+  filter(climate_region == "S3") |>
+  arrange(year, province)
+
+vnt <- vntcr |>
+  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15))
+class(vnt$t_max) <- c("ddl", "fdl", "list")
+
+vnt |> plot_funs(t_max, color = province) +
+  facet_wrap(vars(year)) +
+  labs(x = "temperature (deg. Celsius)", y = "density")
+```
+
+## Outlier detection using ICS
+
+```{r fig-climate_regions_eigen}
+#| fig-cap: ICS on densities of maximum temperature over 13 provinces of Vietnam and during 30 years.
+#| fig-subcap:
+#|  - Scree plot of ICS eigenvalues.
+#|  - ICS eigendensities.
+#| fig-width: 7.5
+#| fig-height: 5
+#| layout-ncol: 2
+
+icsout <- ICS_outlier(vnt$t_max, index = 1:2, n_cores = 14)
+
+icsout$result |> ggplot(aes(index, gen_kurtosis, group = 1)) +
+  geom_line(alpha = 0.5) +
+  geom_point(aes(color = index, alpha = selected), size = 3) +
+  theme_legend_inside_right +
+  labs(x = "", y = "ICS eigenvalues") +
+  guides(color = "none")
+
+icsout$result |>
+  plot_funs(H_dual, color = index, alpha = selected) +
+  geom_hline(yintercept = 1 / diff(icsout$result$H_dual[[1]]$basis$rangeval), linetype = "dotted") +
+  labs(x = "temperature (deg. Celsius)", y = "density") +
+  theme_legend_inside +
+  guides(alpha = "none")
+```
+
+```{r fig-climate_regions_outliers}
+#| fig-cap:
+#|  - Densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
+#|  - Centered log-ratio transforms of the centered densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
+#| fig-width: 7.5
+#| fig-height: 5
+#| layout-ncol: 2
+
+vnt <- vnt |>
+  mutate(
+    index = seq_len(nrow(icsout$scores)),
+    outlying = as.factor(icsout$outliers),
+    distances = icsout$ics_distances
+  ) |>
+  cbind(icsout$scores)
+
+vnt |>
+  mutate(year = ifelse(outlying == 1, year, "not outlying")) |>
+  plot_funs(t_max, color = year, alpha = outlying) +
+  theme_legend_inside +
+  labs(x = "temperature (deg. Celsius)", y = "density") +
+  guides(alpha = "none")
+
+vnt |>
+  mutate(
+    t_max = as.fd(center(t_max)),
+    year = ifelse(outlying == 1, year, "not outlying")
+  ) |>
+  plot_funs(t_max, color = year, alpha = outlying) +
+  theme(legend.position = "none") +
+  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)") +
+  guides(alpha = "none")
+```
+
+```{r fig-climate_regions_outliers_years}
+#| fig-cap:
+#|  - Densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
+#|  - Centered log-ratio transforms of the centered densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
+
+vnt |>
+  mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
+  plot_funs(t_max, color = province, alpha = outlying) +
+  facet_wrap(vars(year)) +
+  labs(x = "temperature (deg. Celsius)", y = "density") +
+  guides(alpha = "none")
+
+vnt |>
+  mutate(
+    t_max = as.fd(center(t_max)),
+    province = ifelse(outlying == 1, province, "not outlying")
+  ) |>
+  plot_funs(t_max, color = province, alpha = outlying) +
+  facet_wrap(vars(year)) +
+  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)") +
+  guides(alpha = "none")
+```
+
+```{r fig-climate_regions_distances}
+#| fig-cap: ICS distances of the densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
+#| fig-width: 7.5
+#| fig-height: 5
+
+vnt |>
+  mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
+  ggplot(aes(index, distances, color = province, label = year)) +
+  geom_text() +
+  geom_hline(yintercept = icsout$ics_dist_cutoff)
+```
+
+```{r fig-climate_regions_scatter}
+#| fig-cap: Selected invariant coordinates of the densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
+#| fig-width: 7.5
+#| fig-height: 5
+
+vnt |>
+  mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
+  ggplot(aes(IC.1, IC.2)) +
+  geom_text(aes(color = province, label = year))
+```
+
+## Influence of the preprocessing parameters
+
+Now let us apply ICS for outlier detection on the same dataset
+but with different smoothing parameters.
+
+```{r tbl-climate_regions_grid}
+#| tbl-cap: Dimensions of the grid of preprocessing parameters.
+
+knots_pos_seq <- "quantiles"
+nknots_seq <- 5 * 1:5
+lambda_seq <- 10^(-2:2)
+index_seq <- c(2, NA)
+
+param_grid <- expand.grid(
+  knots_pos = knots_pos_seq,
+  nknots = nknots_seq,
+  lambda = lambda_seq,
+  index = index_seq
+) |>
+  arrange(nknots, knots_pos, lambda)
+
+knitr::kable(
+  tibble(
+    `# of knots positions` = length(knots_pos_seq),
+    `# of # of knots` = length(nknots_seq),
+    `# of values for lambda` = length(lambda_seq),
+    `# of # of components` = length(lambda_seq),
+    `# of values for index` = length(index_seq),
+    `Total grid size` = nrow(param_grid)
+  )
+)
+
+if (!file.exists("ICS_climate_regions.RData")) {
+  system.time(
+    ics_grid <- param_grid |>
+      mutate(id = seq_len(n())) |>
+      rowwise() |>
+      mutate(res = list(smooth_ICS(vntcr, knots_pos, nknots, lambda, index)))
+  )
+  save(ics_grid, file = "ICS_climate_regions.RData")
+}
+
+load("ICS_climate_regions.RData")
+
+ics_grid_out <- ics_grid |>
+  rowwise() |>
+  filter(!(any(class(res$ics_out) == "error"))) |>
+  mutate(res = list(data.frame(
+    obs_id = seq_len(length((res$ics_out$outliers))),
+    outlying = res$ics_out$outliers == 1
+  ))) |>
+  unnest(res)
+```
+
+```{r fig-climate_regions_grid_outliers}
+#| fig-cap: "Outlier detection using ICS on the S3 climate region of Vietnam, during the years 1987-2016, over a grid of preprocessing parameters. Top: 2 invariant components selected; bottom: automatic selection through D’Agostino tests. Columns correspond to the number of inside knots (5-25)."
+#| fig-width: 11.25
+#| fig-height: 7.5
+
+ics_grid_out |>
+  mutate(index = ifelse(is.na(index), "Auto selection of components",
+    paste("# of components:", index)
+  )) |>
+  ggplot(aes(log10(lambda), obs_id, fill = outlying)) +
+  geom_tile() +
+  scale_fill_grey(start = 1, end = 0) +
+  facet_grid(cols = vars(nknots), rows = vars(index)) +
+  theme_grey(base_size = 16) +
+  labs(y = "observation index")
+
+ics_grid |>
+  filter(is.na(index)) |>
+  mutate(`number of selected ICs` = max(res$ics_out$index)) |>
+  ggplot(aes(log10(lambda), `number of selected ICs`)) +
+  geom_bar(stat = "identity") +
+  facet_grid(cols = vars(nknots))
+```
+
+```{r tbl-climate_regions_grid_summary}
+#| tbl-cap: Outlier detection using ICS on the S3 climate region of Vietnam, during the years 1987-2016, over a grid of preprocessing parameters.
+
+ics_grid_summary <- ics_grid_out |>
+  mutate(outlying = ifelse(outlying, 1, 0)) |>
+  group_by(obs_id) |>
+  summarise(n_outlying = sum(outlying)) |>
+  left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
+  select(obs_id, province, year, n_outlying)
+
+rmarkdown::paged_table(ics_grid_summary)
+```
+
+```{r fig-climate_regions_grid_summary}
+#| fig-cap: Outlier detection using ICS on the S3 climate region of Vietnam, during the years 1987-2016, over a grid of preprocessing parameters.
+#| fig-width: 11.25
+#| fig-height: 7.5
+
+ics_grid_summary |>
+  ggplot(aes(year, n_outlying)) +
+  geom_bar(stat = "identity") +
+  labs(y = "outlier count")
+```
+
+## Constraining the centered-log ratio transforms to 0 on the boundaries
+
+If we force to 0 the first and last ZB-spline coordinates of the $\operatorname{clr}$,
+we project them onto the space of splines constrained to $0$ on the
+boundaries of the interval.
+
+```{r fig-climate_regions_zero_boundary}
+#| fig-cap: Outlier detection using ICS on the S3 climate region of Vietnam, with centered-log ratio transforms constrained to 0 on the boundaries.
+
+boundary_to_zero <- function(x) {
+  b <- x$basis
+  p <- b$nbasis
+  zbsp <- fd(to_zbsplines(inv = TRUE, coefs = diag(p - 1), basis = b), b)
+  plot(as.list(zbsp))
+
+  y <- to_zbsplines(x)
+  y[c(1, p - 1), ] <- 0
+  yfd <- fd(to_zbsplines(inv = TRUE, coefs = y, basis = b), b)
+
+  list(dd = yfd, coefs = t(y[2:(p - 2), ]))
+}
+icsout <- ICS_outlier(boundary_to_zero(c(vnt$t_max))$coefs)
+
+vnt |>
+  mutate(
+    t_max = as.list(as.fd(boundary_to_zero(c(t_max))$dd)),
+    outlying = icsout$outliers == 1
+  ) |>
+  plot_funs(t_max, color = outlying) +
+  facet_wrap(vars(year)) +
+  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
+```
+
+
+# 10 periods, 2 regions (26 provinces)
+
+We compute an average density by province and by period of 3 years.
+There are 10 periods total, and only 26 provinces in the two northern
+regions of Vietnam, so 260 observations total.
+
+## Data presentation
+
+```{r ten_periods_preprocessing}
+data(vietnam_temperature)
+data(vietnam_regions)
+
+vietnam_temperature <- vietnam_temperature |>
+  select(!t_min) |>
+  mutate(period = year - (year - min(year)) %% 3)
+
+if (file.exists("ICS_ten_periods.RData")) {
+  load("ICS_ten_periods.RData")
+} else {
+  vnt <- vietnam_temperature |>
+    filter(region %in% c("RRD", "NMM")) |>
+    mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15)) |>
+    group_by(region, province, period) |>
+    summarise(t_max = list(c(mean(t_max)))) |>
+    ungroup() |>
+    left_join(vietnam_regions, by = c("region" = "code")) |>
+    rename(region_name = name) |>
+    arrange(region, province, period)
+  class(vnt$t_max) <- c("ddl", "fdl", "list")
+}
+```
+
+```{r fig-ten_periods}
+#| fig-cap: Densities of maximum temperature in the two northern regions of Vietnam averaged over three-year periods.
+
+vnt |> plot_funs(t_max, color = province) +
+  facet_wrap(vars(period)) +
+  labs(x = "temperature (deg. Celsius)", y = "density")
+```
+
+## Outlier detection using ICS
+
+```{r ten_periods_out_compute}
+if (!(file.exists("ICS_ten_periods.RData"))) {
+  icsout <- ICS_outlier(vnt$t_max, index = 1:4, n_cores = 14)
+
+  vnt <- vnt |>
+    mutate(outlying = as.factor(icsout$outliers)) |>
+    cbind(icsout$scores)
+  save(icsout, vnt, file = "ICS_ten_periods.RData")
+}
+```
+
+```{r fig-ten_periods_out}
+#| fig-cap:
+#|  - Select invariant components of the densities of maximum temperature in the two northern regions of Vietnam averaged over three-year periods.
+#|  - Outlying densities of maximum temperature in the two northern regions of Vietnam averaged over three-year periods.
+
+vnt |> plot_matrix(paste0("IC.", 1:4),
+  label = period,
+  color = ifelse(outlying == 1, province, "not outlying"),
+  alpha = outlying == 1
+) + labs(color = "province", x = "", y = "") + guides(alpha = "none")
+
+vnt |>
+  mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
+  plot_funs(t_max, color = province, alpha = outlying) +
+  facet_wrap(vars(period)) +
+  labs(x = "temperature (deg. Celsius)", y = "density") +
+  guides(alpha = "none")
+```

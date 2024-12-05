@@ -19,6 +19,16 @@ knitr::opts_chunk$set(
   dev = "jpeg",
   dev.args = list(bg = "white")
 )
+
+library(ggplot2)
+theme_set(theme_minimal(base_size = 18))
+theme_legend_inside <- theme(
+  legend.position = "inside",
+  legend.position.inside = c(.05, .95),
+  legend.justification = c("left", "top"),
+  legend.box.just = "left",
+  legend.margin = margin(6, 6, 6, 6)
+)
 ```
 
 ```{r setup, message = FALSE}
@@ -28,16 +38,7 @@ library(fdANOVA)
 library(tidyverse)
 library(boot)
 library(sf)
-
 set.seed(10983)
-theme_set(theme_minimal(base_size = 18))
-theme_legend_inside <- theme(
-  legend.position = "inside",
-  legend.position.inside = c(.05, .95),
-  legend.justification = c("left", "top"),
-  legend.box.just = "left",
-  legend.margin = margin(6, 6, 6, 6)
-)
 ```
 
 
@@ -148,7 +149,9 @@ vntr <- vnt |>
   mutate(t_max = list(c(mean(t_max[[1]]))))
 class(vntr$t_max) <- c("ddl", "fdl", "list")
 
-vntr |> plot_funs(t_max, color = region_name) + facet_grid(rows = vars(period)) +
+vntr |> plot_funs(t_max, color = region_name) +
+  facet_grid(rows = vars(period)) +
+  geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), color = "red") +
   theme_legend_inside +
   labs(
     x = "Temperature (deg. Celsius)",
