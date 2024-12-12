@@ -77,8 +77,8 @@ vietnam_provinces |>
 ```{r fig-north_south}
 #| fig-cap:
 #|  - Densities of maximum temperature over 28 provinces of Vietnam and during the years 2013-2016, color-coded by region.
-#|  - Centered log-ratio transform of the centered densities of maximum temperature over 28 provinces of Vietnam and during the years 2013-2016, color-coded by region.
-#|  - Centered log-ratio transform of the densities of maximum temperature over 28 provinces of Vietnam and during the years 2013-2016. The case of LAICHAU.
+#|  - Centred log-ratio transforms of the centred densities of maximum temperature over 28 provinces of Vietnam and during the years 2013-2016, color-coded by region.
+#|  - Centred log-ratio transforms of the densities of maximum temperature over 28 provinces of Vietnam and during the years 2013-2016. The case of LAICHAU.
 #| fig-width: 7.5
 #| fig-height: 5
 #| layout-ncol: 2
@@ -109,7 +109,7 @@ vnts |>
   mutate(t_max = as.fd(center(t_max))) |>
   plot_funs(t_max, color = region) +
   theme(legend.position = "none") +
-  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)")
+  labs(x = "temperature (deg. Celsius)", y = "centred clr(density)")
 
 vnts |>
   mutate(
@@ -225,42 +225,44 @@ load("ICS_north_south_outliers.RData")
 ```
 
 ```{r fig-north_south_grid_outliers}
-#| fig-cap: "Outlier detection using ICS on 28 provinces of Vietnam, during the years 2013-2016, over a grid of preprocessing parameters. Top: setting knots at quantiles; bottom: using equally spaced knots. Columns correspond to the number of inside knots (0-35). Outliers are marked as black squares."
+#| fig-cap: "Outlier detection using ICS on 28 provinces of Vietnam, during the years 2013-2016, over a grid of preprocessing parameters. Columns correspond to the number of inside knots (0-35)."
 
 ics_grid_out |>
+  left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
   filter(nknots %% 2 == 0 | nknots > 20) |>
-  ggplot(aes(log10(lambda), obs_id, fill = outlying)) +
+  mutate(region = str_wrap(region, 25)) |>
+  ggplot(aes(log10(lambda), obs_id, fill = region, alpha = outlying)) +
   geom_tile() +
-  scale_fill_grey(start = 1, end = 0) +
   facet_grid(cols = vars(nknots), rows = vars(knots_pos)) +
-  theme_grey(base_size = 16) +
   labs(y = "observation index")
 ```
 
 ```{r tbl-north_south_grid_summary}
-#| tbl-cap: Outlier detection using ICS on 28 provinces of Vietnam, during the years 2013-2016, over a grid of preprocessing parameters.
+#| tbl-cap: Frequency of outlier detection using ICS on 28 provinces of Vietnam, during the years 2013-2016, over a grid of preprocessing parameters.
 
 ics_grid_summary <- ics_grid_out |>
   mutate(outlying = ifelse(outlying, 1, 0)) |>
   group_by(obs_id) |>
   summarise(n_outlying = sum(outlying), mean_distance = mean(distance)) |>
   left_join(vnt |> mutate(obs_id = row_number()), by = c("obs_id")) |>
-  select(obs_id, province, year, n_outlying, mean_distance)
+  select(obs_id, region, province, year, n_outlying, mean_distance)
 
 rmarkdown::paged_table(ics_grid_summary)
 ```
 
 ```{r fig-north_south_grid_summary}
-#| fig-cap: Outlier detection using ICS on 28 provinces of Vietnam, during the years 2013-2016, over a grid of preprocessing parameters.
+#| fig-cap: Summary of outlier detection using ICS on 28 provinces of Vietnam, during the years 2013-2016, over a grid of preprocessing parameters.
 
 ics_grid_summary |>
-  ggplot(aes(obs_id, n_outlying)) +
+  ggplot(aes(obs_id, n_outlying, fill = region)) +
   geom_bar(stat = "identity") +
-  labs(x = "observation index", y = "outlier count")
+  theme_legend_inside_right +
+  labs(x = "observation index", y = "outlier detection frequency")
 
 ics_grid_summary |>
-  ggplot(aes(obs_id, mean_distance)) +
+  ggplot(aes(obs_id, mean_distance, fill = region)) +
   geom_bar(stat = "identity") +
+  theme_legend_inside_right +
   labs(x = "observation index", y = "mean ICS distance")
 ```
 
@@ -329,7 +331,7 @@ vietnam_provinces |>
 ```
 
 ```{r fig-climate_regions}
-#| fig-cap: Densities of maximum temperatures in the 13 provinces of the S3 climate region in Vietnam over 30 years.
+#| fig-cap: Densities of maximum temperatures in the 13 provinces of the S3 climate region of Vietnam during the years 1987-2016.
 
 library(tidyverse)
 library(sf)
@@ -358,10 +360,10 @@ vnt |> plot_funs(t_max, color = province) +
 ## Outlier detection using ICS
 
 ```{r fig-climate_regions_eigen}
-#| fig-cap: ICS on densities of maximum temperature over 13 provinces of Vietnam and during 30 years.
-#| fig-subcap:
+#| fig-cap:
 #|  - Scree plot of ICS eigenvalues.
 #|  - ICS eigendensities.
+#|  - Shifting the mean in the direction of each ICS eigendensity.
 #| fig-width: 7.5
 #| fig-height: 5
 #| layout-ncol: 2
@@ -381,12 +383,22 @@ icsout$result |>
   labs(x = "temperature (deg. Celsius)", y = "density") +
   theme_legend_inside +
   guides(alpha = "none")
+
+h_dual_shift <- c(3 * icsout$result$H_dual)
+h_dual_shift$coefs <- sweep(h_dual_shift$coefs, 1, -c(mean(vnt$t_max))$coefs)
+icsout$result |>
+  mutate(H_dual_shift = as.list(h_dual_shift)) |>
+  plot_funs(H_dual_shift, color = index, alpha = selected) +
+  geom_function(fun = function(x) eval(c(mean(vnt$t_max)), x), color = "black", linetype = "dotted") +
+  labs(x = "temperature (deg. Celsius)", y = "density") +
+  theme_legend_inside +
+  guides(alpha = "none")
 ```
 
 ```{r fig-climate_regions_outliers}
 #| fig-cap:
-#|  - Densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
-#|  - Centered log-ratio transforms of the centered densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
+#|  - Densities of maximum temperature in the provinces of the S3 climate region of Vietnam during the years 1987-2016.
+#|  - Centred log-ratio transforms of the centred densities of maximum temperature in the provinces of the S3 climate region of Vietnam during the years 1987-2016.
 #| fig-width: 7.5
 #| fig-height: 5
 #| layout-ncol: 2
@@ -413,14 +425,14 @@ vnt |>
   ) |>
   plot_funs(t_max, color = year, alpha = outlying) +
   theme(legend.position = "none") +
-  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)") +
+  labs(x = "temperature (deg. Celsius)", y = "centred clr(density)") +
   guides(alpha = "none")
 ```
 
 ```{r fig-climate_regions_outliers_years}
 #| fig-cap:
-#|  - Densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
-#|  - Centered log-ratio transforms of the centered densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
+#|  - Densities of maximum temperature in the provinces of the S3 climate region of Vietnam during the years 1987-2016.
+#|  - Centred log-ratio transforms of the centred densities of maximum temperature in the provinces of the S3 climate region of Vietnam during the years 1987-2016.
 
 vnt |>
   mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
@@ -436,24 +448,24 @@ vnt |>
   ) |>
   plot_funs(t_max, color = province, alpha = outlying) +
   facet_wrap(vars(year)) +
-  labs(x = "temperature (deg. Celsius)", y = "centered clr(density)") +
+  labs(x = "temperature (deg. Celsius)", y = "centred clr(density)") +
   guides(alpha = "none")
 ```
 
 ```{r fig-climate_regions_distances}
-#| fig-cap: ICS distances of the densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
+#| fig-cap: ICS distances of the densities of maximum temperature in the provinces of the S3 climate region of Vietnam during the years 1987-2016.
 #| fig-width: 7.5
 #| fig-height: 5
 
 vnt |>
   mutate(province = ifelse(outlying == 1, province, "not outlying")) |>
-  ggplot(aes(index, distances, color = province, label = year)) +
+  ggplot(aes(year, distances, color = province, label = year)) +
   geom_text() +
   geom_hline(yintercept = icsout$ics_dist_cutoff)
 ```
 
 ```{r fig-climate_regions_scatter}
-#| fig-cap: Selected invariant coordinates of the densities of maximum temperature of the provinces in the S3 climate region of Vietnam during the years 1987-2016.
+#| fig-cap: Selected invariant coordinates of the densities of maximum temperature in the provinces of the S3 climate region of Vietnam during the years 1987-2016.
 #| fig-width: 7.5
 #| fig-height: 5
 
@@ -523,15 +535,28 @@ ics_grid_out <- ics_grid |>
 #| fig-height: 7.5
 
 ics_grid_out |>
-  mutate(index = ifelse(is.na(index), "Auto selection of components",
-    paste("# of components:", index)
+  mutate(index = ifelse(is.na(index), "auto. selection of ICs",
+    paste(index, "ICs selected")
   )) |>
-  ggplot(aes(log10(lambda), obs_id, fill = outlying)) +
+  ggplot(aes(log10(lambda), obs_id, fill = outlying, alpha = outlying)) +
   geom_tile() +
   scale_fill_grey(start = 1, end = 0) +
   facet_grid(cols = vars(nknots), rows = vars(index)) +
-  theme_grey(base_size = 16) +
   labs(y = "observation index")
+
+ics_grid_out |>
+  mutate(index = ifelse(is.na(index), "auto. selection of ICs",
+    paste(index, "ICs selected")
+  )) |>
+  rename(index_select = index) |>
+  left_join(vnt |> mutate(obs_id = row_number()) |> select(!outlying), by = c("obs_id")) |>
+  group_by(nknots, lambda, index_select, year) |>
+  mutate(n_outlying = sum(outlying)) |>
+  ggplot(aes(log10(lambda), year, alpha = n_outlying)) +
+  geom_tile() +
+  scale_alpha_continuous(range = c(0, 1)) +
+  facet_grid(cols = vars(nknots), rows = vars(index_select)) +
+  labs(y = "year", alpha = "outlier\nfrequency")
 
 ics_grid |>
   filter(is.na(index)) |>
@@ -562,17 +587,17 @@ rmarkdown::paged_table(ics_grid_summary)
 ics_grid_summary |>
   ggplot(aes(year, n_outlying)) +
   geom_bar(stat = "identity") +
-  labs(y = "outlier count")
+  labs(y = "outlier detection frequency")
 ```
 
-## Constraining the centered-log ratio transforms to 0 on the boundaries
+## Constraining the centred log-ratio transforms to zero on the boundaries
 
 If we force to 0 the first and last ZB-spline coordinates of the $\operatorname{clr}$,
 we project them onto the space of splines constrained to $0$ on the
 boundaries of the interval.
 
 ```{r fig-climate_regions_zero_boundary}
-#| fig-cap: Outlier detection using ICS on the S3 climate region of Vietnam, with centered-log ratio transforms constrained to 0 on the boundaries.
+#| fig-cap: Outlier detection using ICS on the S3 climate region of Vietnam, with centred log-ratio transforms constrained to 0 on the boundaries.
 
 boundary_to_zero <- function(x) {
   b <- x$basis
