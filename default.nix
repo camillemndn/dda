@@ -39,6 +39,26 @@ let
           hash = "sha256-jOb5Cidyi1cYN8X6XE+YyUg/2mRuMmgdSiYJbDMDsf8=";
         };
       })
+      (buildRPackage {
+        name = "tidyfun";
+        src = pkgs.fetchFromGitHub {
+          owner = "tidyfun";
+          repo = "tidyfun";
+          rev = "d9c4adbd2ff1179cc1f37cb34464e42f5fe2739a";
+          hash = "sha256-uSpwjZZ2+GZZpNn5PFwHfRal7o5MTd5rST8jKd6Kpdo=";
+        };
+        propagatedBuildInputs = [
+          tf
+          dplyr
+          GGally
+          ggplot2
+          pillar
+          purrr
+          tibble
+          tidyr
+          tidyselect
+        ];
+      })
       devtools
       fdANOVA
       DeBoinR
