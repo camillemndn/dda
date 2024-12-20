@@ -21,6 +21,7 @@ let
       corrplot
       fda_usc
       sf
+      tf
       tidyverse
     ];
 
@@ -40,6 +41,8 @@ let
       })
       devtools
       fdANOVA
+      DeBoinR
+      fdaoutlier
       languageserver
       pkgdown
       quarto

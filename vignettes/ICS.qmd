@@ -631,6 +631,185 @@ vnt |>
   labs(x = "temperature (deg. Celsius)", y = "clr(density)")
 ```
 
+# Comparison with other methods
+
+```{r fig-comparison}
+#| fig-cap: Comparison of outlier detection methods for density data.
+
+library(fdaoutlier)
+library(DeBoinR)
+library(tf)
+
+# Step 1: Define parameters
+K <- 3 # Number of data generation schemes
+L <- 4 # Number of outlier detection methods
+N <- 10 # Number of repetitions per combination
+
+# Step 2: Create a function for data generation and true outliers
+
+simulation_gp_clr <- function(n, p = 50) {
+  sim <- fdaoutlier::simulation_model4(n, p)
+  y <- exp(tfd(sim$data))
+
+  list(
+    data = as.matrix(y / tf_integrate(y)),
+    true_outliers = replace(integer(100), sim$true_outliers, 1)
+  )
+}
+
+dgumbel <- function(x, mu = 0, beta = 1) {
+  z <- (x - mu) / beta
+  exp(-z - exp(-z)) / beta
+}
+
+simulation_gumbel <- function(n, p = 50, outlier_rate = 0.05, deterministic = TRUE) {
+  tt <- seq(0, 1, length.out = p)
+  a <- matrix(rnorm(n, sd = 0.01), nrow = p, ncol = n, byrow = TRUE)
+  b <- matrix(rnorm(n, sd = 0.01), nrow = p, ncol = n, byrow = TRUE)
+  y <- dgumbel(tt, mu = 0.25 + a, beta = 0.05 + b)
+  dtt <- fdaoutlier:::determine(deterministic, n, outlier_rate)
+  n_outliers <- dtt$n_outliers
+  true_outliers <- dtt$true_outliers
+  if (n_outliers > 0) {
+    a <- matrix(rnorm(n_outliers, sd = 0.01),
+      nrow = p, ncol = n_outliers, byrow = TRUE
+    )
+    b <- matrix(rnorm(n_outliers, sd = 0.01),
+      nrow = p, ncol = n_outliers, byrow = TRUE
+    )
+    y[, true_outliers] <- dgumbel(tt, mu = 0.32 + a, beta = 0.05 + b)
+  }
+  return(list(
+    data = t(y),
+    true_outliers = replace(integer(100), true_outliers, 1)
+  ))
+}
+
+simulation_gp_margin <- function(n, p = 50) {
+  sim <- fdaoutlier::simulation_model5(n, p = 100)
+  y <- tibble(f = split(sim$data, row(sim$data))) |>
+    mutate(f = as_dd(f, lambda = 1, nbasis = 10, mc.cores = 14))
+
+  list(
+    data = t(eval(c(y$f), seq(min(sim$data), max(sim$data), length.out = p))),
+    true_outliers = replace(integer(100), sim$true_outliers, 1)
+  )
+}
+
+generate_data <- function(scheme, n = 100) {
+  if (scheme == 1) {
+    # Scheme 1: Mixture of GP in clr
+    return(simulation_gp_clr(n))
+  } else if (scheme == 2) {
+    # Scheme 2: Mixture of Gumbel pdfs
+    return(simulation_gumbel(n))
+  } else if (scheme == 3) {
+    # Scheme 3: Mixture model marginalization
+    return(simulation_gp_margin(n))
+  }
+}
+
+method_ICS <- function(data) {
+  y <- tibble(f = split(data, row(data))) |>
+    mutate(f = as_dd(f, lambda = 1e-1, nbasis = 5, mc.cores = 14)) |>
+    mutate(f = as.fd(f))
+
+  ICS_outlier(y$f, n_cores = 14)$ics_distances
+}
+
+# Step 3: Create functions for outlier detection methods
+outlier_score <- function(method, data) {
+  if (method == 1) {
+    # Method 1: ICS
+    method_ICS(data)
+  } else if (method == 2) {
+    # Method 2: Log quantile density in L^2
+    deboinr(seq(0, 1, length.out = ncol(data)), data, distance = "nLQD", num_cores = 14)$density_order[-1]
+  } else if (method == 3) {
+    # Method 3: Wasserstein distance to median
+    deboinr(seq(0, 1, length.out = ncol(data)), data, distance = "wasserstein", num_cores = 14)$density_order
+  } else if (method == 4) {
+    # Method 4: Modified band depth
+    deboinr(seq(0, 1, length.out = ncol(data)), data, distance = "MBD_fboxplot", num_cores = 14)$density_order
+  }
+}
+
+# Step 4: Compute ROC points
+compute_roc <- function(scores, actually_positive) {
+  roc_points <- data.frame()
+  for (t in c(scores, max(scores) + 1)) {
+    # Classify as outliers based on the threshold
+    predicted_positive <- ifelse(scores >= t, 1, 0)
+
+    tp <- sum(predicted_positive & actually_positive)
+    fp <- sum(predicted_positive & !actually_positive)
+    fn <- sum(!predicted_positive & actually_positive)
+    tn <- sum(!predicted_positive & !actually_positive)
+    pp <- sum(predicted_positive)
+
+    # Compute TPR and FPR
+    tpr <- ifelse((tp + fn) > 0, tp / (tp + fn), NA)
+    fpr <- ifelse((fp + tn) > 0, fp / (fp + tn), NA)
+
+    # Store results
+    roc_points <- rbind(roc_points, data.frame(PP = pp, TPR = tpr, FPR = fpr))
+  }
+  return(roc_points)
+}
+```
+
+```{r}
+# Step 5: Run simulation
+results <- data.frame()
+for (k in 1:K) {
+  for (l in 1:L) {
+    for (n in 1:N) {
+      print(paste("Scheme:", k, "| Method:", l, "| Repetition:", n))
+
+      # Generate data
+      generated <- generate_data(scheme = k)
+      data <- generated$data
+      actually_positive <- generated$true_outliers
+
+      # Compute outlier scores
+      scores <- tryCatch(outlier_score(method = l, data = data),
+        error = function(e) stop(paste("Scheme", l))
+      )
+
+      # Compute ROC points
+      roc <- compute_roc(scores, actually_positive)
+      roc$Scheme <- k
+      roc$Method <- l
+      roc$Simulation <- n
+
+      # Store results
+      results <- rbind(results, roc)
+    }
+  }
+}
+
+# Step 6: Aggregate results (optional smoothing over simulations)
+results_avg <- results |>
+  group_by(Scheme, Method, PP) |>
+  summarize(
+    TPR = mean(TPR),
+    FPR = mean(FPR),
+    .groups = "drop"
+  )
+
+# Step 7: Plot ROC curves
+ggplot(results_avg, aes(x = FPR, y = TPR, color = factor(Method), group = Method)) +
+  geom_line() +
+  geom_function(fun = identity, linetype = "dotted") +
+  facet_grid(Method ~ Scheme) +
+  labs(
+    title = "ROC Curves for Outlier Detection Methods",
+    x = "False Positive Rate (FPR)",
+    y = "True Positive Rate (TPR)",
+    color = "Method"
+  )
+```
+
 
 # 10 periods, 2 regions (26 provinces)
 
