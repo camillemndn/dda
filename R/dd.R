@@ -78,10 +78,8 @@ dd <- function(
       rel.tol = .Machine$double.eps^0.5,
       stop.on.error = FALSE
     )$value
-    ddobj <- wfdobj - c(wint / diff(rangeval))
+    ddobj <- wfdobj - wint / diff(rangeval)
   } else {
-    clrmean <- fda::inprod(clr) / diff(clr$basis$rangeval)
-    clr$coefs <- clr$coefs - matrix(clrmean, ncol = ncol(clr$coefs), nrow = nrow(clr$coefs), byrow = TRUE)
     ddobj <- clr
   }
   if (normalize) {
