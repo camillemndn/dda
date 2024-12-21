@@ -645,6 +645,7 @@ See [this vignette from `fdaoutlier`](https://cran.r-project.org/web/packages/fd
 ```{r fig-comparison_schemes, message = FALSE}
 #| fig-cap: Generation schemes for density data with outliers
 
+set.seed(928)
 schemes <- c("GP_clr", "Gumbel", "GP_margin")
 
 simulation_gp_clr <- function(n, p = 50) {
@@ -697,6 +698,7 @@ simulation_gp_margin <- function(n, p = 50) {
 }
 
 generate_data <- function(scheme, n = 100) {
+  print(paste("Generating", scheme, "data"))
   switch(scheme,
     "GP_clr" = simulation_gp_clr(n),
     "Gumbel" = simulation_gumbel(n),
@@ -718,7 +720,7 @@ tibble(Scheme = schemes) |>
   facet_wrap(~Scheme, scales = "free_y")
 ```
 
-```{r fig-comparison_methods}
+```{r fig-comparison_methods, message = FALSE}
 #| fig-cap: ROC Curves for Outlier Detection Methods
 
 methods <- c("ICS", "LQD", "Wasserstein", "MBD")
@@ -726,12 +728,26 @@ N <- 50 # Number of repetitions per combination
 
 if (!(file.exists("ICS_comparison.RData"))) {
   method_ics <- function(data) {
+    u <- fda.usc::fdata(log(pmax(data, 1e-8))) |> fda.usc::fdata2fd()
+    for (i in integer(3)) {
+      u$coefs <- sweep(u$coefs, 2, fda::inprod(u) / diff(u$basis$rangeval))
+    }
+    print(max(fda::inprod(u)))
+    ICS_outlier(u, n_cores = 14)$ics_distances
+  }
+
+  method_ics_l2 <- function(data) {
     f <- fda.usc::fdata(data) |> fda.usc::fdata2fd()
     ICS_outlier(f, n_cores = 14)$ics_distances
   }
 
   method_deboinr <- function(data, distance) {
-    density_order <- deboinr(seq(0, 1, length.out = ncol(data)), data, distance = distance, num_cores = 14)$density_order
+    density_order <- deboinr(
+      x_grid = seq(0, 1, length.out = ncol(data)),
+      densities_matrix = data,
+      distance = distance,
+      num_cores = 14
+    )$density_order
     n <- nrow(data)
     density_order <- density_order[density_order <= n]
     scores <- integer(n)
@@ -740,8 +756,10 @@ if (!(file.exists("ICS_comparison.RData"))) {
   }
 
   outlier_score <- function(method, data) {
+    print(paste("Computing outlier scores with", method))
     switch(method,
       "ICS" = method_ics(data),
+      "ICS_L2" = method_ics_l2(data),
       "LQD" = method_deboinr(data, distance = "nLQD"),
       "Wasserstein" = method_deboinr(data, distance = "wasserstein"),
       "MBD" = method_deboinr(data, distance = "MBD_fboxplot")
@@ -791,7 +809,7 @@ comparison_avg <- comparison |>
 ggplot(comparison_avg, aes(FPR, TPR, color = Method, group = Method)) +
   geom_line() +
   geom_function(fun = identity, linetype = "dotted") +
-  facet_grid(Method ~ Scheme) +
+  facet_grid(~Scheme) +
   labs(
     x = "False Positive Rate (FPR)",
     y = "True Positive Rate (TPR)",
