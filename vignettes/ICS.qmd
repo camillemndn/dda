@@ -723,7 +723,7 @@ tibble(Scheme = schemes) |>
 ```{r fig-comparison_methods, message = FALSE}
 #| fig-cap: ROC Curves for Outlier Detection Methods
 
-methods <- c("ICS", "LQD", "Wasserstein", "MBD")
+methods <- c("ICS", "ICS_L2", "LQD", "Wasserstein", "MBD")
 N <- 50 # Number of repetitions per combination
 
 if (!(file.exists("ICS_comparison.RData"))) {
@@ -732,7 +732,7 @@ if (!(file.exists("ICS_comparison.RData"))) {
     for (i in integer(3)) {
       u$coefs <- sweep(u$coefs, 2, fda::inprod(u) / diff(u$basis$rangeval))
     }
-    print(max(fda::inprod(u)))
+    if (any(is.nan(u$coefs))) stop("ICS preprocessing has failed for at least one density")
     ICS_outlier(u, n_cores = 14)$ics_distances
   }
 
