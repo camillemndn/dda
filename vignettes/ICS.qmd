@@ -726,7 +726,7 @@ tibble(Scheme = schemes) |>
 #| fig-height: 5
 
 methods <- c("ICS", "ICS_L2", "LQD", "Wasserstein", "MBD")
-N <- 50 # Number of repetitions per combination
+N <- 100 # Number of repetitions per combination
 
 if (!(file.exists("ICS_comparison.RData"))) {
   method_ics <- function(data) {
