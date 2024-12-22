@@ -649,7 +649,7 @@ set.seed(928)
 schemes <- c("GP_clr", "Gumbel", "GP_margin")
 
 simulation_gp_clr <- function(n, p = 50) {
-  sim <- fdaoutlier::simulation_model4(n, p, mu = 15)
+  sim <- fdaoutlier::simulation_model4(n, p, mu = 15, outlier_rate = 0.02)
   y <- exp(tfd(sim$data))
 
   list(
@@ -663,7 +663,7 @@ dgumbel <- function(x, mu = 0, beta = 1) {
   exp(-z - exp(-z)) / beta
 }
 
-simulation_gumbel <- function(n, p = 50, outlier_rate = 0.05, deterministic = TRUE) {
+simulation_gumbel <- function(n, p = 50, outlier_rate = 0.02, deterministic = TRUE) {
   tt <- seq(0, 1, length.out = p)
   a <- matrix(rnorm(n, sd = 0.01), nrow = p, ncol = n, byrow = TRUE)
   b <- matrix(rnorm(n, sd = 0.01), nrow = p, ncol = n, byrow = TRUE)
@@ -687,7 +687,7 @@ simulation_gumbel <- function(n, p = 50, outlier_rate = 0.05, deterministic = TR
 }
 
 simulation_gp_margin <- function(n, p = 50) {
-  sim <- fdaoutlier::simulation_model5(n, p = 100)
+  sim <- fdaoutlier::simulation_model5(n, p = 100, outlier_rate = 0.02)
   y <- tibble(f = split(sim$data, row(sim$data))) |>
     mutate(f = as_dd(f, lambda = 1, nbasis = 10, mc.cores = 14))
 
@@ -810,6 +810,7 @@ ggplot(comparison_avg, aes(FPR, TPR, color = Method, group = Method)) +
   geom_line() +
   geom_function(fun = identity, linetype = "dotted") +
   facet_grid(~Scheme) +
+  coord_fixed() +
   labs(
     x = "False Positive Rate (FPR)",
     y = "True Positive Rate (TPR)",
