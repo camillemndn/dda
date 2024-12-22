@@ -644,6 +644,7 @@ See [this vignette from `fdaoutlier`](https://cran.r-project.org/web/packages/fd
 
 ```{r fig-comparison_schemes, message = FALSE}
 #| fig-cap: Generation schemes for density data with outliers
+#| fig-height: 5
 
 set.seed(928)
 schemes <- c("GP_clr", "Gumbel", "GP_margin")
@@ -722,6 +723,7 @@ tibble(Scheme = schemes) |>
 
 ```{r fig-comparison_methods, message = FALSE}
 #| fig-cap: ROC Curves for Outlier Detection Methods
+#| fig-height: 5
 
 methods <- c("ICS", "ICS_L2", "LQD", "Wasserstein", "MBD")
 N <- 50 # Number of repetitions per combination
@@ -757,13 +759,13 @@ if (!(file.exists("ICS_comparison.RData"))) {
 
   outlier_score <- function(method, data) {
     print(paste("Computing outlier scores with", method))
-    switch(method,
+    tryCatch(switch(method,
       "ICS" = method_ics(data),
       "ICS_L2" = method_ics_l2(data),
       "LQD" = method_deboinr(data, distance = "nLQD"),
       "Wasserstein" = method_deboinr(data, distance = "wasserstein"),
       "MBD" = method_deboinr(data, distance = "MBD_fboxplot")
-    )
+    ), error = function(e) NA)
   }
 
   compute_roc <- function(scores, true_outliers) {
