@@ -70,13 +70,17 @@ data(vietnam_provinces)
 data(vietnam_regions)
 
 vietnam_provinces |>
-  mutate(province = if_else(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU"), province, NA)) |>
+  mutate(
+    province = if_else(region %in% c("NMM", "RRD") | province %in% c("ANGIANG", "BACLIEU"), province, NA),
+    region = if_else(region %in% c("NMM", "RRD", "MDR"), region, NA)
+  ) |>
   left_join(vietnam_regions, by = c("region" = "code")) |>
   select(!region) |>
   rename(region = name) |>
   ggplot(aes(fill = region, label = province)) +
   geom_sf() +
   geom_sf_label(fill = "white", size = 3) +
+  scale_fill_discrete(na.translate = FALSE) +
   scale_x_continuous(breaks = seq(from = -180, to = 180, by = 2)) +
   labs(x = "longitude", y = "latitude")
 ```
@@ -334,6 +338,7 @@ vietnam_provinces |>
   ggplot(aes(fill = climate_region, label = province)) +
   geom_sf() +
   geom_sf_label(fill = "white") +
+  scale_fill_viridis_d() +
   labs(x = "longitude", y = "latitude", fill = "climate region")
 ```
 
@@ -385,21 +390,23 @@ icsout$result |> ggplot(aes(index, gen_kurtosis, group = 1)) +
   guides(color = "none")
 
 icsout$result |>
-  plot_funs(H_dual, color = index, alpha = selected) +
+  filter(selected) |>
+  plot_funs(H_dual, color = index) +
   geom_hline(yintercept = 1 / diff(icsout$result$H_dual[[1]]$basis$rangeval), linetype = "dotted") +
   labs(x = "temperature (deg. Celsius)", y = "density") +
-  theme_legend_inside +
-  guides(alpha = "none")
+  scale_color_manual(values = scales::pal_hue()(9)[1:2]) +
+  theme_legend_inside
 
 h_dual_shift <- c(3 * icsout$result$H_dual)
 h_dual_shift$coefs <- sweep(h_dual_shift$coefs, 1, -c(mean(vnt$t_max))$coefs)
 icsout$result |>
   mutate(H_dual_shift = as.list(h_dual_shift)) |>
-  plot_funs(H_dual_shift, color = index, alpha = selected) +
+  filter(selected) |>
+  plot_funs(H_dual_shift, color = index) +
   geom_function(fun = function(x) eval(c(mean(vnt$t_max)), x), color = "black", linetype = "dotted") +
+  scale_color_manual(values = scales::pal_hue()(9)[1:2]) +
   labs(x = "temperature (deg. Celsius)", y = "density") +
-  theme_legend_inside +
-  guides(alpha = "none")
+  theme_legend_inside
 ```
 
 ```{r fig-climate_regions_outliers}
@@ -419,13 +426,15 @@ vnt <- vnt |>
   cbind(icsout$scores)
 
 vnt |>
-  mutate(
-    year = as.factor(ifelse(outlying == 1, year, NA)),
-  ) |>
+  mutate(year = as.factor(ifelse(outlying == 1, year, NA))) |>
   arrange(outlying) |>
   plot_funs(t_max, color = year, alpha = outlying) +
   theme_legend_inside +
-  labs(x = "temperature (deg. Celsius)", y = "density") +
+  labs(
+    x = "temperature (deg. Celsius)", y = "density",
+    color = "outlying\nyears"
+  ) +
+  scale_color_discrete(limits = function(x) ifelse(is.na(x), "", x)) +
   guides(alpha = "none")
 
 vnt |>
@@ -436,7 +445,10 @@ vnt |>
   arrange(outlying) |>
   plot_funs(t_max, color = year, alpha = outlying) +
   theme(legend.position = "none") +
-  labs(x = "temperature (deg. Celsius)", y = "centred clr(density)")
+  labs(
+    x = "temperature (deg. Celsius)", y = "centred clr(density)",
+    color = "outlying\nyears"
+  )
 ```
 
 ```{r fig-climate_regions_outliers_years}
@@ -449,7 +461,11 @@ vnt |>
   arrange(outlying) |>
   plot_funs(t_max, color = province, alpha = outlying) +
   facet_wrap(vars(year)) +
-  labs(x = "temperature (deg. Celsius)", y = "density") +
+  labs(
+    x = "temperature (deg. Celsius)", y = "density",
+    color = "outlying\nprovinces"
+  ) +
+  scale_color_discrete(limits = function(x) ifelse(is.na(x), "", x)) +
   guides(alpha = "none")
 
 vnt |>
@@ -460,7 +476,11 @@ vnt |>
   arrange(outlying) |>
   plot_funs(t_max, color = province, alpha = outlying) +
   facet_wrap(vars(year)) +
-  labs(x = "temperature (deg. Celsius)", y = "centred clr(density)") +
+  labs(
+    x = "temperature (deg. Celsius)", y = "centred clr(density)",
+    color = "outlying\nprovinces"
+  ) +
+  scale_color_discrete(limits = function(x) ifelse(is.na(x), "", x)) +
   guides(alpha = "none")
 ```
 
@@ -473,7 +493,9 @@ vnt |>
   mutate(province = ifelse(outlying == 1, province, NA)) |>
   ggplot(aes(year, distances, color = province, label = year)) +
   geom_text() +
-  geom_hline(yintercept = icsout$ics_dist_cutoff)
+  scale_color_discrete(limits = function(x) ifelse(is.na(x), "", x)) +
+  geom_hline(yintercept = icsout$ics_dist_cutoff) +
+  labs(color = "outlying\nprovinces")
 ```
 
 ```{r fig-climate_regions_scatter}
@@ -484,7 +506,9 @@ vnt |>
 vnt |>
   mutate(province = ifelse(outlying == 1, province, NA)) |>
   ggplot(aes(IC.1, IC.2)) +
-  geom_text(aes(color = province, label = year))
+  scale_color_discrete(limits = function(x) ifelse(is.na(x), "", x)) +
+  geom_text(aes(color = province, label = year)) +
+  labs(color = "outlying\nprovinces")
 ```
 
 ## Influence of the preprocessing parameters
@@ -635,7 +659,11 @@ vnt |>
   ) |>
   plot_funs(t_max, color = province, alpha = outlying) +
   facet_wrap(vars(year)) +
-  labs(x = "temperature (deg. Celsius)", y = "clr(density)")
+  scale_color_discrete(limits = function(x) ifelse(is.na(x), "", x)) +
+  labs(
+    x = "temperature (deg. Celsius)", y = "clr(density)",
+    color = "outlying\nprovinces"
+  )
 ```
 
 # Comparison with other methods
@@ -649,9 +677,9 @@ See [this vignette from `fdaoutlier`](https://cran.r-project.org/web/packages/fd
 set.seed(928)
 schemes <- c("GP_clr", "Gumbel", "GP_margin")
 
-simulation_gp_clr <- function(n, p = 50) {
-  sim <- fdaoutlier::simulation_model4(n, p, mu = 15, outlier_rate = 0.02)
-  y <- exp(tfd(sim$data))
+simulation_gp_clr <- function(n, p = 200) {
+  sim <- fdaoutlier::simulation_model4(n, p, outlier_rate = 0.02)
+  y <- exp(tfd(sim$data, arg = seq(0, 1, length.out = p)))
 
   list(
     data = as.matrix(y / tf_integrate(y)),
@@ -664,7 +692,7 @@ dgumbel <- function(x, mu = 0, beta = 1) {
   exp(-z - exp(-z)) / beta
 }
 
-simulation_gumbel <- function(n, p = 50, outlier_rate = 0.02, deterministic = TRUE) {
+simulation_gumbel <- function(n, p = 200, outlier_rate = 0.02, deterministic = TRUE) {
   tt <- seq(0, 1, length.out = p)
   a <- matrix(rnorm(n, sd = 0.01), nrow = p, ncol = n, byrow = TRUE)
   b <- matrix(rnorm(n, sd = 0.01), nrow = p, ncol = n, byrow = TRUE)
@@ -687,8 +715,9 @@ simulation_gumbel <- function(n, p = 50, outlier_rate = 0.02, deterministic = TR
   ))
 }
 
-simulation_gp_margin <- function(n, p = 50) {
-  sim <- fdaoutlier::simulation_model5(n, p = 100, outlier_rate = 0.02)
+simulation_gp_margin <- function(n, p = 200) {
+  sim <- fdaoutlier::simulation_model5(n, p, outlier_rate = 0.02)
+  sim$data <- (sim$data - min(sim$data)) / diff(range(sim$data))
   y <- tibble(f = split(sim$data, row(sim$data))) |>
     mutate(f = as_dd(f, lambda = 1, nbasis = 10, mc.cores = 14))
 
@@ -711,14 +740,17 @@ tibble(Scheme = schemes) |>
   mutate(sim = map(Scheme, generate_data)) |>
   mutate(sim = map(sim, function(x) {
     tibble(
-      data = tfd(x$data),
-      `true outlier` = ifelse(x$true_outliers == 1, TRUE, NA)
+      data = tfd(x$data, arg = seq(0, 1, length.out = ncol(x$data))),
+      `true outlier` = as.character(x$true_outliers == 1)
     )
   })) |>
   unnest(sim) |>
+  arrange(`true outlier`) |>
   ggplot() +
-  geom_spaghetti(aes(y = data, color = `true outlier`)) +
-  facet_wrap(~Scheme, scales = "free_y")
+  scale_colour_manual(values = c("TRUE" = "red", "FALSE" = "grey")) +
+  geom_spaghetti(aes(y = data, color = `true outlier`, linetype = `true outlier`)) +
+  facet_wrap(~Scheme) +
+  labs(y = "density")
 ```
 
 ```{r fig-comparison_methods, message = FALSE}
@@ -730,7 +762,8 @@ N <- 100 # Number of repetitions per combination
 
 if (!(file.exists("ICS_comparison.RData"))) {
   method_ics <- function(data) {
-    u <- fda.usc::fdata(log(pmax(data, 1e-8))) |> fda.usc::fdata2fd()
+    u <- fda.usc::fdata(log(pmax(data, 1e-8)), argvals = seq(0, 1, length.out = ncol(data))) |>
+      fda.usc::fdata2fd()
     for (i in integer(3)) {
       u$coefs <- sweep(u$coefs, 2, fda::inprod(u) / diff(u$basis$rangeval))
     }
@@ -739,7 +772,8 @@ if (!(file.exists("ICS_comparison.RData"))) {
   }
 
   method_ics_l2 <- function(data) {
-    f <- fda.usc::fdata(data) |> fda.usc::fdata2fd()
+    f <- fda.usc::fdata(data, argvals = seq(0, 1, length.out = ncol(data))) |>
+      fda.usc::fdata2fd()
     ICS_outlier(f, n_cores = 14)$ics_distances
   }
 
@@ -882,7 +916,8 @@ vnt |> plot_matrix(paste0("IC.", 1:4),
   color = ifelse(outlying == 1, province, NA),
   alpha = outlying == 1
 ) +
-  labs(color = "province", x = "", y = "") +
+  labs(color = "outlying\nprovinces", x = "", y = "") +
+  scale_color_discrete(limits = function(x) ifelse(is.na(x), "", x)) +
   guides(alpha = "none")
 
 vnt |>
@@ -890,6 +925,10 @@ vnt |>
   arrange(outlying) |>
   plot_funs(t_max, color = province, alpha = outlying) +
   facet_wrap(vars(period)) +
-  labs(x = "temperature (deg. Celsius)", y = "density") +
+  labs(
+    x = "temperature (deg. Celsius)", y = "density",
+    color = "outlying\nprovinces"
+  ) +
+  scale_color_discrete(limits = function(x) ifelse(is.na(x), "", x)) +
   guides(alpha = "none")
 ```
