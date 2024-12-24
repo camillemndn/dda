@@ -674,16 +674,15 @@ See [this vignette from `fdaoutlier`](https://cran.r-project.org/web/packages/fd
 #| fig-cap: Generation schemes for density data with outliers
 #| fig-height: 5
 
-set.seed(928)
 schemes <- c("GP_clr", "Gumbel", "GP_margin")
 
-simulation_gp_clr <- function(n, p = 200) {
+simulation_gp_clr <- function(n, p = 100) {
   sim <- fdaoutlier::simulation_model4(n, p, outlier_rate = 0.02)
   y <- exp(tfd(sim$data, arg = seq(0, 1, length.out = p)))
 
   list(
     data = as.matrix(y / tf_integrate(y)),
-    true_outliers = replace(integer(100), sim$true_outliers, 1)
+    true_outliers = replace(integer(n), sim$true_outliers, 1)
   )
 }
 
@@ -692,7 +691,7 @@ dgumbel <- function(x, mu = 0, beta = 1) {
   exp(-z - exp(-z)) / beta
 }
 
-simulation_gumbel <- function(n, p = 200, outlier_rate = 0.02, deterministic = TRUE) {
+simulation_gumbel <- function(n, p = 100, outlier_rate = 0.02, deterministic = TRUE) {
   tt <- seq(0, 1, length.out = p)
   a <- matrix(rnorm(n, sd = 0.01), nrow = p, ncol = n, byrow = TRUE)
   b <- matrix(rnorm(n, sd = 0.01), nrow = p, ncol = n, byrow = TRUE)
@@ -711,11 +710,11 @@ simulation_gumbel <- function(n, p = 200, outlier_rate = 0.02, deterministic = T
   }
   return(list(
     data = t(y),
-    true_outliers = replace(integer(100), true_outliers, 1)
+    true_outliers = replace(integer(n), true_outliers, 1)
   ))
 }
 
-simulation_gp_margin <- function(n, p = 200) {
+simulation_gp_margin <- function(n, p = 100) {
   sim <- fdaoutlier::simulation_model5(n, p, outlier_rate = 0.02)
   sim$data <- (sim$data - min(sim$data)) / diff(range(sim$data))
   y <- tibble(f = split(sim$data, row(sim$data))) |>
@@ -723,16 +722,16 @@ simulation_gp_margin <- function(n, p = 200) {
 
   list(
     data = t(eval(c(y$f), seq(min(sim$data), max(sim$data), length.out = p))),
-    true_outliers = replace(integer(100), sim$true_outliers, 1)
+    true_outliers = replace(integer(n), sim$true_outliers, 1)
   )
 }
 
-generate_data <- function(scheme, n = 100) {
+generate_data <- function(scheme, n = 200, p = 100) {
   print(paste("Generating", scheme, "data"))
   switch(scheme,
-    "GP_clr" = simulation_gp_clr(n),
-    "Gumbel" = simulation_gumbel(n),
-    "GP_margin" = simulation_gp_margin(n)
+    "GP_clr" = simulation_gp_clr(n, p),
+    "Gumbel" = simulation_gumbel(n, p),
+    "GP_margin" = simulation_gp_margin(n, p)
   )
 }
 
@@ -758,12 +757,12 @@ tibble(Scheme = schemes) |>
 #| fig-height: 5
 
 methods <- c("ICS", "ICS_L2", "LQD", "Wasserstein", "MBD")
-N <- 200 # Number of repetitions per combination
+N <- 50 # Number of repetitions per combination
 
 if (!(file.exists("ICS_comparison.RData"))) {
   method_ics <- function(data) {
     u <- fda.usc::fdata(log(pmax(data, 1e-8)), argvals = seq(0, 1, length.out = ncol(data))) |>
-      fda.usc::fdata2fd()
+      fda.usc::fdata2fd(nbasis = 10)
     for (i in integer(3)) {
       u$coefs <- sweep(u$coefs, 2, fda::inprod(u) / diff(u$basis$rangeval))
     }
@@ -773,7 +772,7 @@ if (!(file.exists("ICS_comparison.RData"))) {
 
   method_ics_l2 <- function(data) {
     f <- fda.usc::fdata(data, argvals = seq(0, 1, length.out = ncol(data))) |>
-      fda.usc::fdata2fd()
+      fda.usc::fdata2fd(nbasis = 10)
     ICS_outlier(f, n_cores = 14)$ics_distances
   }
 
@@ -833,17 +832,31 @@ if (!(file.exists("ICS_comparison.RData"))) {
 
 load("ICS_comparison.RData")
 
+# Failed score computations
+comparison_failed <- comparison |>
+  group_by(Scheme, Method) |>
+  summarize(
+    missing = sum(is.na(scores)),
+    .groups = "drop"
+  ) |>
+  pivot_wider(names_from = Scheme, values_from = missing)
+
+knitr::kable(comparison_failed)
+
 # Aggregate results (averaging over simulations)
 comparison_avg <- comparison |>
   group_by(Scheme, Method, PP) |>
   summarize(
-    TPR = mean(TPR),
-    FPR = mean(FPR),
+    TPR_avg = mean(TPR),
+    n = n(),
+    TPR_conf = 1.96 * sd(TPR) / sqrt(n()),
+    FPR_avg = mean(FPR),
     .groups = "drop"
   )
 
-ggplot(comparison_avg, aes(FPR, TPR, color = Method, group = Method)) +
+ggplot(comparison_avg, aes(FPR_avg, TPR_avg, color = Method, group = Method)) +
   geom_line() +
+  geom_ribbon(aes(ymin = pmax(0, TPR_avg - TPR_conf), ymax = pmin(1, TPR_avg + TPR_conf), fill = Method), alpha = 0.1, linetype = "dotted") +
   geom_function(fun = identity, linetype = "dotted") +
   facet_grid(~Scheme) +
   coord_fixed() +
