@@ -676,8 +676,8 @@ See [this vignette from `fdaoutlier`](https://cran.r-project.org/web/packages/fd
 
 schemes <- c("GP_clr", "Gumbel", "GP_margin")
 
-simulation_gp_clr <- function(n, p = 100) {
-  sim <- fdaoutlier::simulation_model4(n, p, outlier_rate = 0.02)
+simulation_gp_clr <- function(n, p) {
+  sim <- fdaoutlier::simulation_model4(n, p, mu = 15, outlier_rate = 0.02)
   y <- exp(tfd(sim$data, arg = seq(0, 1, length.out = p)))
 
   list(
@@ -691,7 +691,7 @@ dgumbel <- function(x, mu = 0, beta = 1) {
   exp(-z - exp(-z)) / beta
 }
 
-simulation_gumbel <- function(n, p = 100, outlier_rate = 0.02, deterministic = TRUE) {
+simulation_gumbel <- function(n, p, outlier_rate = 0.02, deterministic = TRUE) {
   tt <- seq(0, 1, length.out = p)
   a <- matrix(rnorm(n, sd = 0.01), nrow = p, ncol = n, byrow = TRUE)
   b <- matrix(rnorm(n, sd = 0.01), nrow = p, ncol = n, byrow = TRUE)
@@ -708,20 +708,22 @@ simulation_gumbel <- function(n, p = 100, outlier_rate = 0.02, deterministic = T
     )
     y[, true_outliers] <- dgumbel(tt, mu = 0.32 + a, beta = 0.05 + b)
   }
+  rownames(y) <- tt
   return(list(
     data = t(y),
     true_outliers = replace(integer(n), true_outliers, 1)
   ))
 }
 
-simulation_gp_margin <- function(n, p = 100) {
+simulation_gp_margin <- function(n, p) {
   sim <- fdaoutlier::simulation_model5(n, p, outlier_rate = 0.02)
-  sim$data <- (sim$data - min(sim$data)) / diff(range(sim$data))
   y <- tibble(f = split(sim$data, row(sim$data))) |>
     mutate(f = as_dd(f, lambda = 1, nbasis = 10, mc.cores = 14))
-
+  tt <- seq(min(sim$data), max(sim$data), length.out = p)
+  densities_matrix <- t(eval(c(y$f), tt))
+  colnames(densities_matrix) <- tt
   list(
-    data = t(eval(c(y$f), seq(min(sim$data), max(sim$data), length.out = p))),
+    data = densities_matrix,
     true_outliers = replace(integer(n), sim$true_outliers, 1)
   )
 }
@@ -739,7 +741,7 @@ tibble(Scheme = schemes) |>
   mutate(sim = map(Scheme, generate_data)) |>
   mutate(sim = map(sim, function(x) {
     tibble(
-      data = tfd(x$data, arg = seq(0, 1, length.out = ncol(x$data))),
+      data = tfd(x$data),
       `true outlier` = as.character(x$true_outliers == 1)
     )
   })) |>
@@ -748,7 +750,7 @@ tibble(Scheme = schemes) |>
   ggplot() +
   scale_colour_manual(values = c("TRUE" = "red", "FALSE" = "grey")) +
   geom_spaghetti(aes(y = data, color = `true outlier`, linetype = `true outlier`)) +
-  facet_wrap(~Scheme) +
+  facet_wrap(~Scheme, scales = "free") +
   labs(y = "density")
 ```
 
@@ -757,11 +759,11 @@ tibble(Scheme = schemes) |>
 #| fig-height: 5
 
 methods <- c("ICS", "ICS_L2", "LQD", "Wasserstein", "MBD")
-N <- 50 # Number of repetitions per combination
+N <- 200 # Number of repetitions per combination
 
 if (!(file.exists("ICS_comparison.RData"))) {
   method_ics <- function(data) {
-    u <- fda.usc::fdata(log(pmax(data, 1e-8)), argvals = seq(0, 1, length.out = ncol(data))) |>
+    u <- fda.usc::fdata(log(pmax(data, 1e-8)), argvals = as.numeric(colnames(data))) |>
       fda.usc::fdata2fd(nbasis = 10)
     for (i in integer(3)) {
       u$coefs <- sweep(u$coefs, 2, fda::inprod(u) / diff(u$basis$rangeval))
@@ -771,7 +773,7 @@ if (!(file.exists("ICS_comparison.RData"))) {
   }
 
   method_ics_l2 <- function(data) {
-    f <- fda.usc::fdata(data, argvals = seq(0, 1, length.out = ncol(data))) |>
+    f <- fda.usc::fdata(data, argvals = as.numeric(colnames(data))) |>
       fda.usc::fdata2fd(nbasis = 10)
     ICS_outlier(f, n_cores = 14)$ics_distances
   }
