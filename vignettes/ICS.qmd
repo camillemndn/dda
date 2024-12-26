@@ -738,7 +738,7 @@ generate_data <- function(scheme, n = 200, p = 100) {
 }
 
 tibble(Scheme = schemes) |>
-  mutate(sim = map(Scheme, generate_data)) |>
+  mutate(sim = map(Scheme, \(x) generate_data(x, p =200))) |>
   mutate(sim = map(sim, function(x) {
     tibble(
       data = tfd(x$data),
