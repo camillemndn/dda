@@ -50,6 +50,23 @@ vietnam_temperature_dd <- vietnam_temperature |>
   filter(year %in% selected_years) |>
   mutate(period = if_else(year >= 2000, "2014-2016", "1987-1989")) |>
   mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15))
+
+vietnam_temperature |>
+  mutate(t_max_mean = sapply(t_max, mean)) |>
+  group_by(region, year) |>
+  summarise(t_max_mean = mean(t_max_mean), .groups = "drop") |>
+  ggplot(aes(year, t_max_mean, color = region)) +
+  geom_line() +
+  geom_smooth(method = "lm") +
+  facet_wrap(vars(region))
+
+vietnam_temperature |>
+  mutate(t_max_sd = sapply(t_max, sd)) |>
+  group_by(region, year) |>
+  summarise(t_max_sd = mean(t_max_sd), .groups = "drop") |>
+  ggplot(aes(year, t_max_sd, color = region)) +
+  geom_line() +
+  facet_wrap(vars(region), scales = "free_y")
 ```
 
 ```{r fig-preprocessing_hist}
@@ -65,8 +82,7 @@ vnt <- vietnam_temperature_dd |>
   filter(year %in% selected_years) |>
   mutate(period = if_else(year >= 2000, "2014-2016", "1987-1989")) |>
   group_by(region, province, period) |>
-  summarise(t_max = list(c(mean(t_max)))) |>
-  ungroup() |>
+  summarise(t_max = list(c(mean(t_max))), .groups = "drop") |>
   left_join(vietnam_regions, by = c("region" = "code")) |>
   rename(region_name = name) |>
   arrange(region, province, period)
@@ -74,13 +90,31 @@ class(vnt$t_max) <- c("ddl", "fdl", "list")
 
 vnt <- vnt |>
   pivot_wider(names_from = period, values_from = t_max) |>
-  mutate(evolution = `2014-2016` - `1987-1989`) |>
+  mutate(evolution = `2014-2016` - `1987-1989`)
+
+slope <- function(ddobj, t = seq_len(ncol(ddobj$coefs))) {
+  ddobj$coefs <- apply(ddobj$coefs, 1, function(y) lm(y ~ t)$coefficients[["t"]])
+  dd(clr = fd(ddobj$coefs, ddobj$basis))
+}
+
+vnt_evol <- vietnam_temperature_dd |>
+  group_by(region, province) |>
+  summarise(t_max = list(c(t_max)), .groups = "drop") |>
+  mutate(t_max = lapply(t_max, slope)) |>
+  left_join(vietnam_regions, by = c("region" = "code")) |>
+  rename(region_name = name) |>
+  arrange(region, province)
+class(vnt_evol$t_max) <- c("ddl", "fdl", "list")
+
+vnt <- vnt |> mutate(evolution = vnt_evol$t_max)
+
+vnt <- vnt |>
   pivot_longer(cols = c("2014-2016", "1987-1989", "evolution"), names_to = "period", values_to = "t_max")
 
 vnt |> plot_funs(t_max, color = region_name) +
-  facet_grid(vars(period), vars(str_wrap(region_name, 20))) +
-  ylim(0, 0.85) +
+  facet_grid(vars(period), vars(str_wrap(region_name, 18)), scales = "free_y") +
   theme(legend.position = "none", axis.title.y = element_text(angle = -90)) +
+  geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), linetype = "dotted") +
   labs(
     x = "Temperature (deg. Celsius)",
     y = "Density",
@@ -88,8 +122,8 @@ vnt |> plot_funs(t_max, color = region_name) +
   )
 
 vnt |> plot_funs(t_max, color = region_name) +
-  facet_wrap(vars(period)) +
-  ylim(0, 0.85) + theme_legend_inside +
+  facet_wrap(vars(period), scales = "free_y") +
+  theme_legend_inside +
   labs(
     x = "Temperature (deg. Celsius)",
     y = "Density",
@@ -107,7 +141,7 @@ vnt |>
   pull(t_max) |>
   mean() |>
   plot() +
-  geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), color = "red") +
+  geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), color = "red", linetype = "dotted") +
   labs(
     x = "Temperature (deg. Celsius)",
     y = "Density"
@@ -150,8 +184,17 @@ vntr <- vnt |>
 class(vntr$t_max) <- c("ddl", "fdl", "list")
 
 vntr |> plot_funs(t_max, color = region_name) +
-  facet_grid(rows = vars(period)) +
-  geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), color = "red") +
+  facet_grid(rows = vars(period), scales = "free_y") +
+  geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), linetype = "dotted") +
+  theme_legend_inside +
+  labs(
+    x = "Temperature (deg. Celsius)",
+    y = "Mean density",
+    color = "Region"
+  )
+vntr |> plot_funs(t_max, color = region_name) +
+  facet_grid(vars(period), vars(str_wrap(region_name, 18)), scales = "free_y") +
+  geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), linetype = "dotted") +
   theme_legend_inside +
   labs(
     x = "Temperature (deg. Celsius)",
