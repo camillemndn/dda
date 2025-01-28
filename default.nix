@@ -76,6 +76,7 @@ let
     r-dev-deps ps
     ++ [
       compositions
+      MVN
       mvnfast
       robCompositions
       xts

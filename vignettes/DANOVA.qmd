@@ -35,6 +35,7 @@ theme_legend_inside <- theme(
 library(dda)
 library(fda.usc)
 library(fdANOVA)
+library(MVN)
 library(tidyverse)
 library(boot)
 library(sf)
@@ -207,7 +208,18 @@ vntr |> plot_funs(t_max, color = region_name) +
 ```
 
 
-# Preliminary study: homogeneity of variances
+# Preliminary study
+
+## Normality assumption
+
+```{r normality}
+vnt_pc <- pca.fd(c(filter(vnt, period == "2014-2016")$t_max), nharm = 5)
+pairs(vnt_pc$scores)
+mvn(vnt_pc$scores, mvnTest = "mardia")
+```
+
+
+## Homogeneity of variances
 
 ```{r fig-variance_homogeneity}
 #| fig-cap: Correlation function within the MDR region (2014-2016).
