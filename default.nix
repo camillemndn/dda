@@ -112,6 +112,7 @@ let
     r-suggest-deps ps
     ++ [
       devtools
+      rextendr
       svglite
     ];
 
@@ -137,6 +138,8 @@ in
 rec {
   devShells.default = pkgs.mkShell {
     buildInputs = with pkgs; [
+      cargo
+      rustc
       (quarto.override { extraRPackages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
       (rWrapper.override { packages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
       texliveFull
@@ -144,7 +147,7 @@ rec {
     ];
     shellHook = ''
       ${pre-commit-hook.shellHook}
-      Rscript -e "devtools::document()"
+      Rscript -e "rextendr::document()"
     '';
   };
 
@@ -185,10 +188,29 @@ rec {
     in
     {
       dda = pkgs.callPackage (
-        { rPackages, ... }:
+        {
+          rPackages,
+          rustPlatform,
+          cargo,
+          rustc,
+          ...
+        }:
         rPackages.buildRPackage {
           name = "dda";
           src = builtins.fetchGit ./.;
+
+          cargoDeps = rustPlatform.importCargoLock {
+            lockFile = ./src/rust/Cargo.lock;
+          };
+
+          cargoRoot = "src/rust";
+
+          nativeBuildInputs = [
+            cargo
+            rustc
+            rustPlatform.cargoSetupHook
+          ];
+
           propagatedBuildInputs = r-import-deps rPackages;
         }
       ) { };

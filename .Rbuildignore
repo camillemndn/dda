@@ -11,3 +11,4 @@
 ^docs$
 ^pkgdown$
 ^vignettes/*_files$
+^src/\.cargo$

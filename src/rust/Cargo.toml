@@ -1,0 +1,18 @@
+[package]
+name = 'dda'
+version = '0.1.0'
+edition = '2021'
+
+[lib]
+crate-type = [ 'staticlib' ]
+name = 'dda'
+
+[dependencies]
+argmin = "0.10.0"
+argmin-math = { version = "0.4.0", features = ["ndarray_latest"] }
+argmin-observer-slog = "0.1.0"
+argmin_testfunctions = "0.2.0"
+extendr-api = { version = "0.7.1", features = ["ndarray"] }
+ndarray = "0.15.6"
+ndarray-linalg = { version = "0.16", features = ["intel-mkl"] }
+peroxide = "0.39.0"
