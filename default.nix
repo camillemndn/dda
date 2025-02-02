@@ -35,7 +35,7 @@ let
         src = pkgs.fetchFromGitHub {
           owner = "jalvesaq";
           repo = "colorout";
-          rev = "v1.3-1";
+          rev = "v1.3-2";
           hash = "sha256-jOb5Cidyi1cYN8X6XE+YyUg/2mRuMmgdSiYJbDMDsf8=";
         };
       })
@@ -64,7 +64,37 @@ let
       DeBoinR
       fdaoutlier
       languageserver
-      pkgdown
+      (buildRPackage {
+        name = "pkgdown";
+        src = pkgs.fetchFromGitHub {
+          owner = "r-lib";
+          repo = "pkgdown";
+          rev = "v2.0.9";
+          hash = "sha256-2rmQxCC6GH6ZVqgifh4rXPHqOMKUPZD32gcnGFOeQPw=";
+        };
+        propagatedBuildInputs = [
+          bslib
+          callr
+          cli
+          desc
+          digest
+          downlit
+          fs
+          httr
+          jsonlite
+          magrittr
+          memoise
+          purrr
+          ragg
+          rlang
+          rmarkdown
+          tibble
+          whisker
+          withr
+          xml2
+          yaml
+        ];
+      })
       quarto
       sinew
       svglite
@@ -92,7 +122,6 @@ rec {
     buildInputs = with pkgs; [
       (quarto.override { extraRPackages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
       (rWrapper.override { packages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
-      (rstudioWrapper.override { packages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
       texliveFull
       npins
     ];
