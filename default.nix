@@ -1,7 +1,79 @@
 let
   inputs = import ./deps;
   system = "x86_64-linux";
-  pkgs = import inputs.nixpkgs { inherit system; };
+  pkgs = import inputs.nixpkgs {
+    inherit system;
+    overlays = [
+      (_: prev: {
+        rPackages = prev.rPackages.override {
+          overrides = with prev.rPackages; {
+            colorout = buildRPackage {
+              name = "colorout";
+              src = pkgs.fetchFromGitHub {
+                owner = "jalvesaq";
+                repo = "colorout";
+                rev = "v1.3-2";
+                hash = "sha256-jOb5Cidyi1cYN8X6XE+YyUg/2mRuMmgdSiYJbDMDsf8=";
+              };
+            };
+
+            pkgdown = buildRPackage {
+              name = "pkgdown";
+              src = pkgs.fetchFromGitHub {
+                owner = "r-lib";
+                repo = "pkgdown";
+                rev = "v2.0.9";
+                hash = "sha256-2rmQxCC6GH6ZVqgifh4rXPHqOMKUPZD32gcnGFOeQPw=";
+              };
+              propagatedBuildInputs = [
+                bslib
+                callr
+                cli
+                desc
+                digest
+                downlit
+                fs
+                httr
+                jsonlite
+                magrittr
+                memoise
+                purrr
+                ragg
+                rlang
+                rmarkdown
+                tibble
+                whisker
+                withr
+                xml2
+                yaml
+              ];
+            };
+
+            tidyfun = buildRPackage {
+              name = "tidyfun";
+              src = pkgs.fetchFromGitHub {
+                owner = "tidyfun";
+                repo = "tidyfun";
+                rev = "d9c4adbd2ff1179cc1f37cb34464e42f5fe2739a";
+                hash = "sha256-uSpwjZZ2+GZZpNn5PFwHfRal7o5MTd5rST8jKd6Kpdo=";
+              };
+              propagatedBuildInputs = [
+                tf
+                dplyr
+                GGally
+                ggplot2
+                pillar
+                purrr
+                tibble
+                tidyr
+                tidyselect
+              ];
+            };
+          };
+        };
+      })
+    ];
+  };
 
   r-import-deps =
     ps: with ps; [
@@ -30,6 +102,7 @@ let
       rmarkdown
       sf
       tf
+      tidyfun
       tidyverse
     ];
 
@@ -39,57 +112,6 @@ let
     r-suggest-deps ps
     ++ [
       devtools
-      (buildRPackage {
-        name = "tidyfun";
-        src = pkgs.fetchFromGitHub {
-          owner = "tidyfun";
-          repo = "tidyfun";
-          rev = "d9c4adbd2ff1179cc1f37cb34464e42f5fe2739a";
-          hash = "sha256-uSpwjZZ2+GZZpNn5PFwHfRal7o5MTd5rST8jKd6Kpdo=";
-        };
-        propagatedBuildInputs = [
-          tf
-          dplyr
-          GGally
-          ggplot2
-          pillar
-          purrr
-          tibble
-          tidyr
-          tidyselect
-        ];
-      })
-      (buildRPackage {
-        name = "pkgdown";
-        src = pkgs.fetchFromGitHub {
-          owner = "r-lib";
-          repo = "pkgdown";
-          rev = "v2.0.9";
-          hash = "sha256-2rmQxCC6GH6ZVqgifh4rXPHqOMKUPZD32gcnGFOeQPw=";
-        };
-        propagatedBuildInputs = [
-          bslib
-          callr
-          cli
-          desc
-          digest
-          downlit
-          fs
-          httr
-          jsonlite
-          magrittr
-          memoise
-          purrr
-          ragg
-          rlang
-          rmarkdown
-          tibble
-          whisker
-          withr
-          xml2
-          yaml
-        ];
-      })
       svglite
     ];
 
@@ -98,15 +120,7 @@ let
     with ps;
     r-dev-deps ps
     ++ [
-      (buildRPackage {
-        name = "colorout";
-        src = pkgs.fetchFromGitHub {
-          owner = "jalvesaq";
-          repo = "colorout";
-          rev = "v1.3-2";
-          hash = "sha256-jOb5Cidyi1cYN8X6XE+YyUg/2mRuMmgdSiYJbDMDsf8=";
-        };
-      })
+      colorout
       compositions
       languageserver
       mvnfast
@@ -183,6 +197,7 @@ rec {
         {
           stdenv,
           image_optim,
+          pandoc,
           rPackages,
           rWrapper,
           ...
@@ -193,6 +208,7 @@ rec {
           src = builtins.fetchGit ./.;
           buildInputs = [
             image_optim
+            pandoc
             (rWrapper.override { packages = r-dev-deps rPackages; })
           ];
           HOME = ".";
