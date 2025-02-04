@@ -45,8 +45,11 @@ set.seed(10983)
 
 # Preprocessing into density data
 
-```{r preprocessing_mpl, eval = FALSE}
+```{r preprocessing_mpl}
 data(vietnam_temperature)
+
+selected_years <- c(1987:1989, 2014:2016)
+
 vietnam_temperature_dd <- vietnam_temperature |>
   filter(year %in% selected_years) |>
   mutate(period = if_else(year >= 2000, "2014-2016", "1987-1989")) |>
