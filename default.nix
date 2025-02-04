@@ -18,8 +18,16 @@ let
     with ps;
     r-import-deps ps
     ++ [
+      boot
       corrplot
+      DeBoinR
+      fdANOVA
       fda_usc
+      fdaoutlier
+      knitr
+      MVN
+      quarto
+      rmarkdown
       sf
       tf
       tidyverse
@@ -30,15 +38,7 @@ let
     with ps;
     r-suggest-deps ps
     ++ [
-      (buildRPackage {
-        name = "colorout";
-        src = pkgs.fetchFromGitHub {
-          owner = "jalvesaq";
-          repo = "colorout";
-          rev = "v1.3-2";
-          hash = "sha256-jOb5Cidyi1cYN8X6XE+YyUg/2mRuMmgdSiYJbDMDsf8=";
-        };
-      })
+      devtools
       (buildRPackage {
         name = "tidyfun";
         src = pkgs.fetchFromGitHub {
@@ -59,11 +59,6 @@ let
           tidyselect
         ];
       })
-      devtools
-      fdANOVA
-      DeBoinR
-      fdaoutlier
-      languageserver
       (buildRPackage {
         name = "pkgdown";
         src = pkgs.fetchFromGitHub {
@@ -95,8 +90,6 @@ let
           yaml
         ];
       })
-      quarto
-      sinew
       svglite
     ];
 
@@ -105,10 +98,20 @@ let
     with ps;
     r-dev-deps ps
     ++ [
+      (buildRPackage {
+        name = "colorout";
+        src = pkgs.fetchFromGitHub {
+          owner = "jalvesaq";
+          repo = "colorout";
+          rev = "v1.3-2";
+          hash = "sha256-jOb5Cidyi1cYN8X6XE+YyUg/2mRuMmgdSiYJbDMDsf8=";
+        };
+      })
       compositions
-      MVN
+      languageserver
       mvnfast
       robCompositions
+      sinew
       xts
     ];
 

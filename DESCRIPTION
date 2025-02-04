@@ -15,10 +15,18 @@ Imports:
     ICS,
     ICSOutlier,
     memoise
-Suggests: 
+Suggests:
+    boot,
+    corrplot,
+    DeBoinR,
+    fdANOVA,
     fda.usc,
+    fdaoutlier,
     knitr,
+    MVN,
     rmarkdown,
+    sf,
+    tf,
     tidyverse
 VignetteBuilder: quarto
 Depends:
