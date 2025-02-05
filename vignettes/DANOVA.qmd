@@ -364,29 +364,30 @@ f_max_dist |>
 
 ## Other global tests
 
-```{r danova_global_other, eval = FALSE}
+```{r danova_global_other}
+vnt_province_region <- vietnam_provinces$region
+names(vnt_province_region) <- vietnam_provinces$province
+
 vnte <- vnt |>
-  filter(period == "1987-1989") |>
+  filter(period == "evolution" & !region %in% c("SR", "MDR")) |>
   mutate(t_max = as.fd(t_max)) |>
   eval_funs(t_max, n = 1401) |>
   select(province, x, y) |>
   pivot_wider(names_from = province, values_from = y) |>
   column_to_rownames("x")
 
-plotFANOVA(vnte, vietnam_provinces$region, separately = TRUE)
+plotFANOVA(vnte, vnt_province_region[colnames(vnte)], separately = TRUE)
 
 system.time(
-  res <- fanova.tests(vnte, vietnam_provinces$region, params = list(
-    paramFP = list(B.FP = 100, basis = "b-spline"),
-    paramCH = 100,
-    paramCS = 100,
-    paramL2b = 100,
-    paramFb = 100,
-    paramFmaxb = 100,
-    paramTRP = list(B.TRP = 100)
-  ), parallel = TRUE, nslaves = parallel::detectCores() - 1)
+  res <- fanova.tests(vnte, vnt_province_region[colnames(vnte)],
+    test = list("GPF", "Fmaxb", "CS", "L2B", "FB", "TRP"),
+    params = list(
+      paramCS = 100,
+      paramFmaxb = 100,
+      paramTRP = list(B.TRP = 100)
+    )
+  )
 )
-save(res, file = "DANOVA.RData")
 ```
 
 
