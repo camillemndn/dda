@@ -13,7 +13,7 @@ let
                 owner = "jalvesaq";
                 repo = "colorout";
                 rev = "v1.3-2";
-                hash = "sha256-jOb5Cidyi1cYN8X6XE+YyUg/2mRuMmgdSiYJbDMDsf8=";
+                hash = "sha256-HBQRKqyYYAKJj2TFXBgX5Gc6EnkMG3ZaMCxuHVR9Cfc=";
               };
             };
 
