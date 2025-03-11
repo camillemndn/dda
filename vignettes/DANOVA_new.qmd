@@ -53,7 +53,7 @@ data(vietnam_regions)
 data(vietnam_provinces)
 
 slope <- function(ddobj, t = seq_len(ncol(ddobj$coefs))) {
-  ddobj$coefs <- apply(ddobj$coefs, 1, function(y) lm(y ~ t)$coefficients[["t"]])
+  ddobj$coefs <- lm(t(ddobj$coefs) ~ t)$coefficients["t", ]
   dd(clr = fd(ddobj$coefs, ddobj$basis))
 }
 
