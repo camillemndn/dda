@@ -1,14 +1,16 @@
 ---
-title: DANOVA on regional mean densities of maximum temperature in Vietnam
+title: Testing the equality of mean densities of temperature in Vietnam
 vignette: >
-  %\VignetteIndexEntry{DANOVA on regional mean densities of maximum temperature in Vietnam}
+  %\VignetteIndexEntry{Testing the equality of mean densities of temperature in Vietnam}
   %\VignetteEngine{quarto::html}
   %\VignetteEncoding{UTF-8}
 lightbox: true
 toc: true
+number-sections: true
+df-print: kable
 ---
 
-```{r, include = FALSE}
+```{r knitr_opts, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -29,6 +31,33 @@ theme_legend_inside <- theme(
   legend.box.just = "left",
   legend.margin = margin(6, 6, 6, 6)
 )
+
+library(kableExtra)
+
+kable_format <- function(tbl) {
+  mutate(tbl, across(
+    where(is.numeric),
+    function(x) {
+      sapply(
+        x,
+        function(x) format(signif(x, 2), scientific = x < 0.1)
+      )
+    }
+  ))
+}
+
+kable_source <- function(tbl) {
+  cat("```tex\n")
+
+  kbl(tbl,
+    format = "latex", booktabs = TRUE, caption = "Results"
+  ) |>
+    kable_styling(latex_options = "striped") |>
+    print()
+
+  cat("\n```\n")
+  cat("\n\n")
+}
 ```
 
 ```{r setup, message = FALSE}
@@ -45,34 +74,6 @@ set.seed(10983)
 
 # Preprocessing into density data
 
-```{r preprocessing_mpl}
-data(vietnam_temperature)
-
-selected_years <- c(1987:1989, 2014:2016)
-
-vietnam_temperature_dd <- vietnam_temperature |>
-  filter(year %in% selected_years) |>
-  mutate(period = if_else(year >= 2000, "2014-2016", "1987-1989")) |>
-  mutate(t_max = as_dd(t_max, lambda = 10, nbasis = 10, mc.cores = 15))
-
-vietnam_temperature |>
-  mutate(t_max_mean = sapply(t_max, mean)) |>
-  group_by(region, year) |>
-  summarise(t_max_mean = mean(t_max_mean), .groups = "drop") |>
-  ggplot(aes(year, t_max_mean, color = region)) +
-  geom_line() +
-  geom_smooth(method = "lm") +
-  facet_wrap(vars(region))
-
-vietnam_temperature |>
-  mutate(t_max_sd = sapply(t_max, sd)) |>
-  group_by(region, year) |>
-  summarise(t_max_sd = mean(t_max_sd), .groups = "drop") |>
-  ggplot(aes(year, t_max_sd, color = region)) +
-  geom_line() +
-  facet_wrap(vars(region), scales = "free_y")
-```
-
 ```{r fig-preprocessing_hist}
 #| fig-cap: Density of maximum temperature per province.
 
@@ -80,43 +81,22 @@ data(vietnam_temperature_dd)
 data(vietnam_regions)
 data(vietnam_provinces)
 
-selected_years <- c(1987:1989, 2014:2016)
-
-vnt <- vietnam_temperature_dd |>
-  filter(year %in% selected_years) |>
-  mutate(period = if_else(year >= 2000, "2014-2016", "1987-1989")) |>
-  group_by(region, province, period) |>
-  summarise(t_max = list(c(mean(t_max))), .groups = "drop") |>
-  left_join(vietnam_regions, by = c("region" = "code")) |>
-  rename(region_name = name) |>
-  arrange(region, province, period)
-class(vnt$t_max) <- c("ddl", "fdl", "list")
-
-vnt <- vnt |>
-  pivot_wider(names_from = period, values_from = t_max) |>
-  mutate(evolution = `2014-2016` - `1987-1989`)
-
-slope <- function(ddobj, t = seq_len(ncol(ddobj$coefs))) {
-  ddobj$coefs <- apply(ddobj$coefs, 1, function(y) lm(y ~ t)$coefficients[["t"]])
+to_trend <- function(ddobj, t = seq_len(ncol(ddobj$coefs))) {
+  ddobj$coefs <- lm(t(ddobj$coefs) ~ t)$coefficients["t", ]
   dd(clr = fd(ddobj$coefs, ddobj$basis))
 }
 
-vnt_evol <- vietnam_temperature_dd |>
+vnt <- vietnam_temperature_dd |>
   group_by(region, province) |>
   summarise(t_max = list(c(t_max)), .groups = "drop") |>
-  mutate(t_max = lapply(t_max, slope)) |>
+  mutate(t_max = lapply(t_max, to_trend)) |>
   left_join(vietnam_regions, by = c("region" = "code")) |>
   rename(region_name = name) |>
   arrange(region, province)
-class(vnt_evol$t_max) <- c("ddl", "fdl", "list")
-
-vnt <- vnt |> mutate(evolution = vnt_evol$t_max)
-
-vnt <- vnt |>
-  pivot_longer(cols = c("2014-2016", "1987-1989", "evolution"), names_to = "period", values_to = "t_max")
+class(vnt$t_max) <- c("ddl", "fdl", "list")
 
 vnt |> plot_funs(t_max, color = region_name) +
-  facet_grid(vars(period), vars(str_wrap(region_name, 18)), scales = "free_y") +
+  facet_grid(vars(str_wrap(region_name, 18)), scales = "free_y") +
   theme(legend.position = "none", axis.title.y = element_text(angle = -90)) +
   geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), linetype = "dotted") +
   labs(
@@ -126,7 +106,6 @@ vnt |> plot_funs(t_max, color = region_name) +
   )
 
 vnt |> plot_funs(t_max, color = region_name) +
-  facet_wrap(vars(period), scales = "free_y") +
   theme_legend_inside +
   labs(
     x = "Temperature (deg. Celsius)",
@@ -135,13 +114,12 @@ vnt |> plot_funs(t_max, color = region_name) +
   )
 ```
 
-```{r fig-mean_negative_perturbation}
+```{r fig-mean_trend}
 #| fig-cap:
-#|  - Mean negative perturbation of maximum temperature distribution between 1987-1989 and 2014-2016.
-#|  - Centered log-ratio transform of the mean negative perturbation of maximum temperature distribution between 1987-1989 and 2014-2016.
+#|  - Mean annual trend of the maximum temperature distributions between 1987 and 2016.
+#|  - Centered log-ratio transform of the mean annual trend of maximum temperature distributions between 1987 and 2016.
 
 vnt |>
-  filter(period == "evolution") |>
   pull(t_max) |>
   mean() |>
   plot() +
@@ -152,7 +130,6 @@ vnt |>
   )
 
 vnt |>
-  filter(period == "evolution") |>
   pull(t_max) |>
   mean() |>
   as.fd() |>
@@ -183,12 +160,11 @@ vietnam_provinces |>
 
 vntr <- vnt |>
   select(!province) |>
-  nest_by(period, region, region_name, .key = "t_max") |>
+  nest_by(region, region_name, .key = "t_max") |>
   mutate(t_max = list(c(mean(t_max[[1]]))))
 class(vntr$t_max) <- c("ddl", "fdl", "list")
 
 vntr |> plot_funs(t_max, color = region_name) +
-  facet_grid(rows = vars(period), scales = "free_y") +
   geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), linetype = "dotted") +
   theme_legend_inside +
   labs(
@@ -197,7 +173,7 @@ vntr |> plot_funs(t_max, color = region_name) +
     color = "Region"
   )
 vntr |> plot_funs(t_max, color = region_name) +
-  facet_grid(vars(period), vars(str_wrap(region_name, 18)), scales = "free_y") +
+  facet_grid(vars(str_wrap(region_name, 18)), scales = "free_y") +
   geom_hline(yintercept = 1 / diff(vnt$t_max[[1]]$basis$rangeval), linetype = "dotted") +
   theme_legend_inside +
   labs(
@@ -216,7 +192,7 @@ vntr |> plot_funs(t_max, color = region_name) +
 ## Normality assumption
 
 ```{r normality}
-vnt_pc <- pca.fd(c(filter(vnt, period == "2014-2016")$t_max), nharm = 5)
+vnt_pc <- pca.fd(c(vnt$t_max), nharm = 5)
 pairs(vnt_pc$scores)
 mvn(vnt_pc$scores, mvnTest = "mardia")
 ```
@@ -225,11 +201,9 @@ mvn(vnt_pc$scores, mvnTest = "mardia")
 ## Homogeneity of variances
 
 ```{r fig-variance_homogeneity}
-#| fig-cap: Correlation function within the MDR region (2014-2016).
+#| fig-cap: Correlation function within the MDR region.
 
-vnt_per <- vnt |> filter(period == "2014-2016" & region == "MDR")
-
-vnt_var <- var.fd(c(as.fd(vnt_per$t_max)))
+vnt_var <- var.fd(c(as.fd(vnt$t_max)))
 
 tt <- seq(
   vnt_var$sbasis$rangeval[1],
@@ -238,7 +212,7 @@ tt <- seq(
 )
 
 z <- eval.bifd(tt, tt, vnt_var) # Covariance
-z <- cor.fd(tt, c(as.fd(vnt_per$t_max))) # Correlation
+z <- cor.fd(tt, c(as.fd(vnt$t_max))) # Correlation
 
 df <- data.frame(
   x = rep(tt, each = length(tt)),
@@ -254,10 +228,91 @@ ggplot(df, aes(x = x, y = y, z = z)) +
   )
 ```
 
+# Global tests
 
-# DANOVA on the regional mean densities of temperature
+## One-sample tests
 
-## Pointwise F-tests
+## Distributional ANOVA
+
+```{r tbl-danova_global}
+#| warning: false
+
+vnte <- vnt |>
+  filter(!region %in% c("SR", "MDR")) |>
+  mutate(t_max = as.fd(t_max)) |>
+  eval_funs(t_max, n = 1401) |>
+  select(province, x, y) |>
+  pivot_wider(names_from = province, values_from = y) |>
+  column_to_rownames("x")
+
+vnt_province_region <- vietnam_provinces$region
+names(vnt_province_region) <- vietnam_provinces$province
+
+plotFANOVA(vnte, vnt_province_region[colnames(vnte)], separately = TRUE)
+
+stat_list <- list("GPF", "Fmaxb", "CS", "L2B", "FB")
+
+res <- fanova.tests(vnte, vnt_province_region[colnames(vnte)],
+  test = stat_list,
+  params = list(
+    paramCS = 100,
+    paramFmaxb = 100,
+    paramTRP = list(B.TRP = 100)
+  )
+)
+
+res_tbl <- res[as_vector(stat_list)] |>
+  sapply(function(x) c(`Statistic` = x$stat, `p-value` = x$pval)) |>
+  t() |>
+  as.data.frame() |>
+  rownames_to_column("Name") |>
+  kable_format()
+
+res_tbl
+```
+
+```{r danova_global_tex}
+#| echo: false
+#| output: asis
+kable_source(res_tbl)
+```
+
+## Two-sample tests
+
+
+# Interval-wise interpretation 
+
+## One-sample tests
+
+```{r fig-one-sample_pointwise}
+#| fig-cap: Pointwise t-statistic.
+
+vnte <- vnt |>
+  mutate(t_max = as.fd(t_max)) |>
+  eval_funs(t_max, n = 1401) |>
+  nest_by(across(-c(x, y, id)))
+
+t_statistic <- function(vnte, indices = NULL) {
+  if (!is.null(indices)) vnte$data <- vnte$data[indices]
+
+  vnte |>
+    unnest(data) |>
+    group_by(x) |>
+    summarise(t = mean(y) / sqrt(var(y) / n()), .groups = "drop_last")
+}
+
+t_statistic(vnte) |>
+  ggplot(aes(x, t)) +
+  geom_line() +
+  geom_hline(yintercept = qt(0.975, nrow(vnt) - 1), color = "red", linetype = "dashed") +
+  geom_hline(yintercept = qt(0.025, nrow(vnt) - 1), color = "red", linetype = "dashed") +
+  labs(
+    x = "Temperature (deg. Celsius)",
+    yintercept = "Critical value"
+  )
+```
+
+## Distributional ANOVA
 
 ```{r fig-danova_pointwise}
 #| fig-cap: Pointwise F-statistic.
@@ -265,17 +320,16 @@ ggplot(df, aes(x = x, y = y, z = z)) +
 vnte <- vnt |>
   mutate(t_max = as.fd(t_max)) |>
   eval_funs(t_max, n = 1401) |>
-  nest_by(across(-c(x, y, id))) |>
-  group_by(period)
+  nest_by(across(-c(x, y, id)))
 
 f_statistic <- function(vnte, indices = NULL) {
   if (!is.null(indices)) vnte$data <- vnte$data[indices]
 
   vnte |>
     unnest(data) |>
-    group_by(period, x, region) |>
+    group_by(x, region) |>
     mutate(mean = mean(y), var = (n() - 1) / n() * var(y)) |>
-    group_by(period, x) |>
+    group_by(x) |>
     summarise(F = (n() - 1) / n() * var(mean) / mean(var) * (n() - length(unique(region))) / (length(unique(region)) - 1), .groups = "drop_last")
 }
 
@@ -295,154 +349,30 @@ f_statistic(vnte) |>
     x = "Temperature (deg. Celsius)",
     yintercept = "Critical value",
     fill = "Null hypothesis"
-  ) +
-  facet_grid(rows = vars(period))
-```
-
-## Global $F_\text{max}$ and GPF tests
-
-```{r fig-danova_global}
-#| fig-cap: "Null distributions of the global DANOVA tests (black: bootstrap, red: Welch–Satterthwaite approximation)."
-
-f_max_statistic <- function(vnte, indices = NULL) {
-  f_statistic(vnte, indices) |>
-    summarise(
-      F_max = max(F),
-      GPF = integrate(approxfun(x, F), min(x), max(x))$value
-    ) |>
-    pivot_longer(!period, names_to = "statistic")
-}
-
-f_max_statistic(vnte)
-
-if (file.exists("DANOVA.RData")) {
-  load("DANOVA.RData")
-} else {
-  system.time(
-    f_max_dist <- boot(vnte,
-      function(vnte, indices) f_max_statistic(vnte, indices)$value,
-      R = 5000,
-      parallel = "multicore",
-      ncpus = parallel::detectCores() - 1
-    )$t
-  )
-
-  f_max_dist <- f_max_statistic(vnte) |>
-    slice(rep(seq_len(n()), nrow(f_max_dist))) |>
-    mutate(value = c(t(f_max_dist)))
-
-  save(f_max_dist, file = "DANOVA.RData")
-}
-
-ival <- vnt_var$sbasis$rangeval
-vnt_var <- var.fd(c(as.fd(vnt$t_max)))
-tt <- seq(
-  ival[1],
-  ival[2],
-  length.out = 1401
-)
-z <- eval.bifd(tt, tt, vnt_var) # Covariance
-z <- cor.fd(tt, c(as.fd(vnt$t_max))) # Correlation
-
-tr_cov2 <- sum(diag(z %*% z))
-beta_w <- diff(ival) / 1401^2 * tr_cov2 / (6 - 1)
-d_w <- (6 - 1) * 1401^2 / tr_cov2
-
-
-f_max_dist |> ggplot(aes(value, linetype = statistic)) +
-  geom_density() +
-  geom_function(fun = ~ 1 / beta_w * dchisq(.x / beta_w, d_w), color = "red", linetype = "dotted") +
-  labs(y = "density") +
-  facet_grid(rows = vars(period))
-
-f_max_dist |>
-  group_by(period, statistic) |>
-  summarise(quantile(value, 0.95), .groups = "drop") |>
-  mutate(value = f_max_statistic(vnte)$value) |>
-  select(period, statistic, value, `quantile(value, 0.95)`)
-```
-
-## Other global tests
-
-```{r danova_global_other}
-vnt_province_region <- vietnam_provinces$region
-names(vnt_province_region) <- vietnam_provinces$province
-
-vnte <- vnt |>
-  filter(period == "evolution" & !region %in% c("SR", "MDR")) |>
-  mutate(t_max = as.fd(t_max)) |>
-  eval_funs(t_max, n = 1401) |>
-  select(province, x, y) |>
-  pivot_wider(names_from = province, values_from = y) |>
-  column_to_rownames("x")
-
-plotFANOVA(vnte, vnt_province_region[colnames(vnte)], separately = TRUE)
-
-system.time(
-  res <- fanova.tests(vnte, vnt_province_region[colnames(vnte)],
-    test = list("GPF", "Fmaxb", "CS", "L2B", "FB", "TRP"),
-    params = list(
-      paramCS = 100,
-      paramFmaxb = 100,
-      paramTRP = list(B.TRP = 100)
-    )
-  )
-)
-```
-
-
-# One-sample tests on the regional mean negative perturbations between 1987-1989 and 2014-2016
-
-## Pointwise t-test
-
-```{r fig-one-sample_pointwise}
-#| fig-cap: Pointwise t-statistic.
-
-vnte <- vnt |>
-  filter(period == "evolution") |>
-  mutate(t_max = as.fd(t_max)) |>
-  eval_funs(t_max, n = 1401) |>
-  nest_by(across(-c(x, y, id)))
-
-t_statistic <- function(vnte, indices = NULL) {
-  if (!is.null(indices)) vnte$data <- vnte$data[indices]
-
-  vnte |>
-    unnest(data) |>
-    group_by(period, x) |>
-    summarise(t = mean(y) / sqrt(var(y) / n()), .groups = "drop_last")
-}
-
-t_statistic(vnte) |>
-  ggplot(aes(x, t)) +
-  geom_line() +
-  geom_hline(yintercept = qt(0.975, nrow(vnt) - 1), color = "red", linetype = "dashed") +
-  geom_hline(yintercept = qt(0.025, nrow(vnt) - 1), color = "red", linetype = "dashed") +
-  labs(
-    x = "Temperature (deg. Celsius)",
-    yintercept = "Critical value"
   )
 ```
 
-## Global $t_\text{norm}$ test
+```{r fig-danova_intervals}
+#| fig-cap: Pointwise F-statistic.
 
-```{r one-sample_global}
+vntf <- vnt |>
+  filter(!region %in% c("SR", "MDR"))
 
+aov.dd <- function(ddobj, group, a, b) {
+  rangeval <- ddobj$basis$rangeval
+  xval <- seq(a, b, length.out = 1401)
+  ddlog <- eval(ddobj, xval)
+  ddint <- apply(ddlog, 2, function(logd) integrate(approxfun(xval, logd), a, b)$value)
+  ddata <- data.frame(ddint = ddint, group = group)
+  fit <- aov(ddint ~ group, data = ddata)
+  list(aov = fit, test = anova(fit), data = ddata)
+}
+
+res <- aov.dd(c(vntf$t_max), vntf$region, a = 30, b = 35)
+res
+
+ggplot(res$data, aes(group, ddint)) +
+  geom_boxplot()
 ```
 
-
-# Pairwise two-sample tests
-
-## Pointwise Welch's t-tests
-
-```{r two-sample_pointwise}
-
-```
-
-## Global tests
-
-
-```{r two-sample_global}
-
-```
-
+## Two-sample tests

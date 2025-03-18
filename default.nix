@@ -96,6 +96,7 @@ let
       fdANOVA
       fda_usc
       fdaoutlier
+      kableExtra
       knitr
       MVN
       quarto
