@@ -738,7 +738,7 @@ generate_data <- function(scheme, n = 200, p = 100) {
 }
 
 tibble(Scheme = schemes) |>
-  mutate(sim = map(Scheme, \(x) generate_data(x, p =200))) |>
+  mutate(sim = map(Scheme, \(x) generate_data(x, p = 200))) |>
   mutate(sim = map(sim, function(x) {
     tibble(
       data = tfd(x$data),
@@ -758,77 +758,127 @@ tibble(Scheme = schemes) |>
 #| fig-cap: ROC Curves for Outlier Detection Methods
 #| fig-height: 5
 
-methods <- c("ICS", "ICS_L2", "LQD", "Wasserstein", "MBD")
+methods <- c(
+  "ICS_B2",
+  "ICS_L2",
+  "Median_LQD",
+  "Median_Wasserstein",
+  "MBD_L2",
+  "MBD_LQD",
+  "MBD_QF",
+  "MUOD_L2",
+  "MUOD_LQD",
+  "MUOD_QF"
+)
 N <- 200 # Number of repetitions per combination
 
-if (!(file.exists("ICS_comparison.RData"))) {
-  method_ics <- function(data) {
-    u <- fda.usc::fdata(log(pmax(data, 1e-8)), argvals = as.numeric(colnames(data))) |>
-      fda.usc::fdata2fd(nbasis = 10)
-    for (i in integer(3)) {
-      u$coefs <- sweep(u$coefs, 2, fda::inprod(u) / diff(u$basis$rangeval))
-    }
-    if (any(is.nan(u$coefs))) stop("ICS preprocessing has failed for at least one density")
-    ICS_outlier(u, n_cores = 14)$ics_distances
+method_ics_b2 <- function(data) {
+  u <- fda.usc::fdata(log(pmax(data, 1e-8)), argvals = as.numeric(colnames(data))) |>
+    fda.usc::fdata2fd(nbasis = 10)
+  for (i in integer(3)) {
+    u$coefs <- sweep(u$coefs, 2, fda::inprod(u) / diff(u$basis$rangeval))
   }
+  if (any(is.nan(u$coefs))) stop("ICS preprocessing has failed for at least one density")
+  ICS_outlier(u, n_cores = 14)$ics_distances
+}
 
-  method_ics_l2 <- function(data) {
-    f <- fda.usc::fdata(data, argvals = as.numeric(colnames(data))) |>
-      fda.usc::fdata2fd(nbasis = 10)
-    ICS_outlier(f, n_cores = 14)$ics_distances
-  }
+method_ics_l2 <- function(data) {
+  f <- fda.usc::fdata(data, argvals = as.numeric(colnames(data))) |>
+    fda.usc::fdata2fd(nbasis = 10)
+  ICS_outlier(f, n_cores = 14)$ics_distances
+}
 
-  method_deboinr <- function(data, distance) {
-    density_order <- deboinr(
-      x_grid = seq(0, 1, length.out = ncol(data)),
-      densities_matrix = data,
-      distance = distance,
-      num_cores = 14
-    )$density_order
-    n <- nrow(data)
-    density_order <- density_order[density_order <= n]
-    scores <- integer(n)
-    scores[density_order] <- seq_len(n)
-    scores
-  }
+method_deboinr <- function(data, distance) {
+  density_order <- deboinr(
+    x_grid = seq(0, 1, length.out = ncol(data)),
+    densities_matrix = data,
+    distance = distance,
+    num_cores = 14
+  )$density_order
+  order(density_order)
+}
 
-  outlier_score <- function(method, data) {
-    print(paste("Computing outlier scores with", method))
-    tryCatch(switch(method,
-      "ICS" = method_ics(data),
-      "ICS_L2" = method_ics_l2(data),
-      "LQD" = method_deboinr(data, distance = "nLQD"),
-      "Wasserstein" = method_deboinr(data, distance = "wasserstein"),
-      "MBD" = method_deboinr(data, distance = "MBD_fboxplot")
-    ), error = function(e) NA)
-  }
+pdf_to_quant <- function(pdf, x_grid) {
+  interp_fn <- approxfun(x_grid, pdf)
+  cdf <- DeBoinR:::pdf_to_cdf(pdf, x_grid, norm = TRUE)
+  quant <- DeBoinR:::cdf_to_quant(cdf, x_grid)
+  return(quant)
+}
 
-  compute_roc <- function(scores, true_outliers) {
-    thresholds <- c(scores, max(scores) + 1)
-    tibble(threshold = thresholds) |>
-      mutate(
-        TP = map_int(threshold, ~ sum(scores >= .x & true_outliers)),
-        FP = map_int(threshold, ~ sum(scores >= .x & !true_outliers)),
-        FN = map_int(threshold, ~ sum(scores < .x & true_outliers)),
-        TN = map_int(threshold, ~ sum(scores < .x & !true_outliers)),
-        PP = map_int(threshold, ~ sum(scores >= .x)),
-        TPR = TP / (TP + FN),
-        FPR = FP / (FP + TN),
-      ) |>
-      select(TPR, FPR, PP)
-  }
-
-  system.time(
-    comparison <- crossing(Scheme = schemes, Method = methods, Simulation = 1:N) |>
-      mutate(sim = map(Scheme, generate_data)) |>
-      unnest_wider(sim) |>
-      mutate(
-        scores = map2(Method, data, outlier_score),
-        roc = map2(scores, true_outliers, compute_roc)
-      ) |>
-      unnest(roc) |>
-      select(!data)
+pdf_transform <- function(data, transform = c("id", "QF", "LQD")) {
+  switch(transform,
+    "id" = data,
+    "QF" = t(apply(
+      data, 1,
+      function(f) pdf_to_quant(f, seq(0, 1, length.out = ncol(data)))
+    )),
+    "LQD" = t(apply(
+      data, 1,
+      function(f) {
+        DeBoinR:::pdf_to_lqd(
+          DeBoinR:::alpha_mix(f, 0.1),
+          seq(0, 1, length.out = ncol(data))
+        )
+      }
+    ))
   )
+}
+
+method_muod <- function(data) {
+  res <- muod(data)$indices
+  res <- apply(res, 2, function(x) (x - quantile(x, 0.75)) / IQR(x))
+  apply(res, 1, max)
+}
+
+outlier_score <- function(method, data) {
+  print(paste("Computing outlier scores with", method))
+  tryCatch(switch(method,
+    "ICS_B2" = method_ics_b2(data),
+    "ICS_L2" = method_ics_l2(data),
+    "Median_LQD" = method_deboinr(data, distance = "nLQD"),
+    "Median_Wasserstein" = method_deboinr(data, distance = "wasserstein"),
+    "MBD_L2" = -modified_band_depth(data),
+    "MBD_LQD" = -modified_band_depth(pdf_transform(data, "LQD")),
+    "MBD_QF" = -modified_band_depth(pdf_transform(data, "QF")),
+    "MUOD_L2" = method_muod(data),
+    "MUOD_LQD" = method_muod(pdf_transform(data, "LQD")),
+    "MUOD_QF" = method_muod(pdf_transform(data, "QF"))
+  ), error = function(e) NA)
+}
+
+compute_roc <- function(scores, true_outliers) {
+  thresholds <- c(scores, max(scores) + 1)
+  tibble(threshold = thresholds) |>
+    mutate(
+      TP = map_int(threshold, ~ sum(scores >= .x & true_outliers)),
+      FP = map_int(threshold, ~ sum(scores >= .x & !true_outliers)),
+      FN = map_int(threshold, ~ sum(scores < .x & true_outliers)),
+      TN = map_int(threshold, ~ sum(scores < .x & !true_outliers)),
+      PP = map_int(threshold, ~ sum(scores >= .x)),
+      TPR = TP / (TP + FN),
+      FPR = FP / (FP + TN),
+    ) |>
+    select(TPR, FPR, PP)
+}
+
+if (!(file.exists("ICS_comparison_data.RData"))) {
+  comparison_data <- crossing(Simulation = 1:N, Scheme = schemes) |>
+    mutate(sim = map(Scheme, generate_data)) |>
+    crossing(Method = methods)
+  save(comparison_data, file = "ICS_comparison_data.RData")
+}
+
+if (!(file.exists("ICS_comparison.RData"))) {
+  load("ICS_comparison_data.RData")
+  comparison <- comparison_data |>
+    filter(Method %in% methods & Scheme %in% schemes) |>
+    unnest_wider(sim) |>
+    mutate(
+      scores = map2(Method, data, outlier_score),
+      roc = map2(scores, true_outliers, compute_roc)
+    ) |>
+    unnest(roc) |>
+    select(!data)
   save(comparison, file = "ICS_comparison.RData")
 }
 
@@ -847,7 +897,8 @@ knitr::kable(comparison_failed)
 
 # Aggregate results (averaging over simulations)
 comparison_avg <- comparison |>
-  group_by(Scheme, Method, PP) |>
+  separate_wider_delim(Method, "_", names = c("Method", "Transf")) |>
+  group_by(Scheme, Transf, Method, PP) |>
   summarize(
     TPR_avg = mean(TPR),
     n = n(),
@@ -856,11 +907,11 @@ comparison_avg <- comparison |>
     .groups = "drop"
   )
 
-ggplot(comparison_avg, aes(FPR_avg, TPR_avg, color = Method, group = Method)) +
+ggplot(comparison_avg, aes(FPR_avg, TPR_avg, color = Scheme, group = Scheme)) +
   geom_line() +
-  geom_ribbon(aes(ymin = pmax(0, TPR_avg - TPR_conf), ymax = pmin(1, TPR_avg + TPR_conf), fill = Method), alpha = 0.1, linetype = "dotted") +
+  geom_ribbon(aes(ymin = pmax(0, TPR_avg - TPR_conf), ymax = pmin(1, TPR_avg + TPR_conf), fill = Scheme), alpha = 0.1, linetype = "dotted") +
   geom_function(fun = identity, linetype = "dotted") +
-  facet_grid(~Scheme) +
+  facet_grid(Transf ~ Method) +
   coord_fixed() +
   labs(
     x = "False Positive Rate (FPR)",
