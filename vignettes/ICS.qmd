@@ -756,7 +756,7 @@ tibble(Scheme = schemes) |>
 
 ```{r fig-comparison_methods, message = FALSE}
 #| fig-cap: ROC Curves for Outlier Detection Methods
-#| fig-height: 5
+#| fig-height: 20
 
 methods <- c(
   "ICS_B2",
@@ -861,7 +861,7 @@ compute_roc <- function(scores, true_outliers) {
     select(TPR, FPR, PP)
 }
 
-if (!(file.exists("ICS_comparison_data.RData"))) {
+if (!(file.exists("ICS_comparison.RData")) & !(file.exists("ICS_comparison_data.RData"))) {
   comparison_data <- crossing(Simulation = 1:N, Scheme = schemes) |>
     mutate(sim = map(Scheme, generate_data)) |>
     crossing(Method = methods)
