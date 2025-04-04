@@ -34,13 +34,20 @@ theme_legend_inside <- theme(
 
 library(kableExtra)
 
+stars_pval <- function(x) {
+  stars <- c("***", "**", "*", NULL)
+  var <- c(0, 0.01, 0.05, 0.10, 1)
+  i <- findInterval(as.numeric(x), var, left.open = T, rightmost.closed = T)
+  paste(as.character(x), ifelse(is.na(stars[i]), "", stars[i]))
+}
+
 kable_format <- function(tbl) {
   mutate(tbl, across(
     where(is.numeric),
     function(x) {
       sapply(
         x,
-        function(x) format(signif(x, 2), scientific = x < 0.1)
+        function(x) format(signif(x, 2), scientific = x < 0.1) |> stars_pval()
       )
     }
   ))
@@ -55,7 +62,7 @@ kable_source <- function(tbl) {
     kable_styling(latex_options = "striped") |>
     print()
 
-cat("```\n")
+  cat("```\n")
   cat("\n\n")
 }
 ```
@@ -287,20 +294,39 @@ kable_source(res_tbl)
 
 ## Pairwise comparisons
 
-```{r pairwise}
-# vntp <- crossing(region1 = vietnam_regions$code, region2= vietnam_regions$code) |>
-#   rowwise() |>
-#   mutate(
-#     data = map2(region1, region2, function(region1, region2) vnte[vnt_province_region[colnames(vnte)] %in% c(region1, region2)]),
-# res = lapply(data, function(data) fanova.tests(data, vnt_province_region[colnames(data)],
-#   test = stat_list,
-#   ) |> pull(as_vector(stat_list)) |>
-#   sapply(function(x) c(`Statistic` = x$stat, `p-value` = x$pval)) |>
-#   t() |>
-#   as.data.frame() |>
-#   rownames_to_column("Name") |>
-#   kable_format())
-#   )
+```{r tbl-danova_pairwise}
+vntp <- t(combn(c("NMM", "RRD", "NCC", "CHR", "SR", "MDR"), m = 2))
+colnames(vntp) <- c("region1", "region2")
+
+pairwise_anova <- function(region1, region2) {
+  data <- vnte[vnt_province_region[colnames(vnte)] %in% c(region1, region2)]
+
+  res <- fanova.tests(data, vnt_province_region[colnames(data)],
+    test = stat_list,
+    params = list(
+      paramCS = 100,
+      paramFmaxb = 100,
+      paramTRP = list(B.TRP = 100)
+    )
+  )
+
+  res[as_vector(stat_list)] |>
+    sapply(function(x) c(x$pval)) |> c()
+}
+
+res_tbl <- as_tibble(vntp) |>
+  rowwise() |>
+  mutate(res = map2(region1, region2, pairwise_anova)) |>
+  unnest_wider(res) |>
+  kable_format()
+
+res_tbl
+```
+
+```{r danova_pairwise_tex}
+#| echo: false
+#| output: asis
+kable_source(res_tbl)
 ```
 
 
