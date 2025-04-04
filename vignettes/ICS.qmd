@@ -756,7 +756,7 @@ tibble(Scheme = schemes) |>
 
 ```{r fig-comparison_methods, message = FALSE}
 #| fig-cap: ROC Curves for Outlier Detection Methods
-#| fig-height: 20
+#| fig-height: 18.75
 
 methods <- c(
   "ICS_B2",
@@ -907,9 +907,17 @@ comparison_avg <- comparison |>
     .groups = "drop"
   )
 
+comparison_auc <- comparison_avg |>
+  group_by(Scheme, Method, Transf) |>
+  summarise(AUC = integrate(approxfun(FPR_avg, TPR_avg), 0, 1)$value)
+
 ggplot(comparison_avg, aes(FPR_avg, TPR_avg, color = Scheme, group = Scheme)) +
   geom_line() +
-  geom_ribbon(aes(ymin = pmax(0, TPR_avg - TPR_conf), ymax = pmin(1, TPR_avg + TPR_conf), fill = Scheme), alpha = 0.1, linetype = "dotted") +
+  geom_ribbon(aes(
+    ymin = pmax(0, TPR_avg - TPR_conf),
+    ymax = pmin(1, TPR_avg + TPR_conf),
+    fill = Scheme
+  ), alpha = 0.1, linetype = "dotted") +
   geom_function(fun = identity, linetype = "dotted") +
   facet_grid(Transf ~ Method) +
   coord_fixed() +
