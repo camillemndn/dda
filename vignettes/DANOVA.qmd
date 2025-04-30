@@ -56,9 +56,8 @@ kable_format <- function(tbl) {
 kable_source <- function(tbl) {
   cat("```tex\n")
 
-  kbl(tbl,
-    format = "latex", booktabs = TRUE
-  ) |>
+  kable_format(tbl) |>
+    kbl(format = "latex", booktabs = TRUE) |>
     kable_styling(latex_options = "striped") |>
     print()
 
@@ -280,10 +279,9 @@ res_tbl <- res[as_vector(stat_list)] |>
   sapply(function(x) c(`Statistic` = x$stat, `p-value` = x$pval)) |>
   t() |>
   as.data.frame() |>
-  rownames_to_column("Name") |>
-  kable_format()
+  rownames_to_column("Name")
 
-res_tbl
+kable_format(res_tbl)
 ```
 
 ```{r danova_global_tex}
@@ -314,13 +312,16 @@ pairwise_anova <- function(region1, region2) {
     sapply(function(x) c(x$pval)) |> c()
 }
 
+multiple_testing <- function(tbl, m) {
+  mutate(tbl, across(where(is.numeric), ~ 1 - (1- .x)^m))
+}
+
 res_tbl <- as_tibble(vntp) |>
   rowwise() |>
   mutate(res = map2(region1, region2, pairwise_anova)) |>
-  unnest_wider(res) |>
-  kable_format()
+  unnest_wider(res)
 
-res_tbl
+kable_format(res_tbl)
 ```
 
 ```{r danova_pairwise_tex}
@@ -329,6 +330,11 @@ res_tbl
 kable_source(res_tbl)
 ```
 
+```{r danova_pairwise_adj_tex}
+#| echo: false
+#| output: asis
+kable_source(res_tbl |> multiple_testing(m = nrow(res_tbl)))
+```
 
 # Interval-wise interpretation 
 
