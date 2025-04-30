@@ -861,6 +861,18 @@ compute_roc <- function(scores, true_outliers) {
     select(TPR, FPR, PP)
 }
 
+compute_auc_2 <- function(scores, true_outliers) {
+  thresholds <- scores[which(true_outliers)]
+  P <- sum(true_outliers)
+  N <- sum(!true_outliers)
+  tibble(threshold = thresholds) |>
+    mutate(
+       is_ordered = map_int(threshold, ~ sum(scores < .x & !true_outliers)) / (P*N),
+    ) |>
+    pull(is_ordered) |>
+    sum()
+}
+
 if (!(file.exists("ICS_comparison.RData")) & !(file.exists("ICS_comparison_data.RData"))) {
   comparison_data <- crossing(Simulation = 1:N, Scheme = schemes) |>
     mutate(sim = map(Scheme, generate_data)) |>
@@ -900,10 +912,11 @@ comparison_avg <- comparison |>
   separate_wider_delim(Method, "_", names = c("Method", "Transf")) |>
   group_by(Scheme, Transf, Method, PP) |>
   summarize(
-    TPR_avg = mean(TPR),
     n = n(),
-    TPR_conf = 1.96 * sd(TPR) / sqrt(n()),
+    TPR_avg = mean(TPR),
+    TPR_conf = qnorm(0.975) * sd(TPR) / sqrt(n()),
     FPR_avg = mean(FPR),
+    FPR_conf = qnorm(0.975) * sd(FPR) / sqrt(n()),
     .groups = "drop"
   )
 
@@ -911,11 +924,18 @@ comparison_auc <- comparison_avg |>
   group_by(Scheme, Method, Transf) |>
   summarise(AUC = integrate(approxfun(FPR_avg, TPR_avg), 0, 1)$value)
 
+comparison_auc |>
+  group_by(Method, Transf) |>
+  summarise(AUC_avg = mean(AUC)) |>
+  arrange(desc(AUC_avg))
+
 ggplot(comparison_avg, aes(FPR_avg, TPR_avg, color = Scheme, group = Scheme)) +
   geom_line() +
   geom_ribbon(aes(
     ymin = pmax(0, TPR_avg - TPR_conf),
     ymax = pmin(1, TPR_avg + TPR_conf),
+    xmin = pmax(0, FPR_avg - FPR_conf),
+    xmax = pmin(1, FPR_avg + FPR_conf),
     fill = Scheme
   ), alpha = 0.1, linetype = "dotted") +
   geom_function(fun = identity, linetype = "dotted") +
