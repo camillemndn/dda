@@ -61,7 +61,7 @@ inst/doc
 *_cache
 docs
 
-# Pre-commit config 
+# Pre-commit config
 .pre-commit-config.yaml
 
 # Nix
