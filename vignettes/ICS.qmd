@@ -939,12 +939,13 @@ ggplot(comparison_avg, aes(FPR_avg, TPR_avg, color = Scheme, group = Scheme)) +
     fill = Scheme
   ), alpha = 0.1, linetype = "dotted") +
   geom_function(fun = identity, linetype = "dotted") +
-  facet_grid(Transf ~ Method) +
+  facet_wrap(vars(paste(Method, Transf, sep = "_")), nrow = 2) +
   coord_fixed() +
   labs(
     x = "False Positive Rate (FPR)",
     y = "True Positive Rate (TPR)",
-  )
+  ) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 
