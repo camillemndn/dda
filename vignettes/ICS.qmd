@@ -756,7 +756,7 @@ tibble(Scheme = schemes) |>
 
 ```{r fig-comparison_methods, message = FALSE}
 #| fig-cap: ROC Curves for Outlier Detection Methods
-#| fig-height: 18.75
+#| fig-height: 7
 
 methods <- c(
   "ICS_B2",
