@@ -28,7 +28,6 @@ Suggests:
     sf,
     tf,
     tidyverse
-VignetteBuilder: quarto
 Depends:
     R (>= 3.5),
     fda

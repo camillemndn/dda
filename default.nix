@@ -17,35 +17,16 @@ let
               };
             };
 
-            pkgdown = buildRPackage {
-              name = "pkgdown";
+            pkgdown_offline = buildRPackage {
+              name = "pkgdown_offline";
               src = pkgs.fetchFromGitHub {
-                owner = "r-lib";
-                repo = "pkgdown";
-                rev = "v2.0.9";
-                hash = "sha256-2rmQxCC6GH6ZVqgifh4rXPHqOMKUPZD32gcnGFOeQPw=";
+                owner = "nanxstats";
+                repo = "pkgdown.offline";
+                rev = "v0.1.0";
+                hash = "sha256-BSEycknfrJVq6p4HRIMbnAZscs9Xy69gyKZoBBwlXqk=";
               };
               propagatedBuildInputs = [
-                bslib
-                callr
-                cli
-                desc
-                digest
-                downlit
-                fs
-                httr
-                jsonlite
-                magrittr
-                memoise
-                purrr
-                ragg
-                rlang
-                rmarkdown
-                tibble
-                whisker
-                withr
-                xml2
-                yaml
+                pkgdown
               ];
             };
 
@@ -113,6 +94,7 @@ let
     r-suggest-deps ps
     ++ [
       devtools
+      pkgdown_offline
       svglite
     ];
 
@@ -215,7 +197,7 @@ rec {
           HOME = ".";
 
           buildPhase = ''
-            Rscript -e "options(pkgdown.internet = FALSE); pkgdown::build_site()"
+            Rscript -e "pkgdown.offline::build_site()"
             image_optim --recursive docs
           '';
 
