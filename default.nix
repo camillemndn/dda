@@ -12,8 +12,8 @@ let
               src = pkgs.fetchFromGitHub {
                 owner = "jalvesaq";
                 repo = "colorout";
-                rev = "v1.3-2";
-                hash = "sha256-HBQRKqyYYAKJj2TFXBgX5Gc6EnkMG3ZaMCxuHVR9Cfc=";
+                rev = "v1.3-3";
+                hash = "sha256-1aWDrvW1+X5bxJEZlm3RLy8Urx6UlYX7BqJwNF2bNYA=";
               };
             };
 

@@ -34,11 +34,11 @@
 #' }
 #' }
 #' @seealso
-#'  \code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[fda]{density.fd}}, \code{\link[fda]{eval.fd}}
+#'  \code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[dda]{density.fd}}, \code{\link[fda]{eval.fd}}
 #'  \code{\link[stats]{integrate}}
 #' @rdname dd
 #' @export
-#' @importFrom fda create.bspline.basis fd fdPar density.fd eval.fd
+#' @importFrom fda create.bspline.basis fd fdPar eval.fd
 #' @importFrom stats integrate
 dd <- function(
     sample = NULL,
@@ -71,7 +71,7 @@ dd <- function(
     wfd0 <- fda::fd(matrix(0, basis$nbasis, 1), basis)
     wfdparobj <- fda::fdPar(wfd0, lambda = lambda)
     # Estimate density
-    wfdobj <- fda::density.fd(sample, wfdparobj)$Wfdobj
+    wfdobj <- density.fd(sample, wfdparobj)$Wfdobj
     wint <- stats::integrate(
       \(t) fda::eval.fd(wfdobj, t),
       min(rangeval), max(rangeval),
