@@ -1,5 +1,5 @@
 let
-  inputs = import ./deps;
+  inputs = import ./lon.nix;
   system = "x86_64-linux";
   pkgs = import inputs.nixpkgs {
     inherit system;
@@ -12,8 +12,8 @@ let
               src = pkgs.fetchFromGitHub {
                 owner = "jalvesaq";
                 repo = "colorout";
-                rev = "v1.3-2";
-                hash = "sha256-HBQRKqyYYAKJj2TFXBgX5Gc6EnkMG3ZaMCxuHVR9Cfc=";
+                rev = "v1.3-3";
+                hash = "sha256-1aWDrvW1+X5bxJEZlm3RLy8Urx6UlYX7BqJwNF2bNYA=";
               };
             };
 
@@ -22,8 +22,8 @@ let
               src = pkgs.fetchFromGitHub {
                 owner = "nanxstats";
                 repo = "pkgdown.offline";
-                rev = "v0.1.0";
-                hash = "sha256-BSEycknfrJVq6p4HRIMbnAZscs9Xy69gyKZoBBwlXqk=";
+                rev = "v0.1.1";
+                hash = "sha256-zu16X/WbCTdrIv5GNOUQbWuqDWCrSHAII7uf8I+2Wdk=";
               };
               propagatedBuildInputs = [
                 pkgdown

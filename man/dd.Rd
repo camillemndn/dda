@@ -89,6 +89,6 @@ if (interactive()) {
 }
 }
 \seealso{
-\code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[fda]{density.fd}}, \code{\link[fda]{eval.fd}}
+\code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[fda]{eval.fd}}
 \code{\link[stats]{integrate}}
 }
