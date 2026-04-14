@@ -29,6 +29,7 @@ let
           ref = args.branch;
           rev = args.revision;
           narHash = args.hash;
+          inherit (args) submodules;
         }
         // (
           if args ? lastModified then

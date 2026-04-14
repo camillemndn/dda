@@ -123,7 +123,7 @@ rec {
       (quarto.override { extraRPackages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
       (rWrapper.override { packages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
       texliveFull
-      npins
+      lon
     ];
     shellHook = ''
       ${pre-commit-hook.shellHook}
