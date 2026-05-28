@@ -1,6 +1,6 @@
 //! Penalized log-spline density estimation by Fisher scoring with line search.
 //!
-//! Mirrors the structure of `density.fd` in R; differences are local:
+//! Mirrors the structure of `density_mpl_legacy` in R; differences are local:
 //!   * Line search is a simple Armijo backtrack (5 tries) on the unnormalized
 //!     Newton direction, instead of the quadratic-interpolating `stepit`.
 //!     Fisher scoring + PD reduced Hessian make this sufficient for descent.
@@ -71,9 +71,10 @@ fn varfnden(basis: &Basis, f: &[f64], cvec: &[f64], cval: f64) -> Matrix {
     let e_phi = integrate_expect(basis, cvec, cval);
     let e_phi_outer = integrate_expect_outer(basis, cvec, cval);
     // Fisher information = fsum · Var_p[φ]. For one-column input f is all 1s
-    // so fsum = N and this matches the original density.fd formula; for
+    // so fsum = N and this matches the original fda formula; for
     // two-column normalized weights fsum = 1 and the scaling is correct
-    // (density.fd uses nobs here, which is wrong for the two-column case).
+    // (density_mpl_legacy uses nobs here, which is wrong for the
+    // two-column case — see vignettes/density-mpl.qmd).
     let fsum: f64 = f.iter().sum();
     let mut h = Matrix::zeros(nb, nb);
     for i in 0..nb {

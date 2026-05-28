@@ -38,8 +38,8 @@ NULL
 }
 
 
-`density_fd_rust_raw` <- function(`x`, `f`, `basis_kind`, `nbasis`, `range`, `knots`, `norder`, `params`, `cvec0`, `zmat`, `zmat_rows`, `kmat`, `conv`, `iterlim`, `climit_lo`, `climit_hi`) {
-  .Call(savvy_density_fd_rust_raw__impl, `x`, `f`, `basis_kind`, `nbasis`, `range`, `knots`, `norder`, `params`, `cvec0`, `zmat`, `zmat_rows`, `kmat`, `conv`, `iterlim`, `climit_lo`, `climit_hi`)
+`density_mpl_rust_raw` <- function(`x`, `f`, `basis_kind`, `nbasis`, `range`, `knots`, `norder`, `params`, `cvec0`, `zmat`, `zmat_rows`, `kmat`, `conv`, `iterlim`, `climit_lo`, `climit_hi`) {
+  .Call(savvy_density_mpl_rust_raw__impl, `x`, `f`, `basis_kind`, `nbasis`, `range`, `knots`, `norder`, `params`, `cvec0`, `zmat`, `zmat_rows`, `kmat`, `conv`, `iterlim`, `climit_lo`, `climit_hi`)
 }
 
 

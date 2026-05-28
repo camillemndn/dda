@@ -39,14 +39,14 @@ SEXP handle_result(SEXP res_) {
     return (SEXP)res;
 }
 
-SEXP savvy_density_fd_rust_raw__impl(SEXP c_arg__x, SEXP c_arg__f, SEXP c_arg__basis_kind, SEXP c_arg__nbasis, SEXP c_arg__range, SEXP c_arg__knots, SEXP c_arg__norder, SEXP c_arg__params, SEXP c_arg__cvec0, SEXP c_arg__zmat, SEXP c_arg__zmat_rows, SEXP c_arg__kmat, SEXP c_arg__conv, SEXP c_arg__iterlim, SEXP c_arg__climit_lo, SEXP c_arg__climit_hi) {
-    SEXP res = savvy_density_fd_rust_raw__ffi(c_arg__x, c_arg__f, c_arg__basis_kind, c_arg__nbasis, c_arg__range, c_arg__knots, c_arg__norder, c_arg__params, c_arg__cvec0, c_arg__zmat, c_arg__zmat_rows, c_arg__kmat, c_arg__conv, c_arg__iterlim, c_arg__climit_lo, c_arg__climit_hi);
+SEXP savvy_density_mpl_rust_raw__impl(SEXP c_arg__x, SEXP c_arg__f, SEXP c_arg__basis_kind, SEXP c_arg__nbasis, SEXP c_arg__range, SEXP c_arg__knots, SEXP c_arg__norder, SEXP c_arg__params, SEXP c_arg__cvec0, SEXP c_arg__zmat, SEXP c_arg__zmat_rows, SEXP c_arg__kmat, SEXP c_arg__conv, SEXP c_arg__iterlim, SEXP c_arg__climit_lo, SEXP c_arg__climit_hi) {
+    SEXP res = savvy_density_mpl_rust_raw__ffi(c_arg__x, c_arg__f, c_arg__basis_kind, c_arg__nbasis, c_arg__range, c_arg__knots, c_arg__norder, c_arg__params, c_arg__cvec0, c_arg__zmat, c_arg__zmat_rows, c_arg__kmat, c_arg__conv, c_arg__iterlim, c_arg__climit_lo, c_arg__climit_hi);
     return handle_result(res);
 }
 
 
 static const R_CallMethodDef CallEntries[] = {
-    {"savvy_density_fd_rust_raw__impl", (DL_FUNC) &savvy_density_fd_rust_raw__impl, 16},
+    {"savvy_density_mpl_rust_raw__impl", (DL_FUNC) &savvy_density_mpl_rust_raw__impl, 16},
     {NULL, NULL, 0}
 };
 

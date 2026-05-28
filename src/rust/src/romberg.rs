@@ -1,7 +1,7 @@
 //! Generic Romberg integration on [a, b] with Neville extrapolation.
 //!
 //! Ports `polintarray` / the trapezoid+extrapolation ladder used by the three
-//! integrators in `density.fd.R` (normden.phi, expectden.phi, expectden.phiphit).
+//! integrators in `R/density-mpl-legacy.R` (normden.phi, expectden.phi, expectden.phiphit).
 //! The integrand is supplied as a closure taking a slice of evaluation points
 //! and returning the *sum* over those points of the per-point output vector
 //! (length `out_len`). The Romberg ladder converts these trapezoid-style

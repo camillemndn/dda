@@ -1,7 +1,7 @@
 //! dda: Rust kernel for distributional data analysis.
 //!
 //! Currently exposes:
-//!   - `density_fd_rust(...)`: penalized log-spline density estimation.
+//!   - `density_mpl_rust(...)`: penalized log-spline density estimation.
 //!
 //! Module layout:
 //!   mat     — row-major dense matrix + small LA primitives (Cholesky, etc.)

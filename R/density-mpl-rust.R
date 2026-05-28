@@ -1,6 +1,6 @@
 #' Penalized log-spline density estimation (Rust backend)
 #'
-#' Reimplementation of [density.fd] with the Fisher-scoring loop and Romberg
+#' Reimplementation of [density_mpl_legacy] with the Fisher-scoring loop and Romberg
 #' integrators executed in Rust. Same statistical model, same output shape;
 #' typically 10–50x faster on B-spline bases with `nbasis` in the usual range.
 #'
@@ -10,10 +10,10 @@
 #' @param conv      Convergence tolerance on the objective. Default `1e-4`.
 #' @param iterlim   Maximum Fisher-scoring iterations. Default `20`.
 #'
-#' @return A list with the same fields as [density.fd]:
+#' @return A list with the same fields as [density_mpl_legacy]:
 #'   `Wfdobj`, `C`, `Flist`, `iternum`, `iterhist`.
 #' @export
-density_fd_rust <- function(x, WfdParobj, conv = 1e-4, iterlim = 20) {
+density_mpl_rust <- function(x, WfdParobj, conv = 1e-4, iterlim = 20) {
 
   if (!inherits(WfdParobj, "fdPar")) {
     if (inherits(WfdParobj, "fd") || inherits(WfdParobj, "basisfd")) {
@@ -29,7 +29,7 @@ density_fd_rust <- function(x, WfdParobj, conv = 1e-4, iterlim = 20) {
   rangex   <- basisobj$rangeval
   lambda   <- WfdParobj$lambda
 
-  # --- normalize x / f exactly as density.fd does --------------------------
+  # --- normalize x / f exactly as density_mpl_legacy does --------------------------
   x <- as.matrix(x)
   xdim <- dim(x); N <- xdim[1]; m <- xdim[2]
   if (m > 2 && N > 2) stop("Argument x must have one or two columns.")
@@ -60,7 +60,7 @@ density_fd_rust <- function(x, WfdParobj, conv = 1e-4, iterlim = 20) {
 
   # --- call into Rust ------------------------------------------------------
   cvec0 <- as.numeric(Wfdobj$coefs)
-  res <- density_fd_rust_raw(
+  res <- density_mpl_rust_raw(
     x          = as.numeric(x),
     f          = as.numeric(f),
     basis_kind = as.integer(basis_pack$kind),
@@ -122,6 +122,6 @@ density_fd_rust <- function(x, WfdParobj, conv = 1e-4, iterlim = 20) {
     list(kind = 6L, knots = numeric(0), norder = 0L,
          params = as.numeric(basisobj$params))
   } else {
-    stop("Basis type '", type, "' is not supported by density_fd_rust.")
+    stop("Basis type '", type, "' is not supported by density_mpl_rust.")
   }
 }

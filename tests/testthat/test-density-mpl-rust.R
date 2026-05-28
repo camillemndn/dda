@@ -1,6 +1,6 @@
-# Validate density_fd_rust against the reference R implementation density.fd.
+# Validate density_mpl_rust against the reference R implementation density_mpl_legacy.
 #
-# Note on tolerance: density.fd's line search (fda::stepit) exits when it
+# Note on tolerance: density_mpl_legacy's line search (fda::stepit) exits when it
 # cannot make further progress, which is *not* the same as a true stationary
 # point — gradients of size ~1e-1 to 1e-4 are common at its termination.
 # The Rust implementation uses Armijo backtracking on the Newton direction
@@ -17,8 +17,8 @@ skip_if_no_rust <- function() {
 run_both <- function(x, basis, lambda = 0, conv = 1e-8, iterlim = 100) {
   Wfd0 <- fda::fd(matrix(0, basis$nbasis, 1), basis)
   WfdPar <- fda::fdPar(Wfd0, lambda = lambda)
-  r_ref  <- dda:::density.fd(x, WfdPar, conv = conv, iterlim = iterlim)
-  r_rust <- dda::density_fd_rust(x, WfdPar, conv = conv, iterlim = iterlim)
+  r_ref  <- dda::density_mpl_legacy(x, WfdPar, conv = conv, iterlim = iterlim)
+  r_rust <- dda::density_mpl_rust(x, WfdPar, conv = conv, iterlim = iterlim)
   list(ref = r_ref, rust = r_rust)
 }
 
@@ -87,7 +87,7 @@ test_that("Two-column input with frequencies is handled identically", {
 })
 
 # ---------------------------------------------------------------------------
-# Closed-form / math-based tests (no reference to R's density.fd).
+# Closed-form / math-based tests (no reference to R's density_mpl_legacy).
 #
 # At the MLE of the exponential family p(x;c) = exp(φ(x)ᵀ c) / C(c), the
 # gradient zero condition is
@@ -100,7 +100,7 @@ test_that("Two-column input with frequencies is handled identically", {
 mle_moment_check <- function(x, basis, tol) {
   Wfd0 <- fda::fd(matrix(0, basis$nbasis, 1), basis)
   WfdPar <- fda::fdPar(Wfd0, lambda = 0)
-  res <- dda::density_fd_rust(x, WfdPar, conv = 1e-10, iterlim = 200)
+  res <- dda::density_mpl_rust(x, WfdPar, conv = 1e-10, iterlim = 200)
 
   # Empirical moment of each basis function: (1/N) Σ_i φ_j(x_i).
   phi_sample  <- fda::eval.basis(x, basis)

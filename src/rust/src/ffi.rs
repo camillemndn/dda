@@ -1,4 +1,4 @@
-//! savvy bindings: the single `density_fd_rust` entry point seen by R.
+//! savvy bindings: the single `density_mpl_rust` entry point seen by R.
 //!
 //! The R-side wrapper is responsible for:
 //!   * extracting basis params from a `basisfd` object into the flat vectors
@@ -17,7 +17,7 @@ use crate::mat::Matrix;
 
 #[allow(clippy::too_many_arguments)]
 #[savvy]
-fn density_fd_rust_raw(
+fn density_mpl_rust_raw(
     x: RealSexp,
     f: RealSexp,
     basis_kind: i32,

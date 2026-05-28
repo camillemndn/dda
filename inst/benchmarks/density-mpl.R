@@ -1,4 +1,4 @@
-# Wall-clock benchmark: density.fd (R) vs density_fd_rust (Rust).
+# Wall-clock benchmark: density_mpl_legacy (R) vs density_mpl_rust (Rust).
 #
 # Both implementations are called with their package-default convergence
 # settings (conv = 1e-4, iterlim = 20), so this is the realistic comparison
@@ -6,8 +6,8 @@
 
 suppressMessages(library(dda))
 library(microbenchmark)
-ref  <- dda:::density.fd
-rust <- dda::density_fd_rust
+ref  <- dda::density_mpl_legacy
+rust <- dda::density_mpl_rust
 
 make_basis <- function(type, K, rng = c(-4, 4)) {
   switch(type,

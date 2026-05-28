@@ -71,7 +71,7 @@ dd <- function(
     wfd0 <- fda::fd(matrix(0, basis$nbasis, 1), basis)
     wfdparobj <- fda::fdPar(wfd0, lambda = lambda)
     # Estimate density
-    wfdobj <- density.fd(sample, wfdparobj)$Wfdobj
+    wfdobj <- density_mpl(sample, wfdparobj)$Wfdobj
     wint <- stats::integrate(
       \(t) fda::eval.fd(wfdobj, t),
       min(rangeval), max(rangeval),
