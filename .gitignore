@@ -66,3 +66,9 @@ docs
 
 # Nix
 result*
+
+# Rust build artifacts
+src/Makevars
+src/.cargo/
+src/rust/target/
+

@@ -26,10 +26,13 @@ Suggests:
     MVN,
     rmarkdown,
     sf,
+    testthat (>= 3.0.0),
     tf,
     tidyverse
 Depends:
     R (>= 3.5),
     fda
+SystemRequirements: Cargo (>= 1.78), rustc
+Config/build/copy-method: link
 LazyData: true
 LazyDataCompression: bzip2

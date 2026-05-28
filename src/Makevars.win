@@ -1,0 +1,34 @@
+TARGET = $(subst 64,x86_64,$(subst 32,i686,$(WIN)))-pc-windows-gnu
+
+LIBDIR  = ./rust/target/$(TARGET)/release
+STATLIB = $(LIBDIR)/libdda.a
+PKG_LIBS = -L$(LIBDIR) -ldda -lws2_32 -ladvapi32 -luserenv -lbcrypt -lntdll
+
+CARGOTMP = $(CURDIR)/.cargo
+VENDOR_DIR = $(CURDIR)/rust/vendor
+
+all: C_clean
+
+$(SHLIB): $(STATLIB)
+
+$(STATLIB):
+	if [ -d "$(VENDOR_DIR)" ]; then \
+		mkdir -p $(CARGOTMP) && \
+		echo '[source.crates-io]'                 >  $(CARGOTMP)/config.toml && \
+		echo 'replace-with = "vendored-sources"' >> $(CARGOTMP)/config.toml && \
+		echo '[source.vendored-sources]'         >> $(CARGOTMP)/config.toml && \
+		echo 'directory = "$(VENDOR_DIR)"'       >> $(CARGOTMP)/config.toml ; \
+	fi
+	export CARGO_HOME="$(CARGOTMP)" && \
+		cargo build --target=$(TARGET) --lib --release --offline \
+			--manifest-path=./rust/Cargo.toml || \
+		(export CARGO_HOME="$(CARGOTMP)" && \
+		 cargo build --target=$(TARGET) --lib --release \
+			--manifest-path=./rust/Cargo.toml)
+	if [ -d "$(CARGOTMP)" ]; then rm -Rf $(CARGOTMP); fi
+
+C_clean:
+	rm -Rf $(SHLIB) $(STATLIB) $(OBJECTS)
+
+clean:
+	rm -Rf $(SHLIB) $(STATLIB) $(OBJECTS) ./rust/target $(CARGOTMP)

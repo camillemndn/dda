@@ -120,14 +120,18 @@ in
 rec {
   devShells.default = pkgs.mkShell {
     buildInputs = with pkgs; [
-      (quarto.override { extraRPackages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
-      (rWrapper.override { packages = r-deps pkgs.rPackages ++ [ packages.x86_64-linux.dda ]; })
+      (quarto.override { extraRPackages = r-deps pkgs.rPackages; }) # ++ [ packages.x86_64-linux.dda ]; })
+      (rWrapper.override { packages = r-deps pkgs.rPackages; }) # ++ [ packages.x86_64-linux.dda ]; })
       texliveFull
       lon
+      cargo
+      rustc
+      rustfmt
+      clippy
     ];
     shellHook = ''
       ${pre-commit-hook.shellHook}
-      Rscript -e "devtools::document()"
+      #Rscript -e "devtools::document()"
     '';
   };
 

@@ -11,3 +11,15 @@
 ^docs$
 ^pkgdown$
 ^vignettes/*_files$
+^src/Makevars$
+^src/\.cargo$
+^src/rust/target$
+^default\.nix$
+^shell\.nix$
+^lon\.nix$
+^lon\.lock$
+^deps$
+^\.pre-commit-config\.yaml$
+
+^src/rust/\.cargo$
+^src/Makevars\.win$
