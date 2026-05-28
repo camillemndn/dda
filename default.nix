@@ -113,7 +113,70 @@ let
 
   pre-commit-hook = (import inputs.git-hooks).run {
     src = ./.;
-    hooks.commitizen.enable = true;
+    hooks = {
+      commitizen.enable = true;
+
+      # ----- Rust -----
+      # rustfmt rewrites *.rs in place. If anything changed, pre-commit
+      # fails the commit and you re-stage; that's the standard flow.
+      rustfmt.enable = true;
+      # Clippy: real errors block, but `clippy::*` warnings stay advisory.
+      clippy = {
+        enable = true;
+        settings.denyWarnings = false;
+      };
+
+      # ----- Nix -----
+      nixfmt.enable = true;
+
+      # ----- Generic hygiene -----
+      trim-trailing-whitespace.enable = true;
+
+      # ----- Custom: keep roxygen-generated NAMESPACE + man/ in sync -----
+      roxygen-sync = {
+        enable = true;
+        name = "devtools::document() sync";
+        description = "Regenerate NAMESPACE and man/*.Rd when R sources change";
+        entry = toString (
+          pkgs.writeShellScript "roxygen-sync" ''
+            set -eu
+            ${(pkgs.rWrapper.override { packages = r-dev-deps pkgs.rPackages; })}/bin/Rscript \
+              -e 'devtools::document(quiet = TRUE)'
+            git diff --quiet NAMESPACE man/ || {
+              echo "roxygen regenerated NAMESPACE / man/; re-stage and retry." >&2
+              git add NAMESPACE man/
+              exit 1
+            }
+          ''
+        );
+        files = "(^R/.*\\.[Rr]$|^DESCRIPTION$)";
+        pass_filenames = false;
+      };
+
+      # ----- Custom: regenerate savvy bindings when Rust FFI changes -----
+      savvy-sync = {
+        enable = true;
+        name = "savvy-cli update";
+        description = "Regenerate src/init.c, src/rust/api.h, R/000-wrappers.R when ffi.rs changes";
+        entry = toString (
+          pkgs.writeShellScript "savvy-sync" ''
+            set -eu
+            if ! command -v savvy-cli >/dev/null 2>&1; then
+              echo "savvy-cli not on PATH; install via 'cargo install savvy-cli'" >&2
+              exit 1
+            fi
+            savvy-cli update .
+            git diff --quiet src/init.c src/rust/api.h R/000-wrappers.R || {
+              echo "savvy-cli regenerated bindings; re-stage and retry." >&2
+              git add src/init.c src/rust/api.h R/000-wrappers.R
+              exit 1
+            }
+          ''
+        );
+        files = "^src/rust/src/ffi\\.rs$";
+        pass_filenames = false;
+      };
+    };
   };
 in
 rec {
@@ -243,5 +306,72 @@ rec {
 
   checks.default = {
     inherit packages;
+
+    # `R CMD check` against the source tarball. Fast-ish; runs tests +
+    # examples + Rd-format checks.
+    R-CMD-check = pkgs.callPackage (
+      {
+        stdenv,
+        rWrapper,
+        rPackages,
+        cargo,
+        rustc,
+        ...
+      }:
+      stdenv.mkDerivation {
+        name = "dda-R-CMD-check";
+        src = builtins.fetchGit ./.;
+        nativeBuildInputs = [
+          cargo
+          rustc
+          (rWrapper.override { packages = r-dev-deps rPackages; })
+        ];
+        HOME = ".";
+        buildPhase = ''
+          export _R_CHECK_FORCE_SUGGESTS_=false
+          R CMD build .
+          R CMD check --no-manual dda_*.tar.gz
+        '';
+        installPhase = ''
+          mkdir -p $out
+          cp -r dda.Rcheck $out/ || true
+          cp dda_*.tar.gz $out/ || true
+        '';
+      }
+    ) { };
+
+    # `R CMD check --as-cran` — the stricter check CRAN's incoming queue
+    # runs. Flags policy violations (license, file structure, Rust
+    # vendoring, …) in addition to the regular check set.
+    R-CMD-check-cran = pkgs.callPackage (
+      {
+        stdenv,
+        rWrapper,
+        rPackages,
+        cargo,
+        rustc,
+        ...
+      }:
+      stdenv.mkDerivation {
+        name = "dda-R-CMD-check-cran";
+        src = builtins.fetchGit ./.;
+        nativeBuildInputs = [
+          cargo
+          rustc
+          (rWrapper.override { packages = r-dev-deps rPackages; })
+        ];
+        HOME = ".";
+        buildPhase = ''
+          export _R_CHECK_FORCE_SUGGESTS_=false
+          R CMD build .
+          R CMD check --as-cran --no-manual dda_*.tar.gz
+        '';
+        installPhase = ''
+          mkdir -p $out
+          cp -r dda.Rcheck $out/ || true
+          cp dda_*.tar.gz $out/ || true
+        '';
+      }
+    ) { };
   };
 }
