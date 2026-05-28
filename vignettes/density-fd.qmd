@@ -1,0 +1,77 @@
+---
+title: "Penalized log-spline density estimation: `density.fd`"
+format: html
+---
+
+## Model
+
+Given observations $x_1,\dots,x_n$ with weights $f_i$ ($F=\sum_i f_i$) on an interval $\Omega=[a,b]$, and a basis $\phi(x)=(\phi_1(x),\dots,\phi_K(x))^\top$, the density is parameterized by $c\in\mathbb{R}^K$ as
+$$
+p(x;c)=\frac{\exp\!\bigl(\phi(x)^\top c\bigr)}{C(c)},\qquad
+C(c)=\int_\Omega \exp\!\bigl(\phi(x)^\top c\bigr)\,dx .
+$$
+
+The penalized negative log-likelihood minimized is
+$$
+F(c)=\underbrace{-\sum_i f_i\,\phi(x_i)^\top c+F\log C(c)}_{-\ell(c)}+\lambda\,c^\top K c,
+\qquad
+K=\int_\Omega (L\phi)(L\phi)^\top\,dx,
+$$
+where $L$ is the differential operator carried by `WfdParobj$Lfd`.
+
+## Gradient and expected Hessian
+
+Differentiating $\log C$ gives
+$$
+\nabla_c\log C(c)=\mathbb{E}_p[\phi(X)],\qquad
+\nabla_c^2\log C(c)=\operatorname{Var}_p[\phi(X)].
+$$
+Hence
+$$
+\nabla\ell(c)=\sum_i f_i\bigl(\phi(x_i)-\mathbb{E}_p[\phi]\bigr),\qquad
+-\nabla^2\ell(c)=F\operatorname{Var}_p[\phi].
+$$
+With the penalty,
+$$
+g(c)=-\nabla\ell(c)+2\lambda K c,\qquad
+H(c)=F\operatorname{Var}_p[\phi]+2\lambda K .
+$$
+These are exactly `loglfnden` (gradient) and `Varfnden`+$2K$ (expected Hessian); the integrals $C$, $\mathbb{E}_p[\phi]$, $\mathbb{E}_p[\phi\phi^\top]$ are computed by Romberg integration in `normden.phi`, `expectden.phi`, `expectden.phiphit`.
+
+## Identifiability
+
+For a B-spline (or any partition-of-unity) basis, $\sum_j\phi_j\equiv 1$, so shifting $c\mapsto c+a\mathbf{1}$ shifts $\phi^\top c$ by the constant $a$, which is absorbed into $C$. The likelihood is therefore invariant along the direction $\mathbf{1}$. Let $Z\in\mathbb{R}^{K\times(K-1)}$ be an orthonormal basis of $\mathbf{1}^\perp$ (`zerobasis(nbasis)`). Reparametrize $c=Z\tilde c$; the reduced problem
+$$
+\tilde g=Z^\top g,\qquad \tilde H=Z^\top H Z
+$$
+has $\tilde H\succ 0$ (since $\operatorname{Var}_p[\phi]$ is PD on $\mathbf{1}^\perp$, and the $\lambda K$ term is PSD).
+
+## Algorithm (Fisher scoring with line search)
+
+1. Initialize $c\leftarrow c_0$ (from `WfdParobj$fd`).
+2. Compute $g,H$; reduce to $\tilde g,\tilde H$; Newton step $\Delta\tilde c=-\tilde H^{-1}\tilde g$, $\Delta c=Z\Delta\tilde c$.
+3. Backtracking/interpolating line search (`stepit`) on $\alpha\mapsto F(c+\alpha\Delta c)$ subject to box constraints $c\in[-50,400]^K$ (`stepchk`).
+4. Update $c\leftarrow c+\alpha\Delta c$; stop when $|F^{\text{new}}-F^{\text{old}}|<\text{conv}$ or `iterlim` reached.
+5. Return $W_c=\phi^\top c$ and $C=C(c)$.
+
+## Correctness
+
+**Convexity.** $\log C(c)$ is the log-partition of an exponential family and is convex (its Hessian $\operatorname{Var}_p[\phi]$ is PSD). Therefore $-\ell$ is convex, and $F=-\ell+\lambda c^\top K c$ is convex (strictly, on $\mathbf{1}^\perp$, when $K\succeq 0$). Any stationary point of the reduced problem in $\tilde c$ is the unique global minimizer.
+
+**Descent direction.** Since $\tilde H\succ 0$,
+$$
+\tilde g^\top\Delta\tilde c=-\tilde g^\top\tilde H^{-1}\tilde g<0\quad\text{whenever }\tilde g\neq 0,
+$$
+so $\Delta c$ is a strict descent direction for $F$ (lines 227–238 check the slope and fall back to $-\tilde g$ if numerical loss makes $\cos\angle<0$, line 340–343).
+
+**Monotone convergence.** The line search returns $\alpha>0$ with $F(c+\alpha\Delta c)<F(c)$ (Wolfe-style interpolation in `stepit`); the sequence $\{F(c^{(k)})\}$ is decreasing and bounded below (since $F$ is coercive on the identifiable subspace), hence converges. Combined with strict convexity on $\mathbf{1}^\perp$, $c^{(k)}\to c^\star$, the unique minimizer.
+
+**Normalization.** At return, $C=\int_\Omega\exp(\phi^\top c^\star)\,dx$ is computed to tolerance $10^{-7}$ by Romberg extrapolation, so $\int_\Omega p(x;c^\star)\,dx=1$ by construction.
+
+## Output
+
+`density.fd` returns `list(Wfdobj, C, Flist, iternum, iterhist)` with
+$$
+\widehat p(x)=\frac{\exp\!\bigl(W_{c^\star}(x)\bigr)}{C},\quad x\in\Omega,
+$$
+the unique maximizer of the penalized log-likelihood in the chosen log-spline family.
