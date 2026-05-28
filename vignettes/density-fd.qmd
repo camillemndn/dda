@@ -75,3 +75,44 @@ $$
 \widehat p(x)=\frac{\exp\!\bigl(W_{c^\star}(x)\bigr)}{C},\quad x\in\Omega,
 $$
 the unique maximizer of the penalized log-likelihood in the chosen log-spline family.
+
+## Bugs in the R reference
+
+Porting the algorithm to Rust surfaced two issues in `fda::density.fd` that the present `density_fd_rust` implementation corrects.
+
+### 1. Hessian scaling for frequency-weighted input
+
+Let $F=\sum_i f_i$ be the total weight. Differentiating $-\ell$ twice in $c$:
+$$
+-\partial_c^2\ell(c) = F\,\partial_c^2\log C(c) = F\operatorname{Var}_p[\phi(X)].
+$$
+The Fisher information is **$F\operatorname{Var}_p[\phi]$**, not $N\operatorname{Var}_p[\phi]$. In `Varfnden` (line 411 of `density.fd.R`) the code computes
+```r
+Varphi <- nobs*(EDwDwt - outer(EDw,EDw))
+```
+i.e.\ it always scales by `nobs = length(x)`, regardless of $F$.
+
+- For a *one-column* input ($f_i\equiv 1$, $F=N=$ `nobs`), this matches the correct formula.
+- For a *two-column* input with frequencies normalized to $\sum_i f_i=1$ (lines 116–120 of `density.fd.R`), we have $F=1$ but `nobs`$=N$, so the Hessian is over-scaled by a factor of $N$. The Newton step $-H^{-1}g$ is therefore *under-sized by a factor $N$*.
+
+In R, `fda::stepit` masks this by aggressively *expanding* the trial step (its line search is Wolfe-style with quadratic interpolation). A plain backtracking line search — as in the Rust port — does **not** expand and the descent stalls. The fix in `density.rs::varfnden` replaces `nobs` with $F=\sum f_i$:
+$$
+H(c)=F\operatorname{Var}_p[\phi]+2\lambda K .
+$$
+
+### 2. Early termination at non-stationary points
+
+The R loop has two exit conditions (lines 325–332):
+```r
+if (abs(Flist$f - Foldstr$f) < conv) { ... return }
+if (Flist$f >= Foldstr$f) break          # not a return: just exits
+```
+The second branch fires whenever the line search fails to find a step that strictly decreases $F$. This is *not* the same as reaching a stationary point — `stepit` can fail purely from numerical limitations of its interpolation while $\|\tilde g\|$ is still on the order of $10^{-1}$ to $10^{-4}$. The function then returns the current $c$ regardless.
+
+For test problems where the true minimizer lies close to an active box constraint or where the Hessian is poorly conditioned along weakly identified directions (e.g.\ B-spline boundary coefficients with no data nearby), `density.fd` terminates with $\|\tilde g\|\gg \epsilon$ and the returned $c$ is *not* the optimum of the penalized log-likelihood.
+
+The Rust port uses Armijo backtracking on the (correctly scaled) Newton direction and converges to $\|\tilde g\|<10^{-7}$ in our tests. Where the R and Rust solutions disagree, the Rust solution has the strictly smaller objective value.
+
+### Practical consequence
+
+For un-penalized fits on data that doesn't cover the basis range (e.g.\ a $\mathcal N(0,1)$ sample with $\Omega=[-4,4]$), the two implementations can return densities that disagree by $O(1)$ outside the data support — both are local optima of an ill-posed problem and the boundary coefficients of the B-spline basis are weakly identified. Inside the data support the densities agree to under 1% relative difference.

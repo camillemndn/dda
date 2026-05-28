@@ -66,15 +66,19 @@ fn loglfnden(
     (logl, dlogl)
 }
 
-fn varfnden(basis: &Basis, x: &[f64], cvec: &[f64], cval: f64) -> Matrix {
+fn varfnden(basis: &Basis, f: &[f64], cvec: &[f64], cval: f64) -> Matrix {
     let nb = basis.nbasis;
     let e_phi = integrate_expect(basis, cvec, cval);
     let e_phi_outer = integrate_expect_outer(basis, cvec, cval);
-    let nobs = x.len() as f64;
+    // Fisher information = fsum · Var_p[φ]. For one-column input f is all 1s
+    // so fsum = N and this matches the original density.fd formula; for
+    // two-column normalized weights fsum = 1 and the scaling is correct
+    // (density.fd uses nobs here, which is wrong for the two-column case).
+    let fsum: f64 = f.iter().sum();
     let mut h = Matrix::zeros(nb, nb);
     for i in 0..nb {
         for j in 0..nb {
-            *h.at_mut(i, j) = nobs * (e_phi_outer.at(i, j) - e_phi[i] * e_phi[j]);
+            *h.at_mut(i, j) = fsum * (e_phi_outer.at(i, j) - e_phi[i] * e_phi[j]);
         }
     }
     h
@@ -181,7 +185,7 @@ pub fn density_fd(basis: &Basis, x: &[f64], f: &[f64], cvec0: &[f64], opts: &Den
     // Reduced gradient and Newton direction.
     let mut grad_r = zt_vec(z, &grad);
 
-    let mut hmat = varfnden(basis, x, &cvec, cval);
+    let mut hmat = varfnden(basis, f, &cvec, cval);
     add_penalty_hessian(&mut hmat, kmat);
     let mut h_r = zt_h_z(z, &hmat);
 
@@ -269,7 +273,7 @@ pub fn density_fd(basis: &Basis, x: &[f64], f: &[f64], cvec0: &[f64], opts: &Den
         }
 
         // Refresh Hessian and Newton step.
-        let mut h = varfnden(basis, x, &cvec, cval);
+        let mut h = varfnden(basis, f, &cvec, cval);
         add_penalty_hessian(&mut h, kmat);
         h_r = zt_h_z(z, &h);
         deltac = solve_newton_step(&mut h_r, &grad_r, z);
