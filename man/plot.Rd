@@ -4,38 +4,22 @@
 \alias{plot.fdl}
 \alias{plot.dd}
 \alias{plot.ddl}
-\title{FUNCTION_TITLE}
+\title{Plot a distributional-data object}
 \usage{
-\method{plot}{fdl}(fdlist, ...)
+\method{plot}{fdl}(x, ...)
 
-\method{plot}{dd}(ddobj, ...)
+\method{plot}{dd}(x, ...)
 
-\method{plot}{ddl}(ddlist, ...)
+\method{plot}{ddl}(x, ...)
 }
 \arguments{
-\item{...}{PARAM_DESCRIPTION}
+\item{x}{A \code{dd} object or list (\code{ddl} / \code{fdl}).}
 
-\item{ddobj}{PARAM_DESCRIPTION}
-
-\item{rangeval}{PARAM_DESCRIPTION, Default: ddobj$basis$rangeval}
-
-\item{h}{PARAM_DESCRIPTION, Default: 0.001}
-
-\item{show.legend}{PARAM_DESCRIPTION, Default: FALSE}
+\item{...}{Aesthetic arguments forwarded to ggplot layers.}
 }
 \value{
-OUTPUT_DESCRIPTION
+A \code{ggplot} object.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
+Plot a distributional-data object
 }

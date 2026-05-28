@@ -4,59 +4,24 @@
 \alias{relative}
 \alias{relative.dd}
 \alias{relative.ddl}
-\title{FUNCTION_TITLE}
+\title{Bayes-space relative density}
 \usage{
-relative(...)
+relative(e1, e2, ...)
 
-\method{relative}{dd}(...)
+\method{relative}{dd}(e1, e2, ...)
 
-\method{relative}{ddl}(ddl1, ddl2, ...)
+\method{relative}{ddl}(e1, e2, ...)
 }
 \arguments{
-\item{...}{PARAM_DESCRIPTION}
+\item{e1, e2}{\code{dd} objects (or lists thereof) to compare.}
 
-\item{ddl1}{PARAM_DESCRIPTION}
-
-\item{ddl2}{PARAM_DESCRIPTION}
+\item{...}{Further arguments forwarded to the underlying method.}
 }
 \value{
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
+A \code{dd} object.
 }
 \description{
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-
-DETAILS
-
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-}
-\seealso{
-\code{\link[fda]{arithmetic.fd}}
+Generic \code{relative(e1, e2)} returns the Bayes-space ratio of two
+densities. The default method dispatches to \code{\link[fda:arithmetic.fd]{fda::minus.fd()}} on the
+clr-transformed log-densities.
 }

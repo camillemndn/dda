@@ -4,59 +4,22 @@
 \alias{center}
 \alias{center.dd}
 \alias{center.ddl}
-\title{FUNCTION_TITLE}
+\title{Center a functional/distributional object}
 \usage{
-center(...)
+center(x, ...)
 
-\method{center}{dd}(ddobj, ...)
+\method{center}{dd}(x, ...)
 
-\method{center}{ddl}(ddlist, ...)
+\method{center}{ddl}(x, ...)
 }
 \arguments{
-\item{...}{PARAM_DESCRIPTION}
+\item{x}{A \code{dd} object or list (\code{ddl} / \code{fdl}).}
 
-\item{ddobj}{PARAM_DESCRIPTION}
-
-\item{ddlist}{PARAM_DESCRIPTION}
+\item{...}{Further arguments forwarded to \code{\link[=dd]{dd()}}.}
 }
 \value{
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
+A \code{dd} object (or list, for list input).
 }
 \description{
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-
-DETAILS
-
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-}
-\seealso{
-\code{\link[fda]{center.fd}}
+Subtract the mean (in the appropriate Bayes space) from each realization.
 }

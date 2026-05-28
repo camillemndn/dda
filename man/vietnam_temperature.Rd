@@ -3,24 +3,21 @@
 \docType{data}
 \name{vietnam_temperature}
 \alias{vietnam_temperature}
-\title{DATASET_TITLE}
+\title{Vietnam daily temperature records}
 \format{
 A data frame with 1890 rows and 5 variables:
 \describe{
-\item{\code{year}}{character COLUMN_DESCRIPTION}
-\item{\code{region}}{character COLUMN_DESCRIPTION}
-\item{\code{province}}{character COLUMN_DESCRIPTION}
-\item{\code{t_max}}{list COLUMN_DESCRIPTION}
-\item{\code{t_min}}{list COLUMN_DESCRIPTION}
+\item{year}{Observation year.}
+\item{region}{Administrative region code.}
+\item{province}{Province name.}
+\item{t_max}{List column of \code{tf} daily-maximum temperature traces.}
+\item{t_min}{List column of \code{tf} daily-minimum temperature traces.}
 }
 }
 \usage{
 vietnam_temperature
 }
 \description{
-DATASET_DESCRIPTION
-}
-\details{
-DETAILS
+Daily maximum and minimum temperatures recorded across Vietnamese provinces.
 }
 \keyword{datasets}

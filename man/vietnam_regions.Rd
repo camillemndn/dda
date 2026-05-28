@@ -3,21 +3,18 @@
 \docType{data}
 \name{vietnam_regions}
 \alias{vietnam_regions}
-\title{DATASET_TITLE}
+\title{Vietnamese administrative regions}
 \format{
 A data frame with 6 rows and 2 variables:
 \describe{
-\item{\code{code}}{character COLUMN_DESCRIPTION}
-\item{\code{name}}{character COLUMN_DESCRIPTION}
+\item{code}{Region code.}
+\item{name}{Region name.}
 }
 }
 \usage{
 vietnam_regions
 }
 \description{
-DATASET_DESCRIPTION
-}
-\details{
-DETAILS
+Lookup table from region code to region name.
 }
 \keyword{datasets}

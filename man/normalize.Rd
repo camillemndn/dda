@@ -2,29 +2,20 @@
 % Please edit documentation in R/eval.R
 \name{normalize}
 \alias{normalize}
-\title{FUNCTION_TITLE}
+\title{Compute the normalizing constant of a log-density carrier}
 \usage{
 normalize(self)
 }
 \arguments{
-\item{self}{PARAM_DESCRIPTION}
+\item{self}{An object carrying \code{coefs}, \code{basis}, and (optionally)
+\code{constant}.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Character vector of normalizing constants, one per realization;
+\code{NULL} if \code{self$constant} is already numeric.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-}
-\seealso{
-\code{\link[fda]{eval.fd}}
+Numerically integrates \code{exp(W(t))} over the basis range and returns the
+normalizing constants per realization, formatted as character strings in
+scientific notation (one per column of \code{self$coefs}).
 }

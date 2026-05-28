@@ -1,147 +1,76 @@
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ddobj PARAM_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
-#' @seealso
-#'  \code{\link[fda]{mean.fd}}
+#' Mean of distributional data
+#'
+#' @param x A `dd` object (or list of them) / a `ddl` list.
+#' @param ... Further arguments forwarded to [dd()].
+#' @return A `dd` object.
 #' @rdname mean
 #' @export
 #' @importFrom fda mean.fd
-mean.dd <- function(ddobj, ...) {
+mean.dd <- function(x, ...) {
   return_list <- FALSE
-  if (inherits(ddobj, "list")) {
-    ddobj <- merge.dd(ddobj)
+  if (inherits(x, "list")) {
+    x <- do.call(c, x)
     return_list <- TRUE
   }
-  meandd <- dd(clr = fda::mean.fd(ddobj), ...)
+  meandd <- dd(clr = fda::mean.fd(x), ...)
   if (return_list) list(meandd) else meandd
 }
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ddlist PARAM_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
 #' @rdname mean
 #' @export
-mean.ddl <- function(ddlist, ...) as.list(mean(c(ddlist), ...))
+mean.ddl <- function(x, ...) as.list(mean(c(x), ...))
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' Center a functional/distributional object
+#'
+#' Subtract the mean (in the appropriate Bayes space) from each realization.
+#'
+#' @param x A `dd` object or list (`ddl` / `fdl`).
+#' @param ... Further arguments forwarded to [dd()].
+#' @return A `dd` object (or list, for list input).
 #' @rdname center
 #' @export
-center <- function(...) UseMethod("center")
+center <- function(x, ...) UseMethod("center")
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ddobj PARAM_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
-#' @seealso
-#'  \code{\link[fda]{center.fd}}
 #' @rdname center
 #' @export
 #' @importFrom fda center.fd
-center.dd <- function(ddobj, ...) {
-  dd(clr = fda::center.fd(ddobj), ...)
+center.dd <- function(x, ...) {
+  dd(clr = fda::center.fd(x), ...)
 }
 
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ddlist PARAM_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
 #' @rdname center
 #' @export
-center.ddl <- function(ddlist, ...) as.list(center(c(ddlist), ...))
+center.ddl <- function(x, ...) as.list(center(c(x), ...))
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' Geometric mean in Bayes space
+#'
+#' Bayes-space mean of a `dd` object or a list (`ddl`) of them.
+#'
+#' @param x A `dd` object or a `ddl` list.
+#' @param ... Further arguments forwarded to the underlying [mean.dd()].
+#' @return A `dd` object (or list for `ddl` input).
 #' @rdname gmean
 #' @export
-gmean <- function(...) UseMethod("gmean")
+gmean <- function(x, ...) UseMethod("gmean")
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ddlist PARAM_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
 #' @rdname gmean
 #' @export
-gmean.ddl <- function(ddlist, ...) as.list(gmean(c(ddlist), ...))
+gmean.ddl <- function(x, ...) as.list(gmean(c(x), ...))
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ddlist PARAM_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
 #' @rdname gmean
 #' @export
-gmean.dd <- function(ddlist, ...) mean.dd(ddobj, normalize = FALSE)
+gmean.dd <- function(x, ...) mean.dd(x, normalize = FALSE)
 
-#' Bayes space operations
+#' Bayes-space arithmetic on `dd` / `ddl` objects
+#'
+#' Pointwise Bayes-space addition, subtraction, multiplication and
+#' subsetting for distributional-data objects.
+#'
+#' @param e1,e2 `dd` (or `ddl`) operands.
+#' @param ... For `+.dd` / `-.dd` / `*.dd` / `[.dd`, the operands and
+#'   indexing args forwarded to the underlying `fda` operator.
+#' @return A `dd` object (or `ddl` list for `ddl` operands).
 #' @rdname operations
 #' @export
 `+.dd` <- function(...) dd(clr = fda::plus.fd(...))
@@ -154,163 +83,80 @@ gmean.dd <- function(ddlist, ...) mean.dd(ddobj, normalize = FALSE)
 #' @rdname operations
 #' @export
 `[.dd` <- function(...) dd(clr = fda::`[.fd`(...))
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' Bayes-space relative density
+#'
+#' Generic `relative(e1, e2)` returns the Bayes-space ratio of two
+#' densities. The default method dispatches to [fda::minus.fd()] on the
+#' clr-transformed log-densities.
+#'
+#' @param e1,e2 `dd` objects (or lists thereof) to compare.
+#' @param ... Further arguments forwarded to the underlying method.
+#' @return A `dd` object.
 #' @rdname relative
 #' @export
-relative <- function(...) UseMethod("relative")
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
-#' @seealso
-#'  \code{\link[fda]{arithmetic.fd}}
+relative <- function(e1, e2, ...) UseMethod("relative")
+
 #' @rdname relative
 #' @export
 #' @importFrom fda minus.fd
-relative.dd <- function(...) dd(clr = fda::minus.fd(...), normalize = FALSE)
+relative.dd <- function(e1, e2, ...) {
+  dd(clr = fda::minus.fd(e1, e2), normalize = FALSE)
+}
 
 #' @rdname operations
 #' @export
-`+.ddl` <- function(ddl1, ddl2, ...) as.list(`+.dd`(c(ddl1), c(ddl2), ...))
+`+.ddl` <- function(e1, e2) as.list(`+.dd`(c(e1), c(e2)))
 #' @rdname operations
 #' @export
-`-.ddl` <- function(ddl1, ddl2, ...) as.list(`-.dd`(c(ddl1), c(ddl2), ...))
+`-.ddl` <- function(e1, e2) as.list(`-.dd`(c(e1), c(e2)))
 #' @rdname operations
 #' @export
-`*.ddl` <- function(ddl1, ddl2, ...) as.list(`*.dd`(c(ddl1), c(ddl2), ...))
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ddl1 PARAM_DESCRIPTION
-#' @param ddl2 PARAM_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+`*.ddl` <- function(e1, e2) as.list(`*.dd`(c(e1), c(e2)))
+
 #' @rdname relative
 #' @export
-relative.ddl <- function(ddl1, ddl2, ...) as.list(relative.dd(c(ddl1, normalize = FALSE), c(ddl2, normalize = FALSE), ...))
+relative.ddl <- function(e1, e2, ...) {
+  as.list(relative.dd(c(e1, normalize = FALSE), c(e2, normalize = FALSE), ...))
+}
 
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param x PARAM_DESCRIPTION
-#' @param y PARAM_DESCRIPTION, Default: NULL
-#' @param na.rm PARAM_DESCRIPTION, Default: FALSE
-#' @param use PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' Variance
+#'
+#' Generic dispatching to [stats::var()] by default and to [fda::var.fd()]
+#' for `dd` input.
+#'
+#' @param x A numeric vector or a `dd` object.
+#' @param ... Further arguments forwarded to the underlying method.
+#' @return A variance estimate; for `dd` input, an object of class `bidd`.
 #' @rdname var
 #' @export
-var.default <- var
+var <- function(x, ...) UseMethod("var")
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
 #' @rdname var
 #' @export
-var <- function(...) UseMethod("var")
+var.default <- function(x, ...) stats::var(x, ...)
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
-#' @seealso
-#'  \code{\link[fda]{var.fd}}
 #' @rdname var
 #' @export
 #' @importFrom fda var.fd
-var.dd <- function(...) structure(fda::var.fd(...), class = "bidd")
+var.dd <- function(x, ...) structure(fda::var.fd(x, ...), class = "bidd")
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param x PARAM_DESCRIPTION
-#' @param y PARAM_DESCRIPTION, Default: NULL
-#' @param use PARAM_DESCRIPTION, Default: 'everything'
-#' @param method PARAM_DESCRIPTION, Default: c("pearson", "kendall", "spearman")
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' Covariance
+#'
+#' Generic dispatching to [stats::cov()] by default and to [fda::var.fd()]
+#' for `dd` input.
+#'
+#' @param x A numeric vector / matrix or a `dd` object.
+#' @param ... Further arguments forwarded to the underlying method.
+#' @return A covariance estimate.
 #' @rdname cov
 #' @export
-cov.default <- cov
+cov <- function(x, ...) UseMethod("cov")
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
 #' @rdname cov
 #' @export
-cov <- function(...) UseMethod("cov")
+cov.default <- function(x, ...) stats::cov(x, ...)
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
-#' @seealso
-#'  \code{\link[fda]{var.fd}}
 #' @rdname cov
 #' @export
-#' @importFrom fda var.fd
 cov.dd <- var.dd

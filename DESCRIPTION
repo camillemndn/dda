@@ -9,12 +9,12 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Imports: 
-    GGally,
+VignetteBuilder: quarto
+Imports:
+    dplyr,
     ggplot2,
-    ICS,
-    ICSOutlier,
-    memoise
+    rlang,
+    tidyr
 Suggests:
     boot,
     corrplot,
@@ -24,13 +24,14 @@ Suggests:
     fdaoutlier,
     knitr,
     MVN,
+    quarto,
     rmarkdown,
     sf,
     testthat (>= 3.0.0),
     tf,
     tidyverse
 Depends:
-    R (>= 3.5),
+    R (>= 4.1.0),
     fda
 SystemRequirements: Cargo (>= 1.78), rustc
 Config/build/copy-method: link

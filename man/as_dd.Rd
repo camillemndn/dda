@@ -7,106 +7,35 @@
 \alias{as_dd.dd}
 \alias{as_dd.fd}
 \alias{as_dd.numeric}
-\title{FUNCTION_TITLE}
+\title{Coerce to a distributional-data object}
 \usage{
-as_dd(...)
+as_dd(x, ...)
 
-\method{as_dd}{list}(l, full_sample = unlist(l), mc.cores = NULL, ...)
+\method{as_dd}{list}(x, full_sample = unlist(x), mc.cores = NULL, ...)
 
-\method{as_dd}{xts}(sample, ...)
+\method{as_dd}{xts}(x, ...)
 
-\method{as_dd}{dd}(ddobj, ...)
+\method{as_dd}{dd}(x, ...)
 
-\method{as_dd}{fd}(fdobj, ...)
+\method{as_dd}{fd}(x, ...)
 
-\method{as_dd}{numeric}(sample, ...)
+\method{as_dd}{numeric}(x, ...)
 }
 \arguments{
-\item{...}{PARAM_DESCRIPTION}
+\item{x}{Object to coerce: a numeric sample, an \code{fd}, \code{dd}, list, or
+\code{xts} time series.}
 
-\item{l}{PARAM_DESCRIPTION}
+\item{...}{Further arguments forwarded to \code{\link[=dd]{dd()}}.}
 
-\item{full_sample}{PARAM_DESCRIPTION, Default: unlist(l)}
+\item{full_sample}{Pooled reference sample used to set common breakpoints
+across list elements. Defaults to \code{unlist(x)}.}
 
-\item{mc.cores}{PARAM_DESCRIPTION, Default: NULL}
-
-\item{sample}{PARAM_DESCRIPTION}
-
-\item{ddobj}{PARAM_DESCRIPTION}
-
-\item{fdobj}{PARAM_DESCRIPTION}
+\item{mc.cores}{Optional integer; if non-\code{NULL}, list elements are
+processed in parallel via \code{\link[parallel:mclapply]{parallel::mclapply()}}.}
 }
 \value{
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
+A \code{dd} object, or a list of them with class \code{c("ddl", "fdl", "list")} for list / xts input.
 }
 \description{
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-
-DETAILS
-
-DETAILS
-
-DETAILS
-
-DETAILS
-
-DETAILS
-}
-\examples{
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-}
-\seealso{
-\code{\link[parallel]{mclapply}}
+Coerce to a distributional-data object
 }

@@ -1,21 +1,18 @@
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param x PARAM_DESCRIPTION
-#' @param WfdParobj PARAM_DESCRIPTION
-#' @param conv PARAM_DESCRIPTION, Default: 1e-04
-#' @param iterlim PARAM_DESCRIPTION, Default: 20
-#' @param active PARAM_DESCRIPTION, Default: 1:nbasis
-#' @param dbglev PARAM_DESCRIPTION, Default: 0
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
-#' @rdname density_mpl_legacy
+#' Silverman / Ramsay log-spline density estimator (legacy R backend)
+#'
+#' Original `fda::density.fd` algorithm, ported verbatim. Use the unified
+#' [density_mpl()] (default backend: `"rust"`) unless you need bit-for-bit
+#' compatibility with prior results.
+#'
+#' @param x Observation vector or two-column matrix.
+#' @param WfdParobj An `fdPar` object specifying the basis and penalty.
+#' @param conv Convergence tolerance on the objective. Default `1e-4`.
+#' @param iterlim Maximum Fisher-scoring iterations. Default `20`.
+#' @param active Indices of coefficients that may be updated. Default all.
+#' @param dbglev Verbosity for the line-search trace. Default `0`.
+#' @param ... Currently unused; accepted for forward-compatibility.
+#' @return A list with `Wfdobj`, `C`, `Flist`, `iternum`, `iterhist`.
+#' @keywords internal
 #' @export
 density_mpl_legacy <- function(x, WfdParobj, conv=0.0001, iterlim=20,
                                  active=1:nbasis, dbglev=0, ...) {
@@ -352,7 +349,7 @@ for (iter in 1:iterlim) {
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname density_mpl_legacy
+#' @noRd
 loglfnden <- function(x, f, basisobj, cvec=FALSE) {
 	#  Computes the log likelihood and its derivative with
 	#    respect to the coefficients in CVEC
@@ -384,7 +381,7 @@ loglfnden <- function(x, f, basisobj, cvec=FALSE) {
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname density_mpl_legacy
+#' @noRd
 Varfnden <- function(x, basisobj, cvec=FALSE) {
 	#  Computes the expected Hessian
    	nbasis  <- basisobj$nbasis
@@ -412,7 +409,7 @@ Varfnden <- function(x, basisobj, cvec=FALSE) {
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname density_mpl_legacy
+#' @noRd
 normden.phi <- function(basisobj, cvec, JMAX=15, EPS=1e-7) {
 
 #  Computes integrals of
@@ -498,7 +495,7 @@ normden.phi <- function(basisobj, cvec, JMAX=15, EPS=1e-7) {
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname density_mpl_legacy
+#' @noRd
 expectden.phi <- function(basisobj, cvec, Cval=1, nderiv=0,
                      JMAX=15, EPS=1e-7) {
     #  Computes expectations of basis functions with respect to density
@@ -600,7 +597,7 @@ expectden.phi <- function(basisobj, cvec, Cval=1, nderiv=0,
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname density_mpl_legacy
+#' @noRd
 expectden.phiphit <- function(basisobj, cvec, Cval=1, nderiv1=0, nderiv2=0,
                               JMAX=15, EPS=1e-7) {
 
@@ -708,7 +705,7 @@ expectden.phiphit <- function(basisobj, cvec, Cval=1, nderiv1=0, nderiv2=0,
 #'  #EXAMPLE1
 #'  }
 #' }
-#' @rdname density_mpl_legacy
+#' @noRd
 polintarray <- function(xa, ya, x0) {
   	#  YA is an array with up to 4 dimensions
   	#     with 1st dim the same length same as the vector XA

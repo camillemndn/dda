@@ -2,7 +2,7 @@
 % Please edit documentation in R/dd.R
 \name{dd}
 \alias{dd}
-\title{FUNCTION_TITLE}
+\title{Build a distributional-data (\code{dd}) object}
 \usage{
 dd(
   sample = NULL,
@@ -34,61 +34,46 @@ dd(
 )
 }
 \arguments{
-\item{sample}{PARAM_DESCRIPTION, Default: NULL}
+\item{sample}{Optional numeric sample used to estimate the density.}
 
-\item{full_sample}{PARAM_DESCRIPTION, Default: sample}
+\item{full_sample}{Pooled reference sample for knot placement. Defaults
+to \code{sample}.}
 
-\item{basis}{PARAM_DESCRIPTION, Default: fda::create.bspline.basis(rangeval = rangeval, nbasis = nbasis,
-norder = norder, breaks = breaks)}
+\item{basis}{A \code{basisfd} object. Defaults to a B-spline basis built from
+\code{rangeval}, \code{nbasis}, \code{norder}, \code{breaks}.}
 
-\item{knots_pos}{PARAM_DESCRIPTION, Default: 'quantiles'}
+\item{knots_pos}{How to derive knots from \code{full_sample} (\code{"quantiles"}
+by default).}
 
-\item{breaks}{PARAM_DESCRIPTION, Default: if (is.numeric(sample)) {
-if (knots_pos == "quantiles") {
-quantile(full_sample, seq(0, 1, length.out = nbasis -
-norder + 2))
-}
-else {
-quantile(range(full_sample), seq(0, 1, length.out = nbasis -
-norder + 2))
-}
-} else {
-NULL
-}}
+\item{breaks}{Numeric vector of knot positions. By default chosen from
+\code{full_sample} according to \code{knots_pos}; \code{NULL} for non-numeric input.}
 
-\item{rangeval}{PARAM_DESCRIPTION, Default: if (is.numeric(sample)) range(breaks) else c(0, 1)}
+\item{rangeval}{Numeric pair giving the range over which the density
+lives. Defaults to \code{range(breaks)} for numeric input, \code{c(0, 1)}
+otherwise.}
 
-\item{nbasis}{PARAM_DESCRIPTION, Default: 12}
+\item{nbasis}{Number of basis functions. Default \code{12}.}
 
-\item{norder}{PARAM_DESCRIPTION, Default: 5}
+\item{norder}{B-spline order. Default \code{5}.}
 
-\item{lambda}{PARAM_DESCRIPTION, Default: 0}
+\item{lambda}{Penalty parameter forwarded to \code{\link[=density_mpl]{density_mpl()}}.}
 
-\item{clr}{PARAM_DESCRIPTION, Default: fda::fd(basisobj = basis)}
+\item{clr}{Pre-computed clr-transformed \code{fd} (skip density estimation if
+supplied).}
 
-\item{constant}{PARAM_DESCRIPTION, Default: NULL}
+\item{constant}{Optional pre-computed normalizing constant.}
 
-\item{normalize}{PARAM_DESCRIPTION, Default: TRUE}
+\item{normalize}{Logical; if \code{TRUE} (default) compute the normalizing
+constant via \code{\link[=normalize]{normalize()}}.}
 
-\item{...}{PARAM_DESCRIPTION}
+\item{...}{Further arguments forwarded to \code{\link[=density_mpl]{density_mpl()}}.}
 }
 \value{
-OUTPUT_DESCRIPTION
+A \code{dd} object: an \code{fd} carrying \code{constant} and (optionally)
+\code{sample}.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-}
-\seealso{
-\code{\link[fda]{create.bspline.basis}}, \code{\link[fda]{fd}}, \code{\link[fda]{fdPar}}, \code{\link[fda]{eval.fd}}
-\code{\link[stats]{integrate}}
+Constructor for a \code{dd} object: a B-spline \code{fd} representation of a
+log-density together with its normalizing constant (so the density is
+\code{exp(W(x)) / constant}).
 }

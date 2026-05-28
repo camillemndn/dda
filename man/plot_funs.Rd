@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.R
 \name{plot_funs}
 \alias{plot_funs}
-\title{FUNCTION_TITLE}
+\title{Plot a column of functional objects}
 \usage{
 plot_funs(
   .data,
@@ -19,39 +19,23 @@ plot_funs(
 )
 }
 \arguments{
-\item{.data}{PARAM_DESCRIPTION}
+\item{.data}{A data frame with a list column of \code{fd} objects.}
 
-\item{funs}{PARAM_DESCRIPTION}
+\item{funs}{Tidy-selection for that column.}
 
-\item{...}{PARAM_DESCRIPTION}
+\item{...}{Additional aesthetic arguments forwarded to \code{\link[ggplot2:aes]{ggplot2::aes()}}.}
 
-\item{n}{PARAM_DESCRIPTION, Default: 401}
+\item{n}{Number of evaluation points. Default \code{401}.}
 
-\item{rangeval}{PARAM_DESCRIPTION, Default: range(lapply(dplyr::pull(.data, {
-{
-funs
-}
-}), function(fun) fun$basis$rangeval))}
+\item{rangeval}{Numeric pair; abscissa range. Defaults to the union of
+the basis ranges of the functions in \code{funs}.}
 
-\item{x}{PARAM_DESCRIPTION, Default: seq(rangeval\link{1}, rangeval\link{2}, length.out = n)}
+\item{x}{Evaluation grid. Defaults to \code{seq(rangeval[1], rangeval[2], length.out = n)}.}
 }
 \value{
-OUTPUT_DESCRIPTION
+A \code{ggplot} object.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-}
-\seealso{
-\code{\link[dplyr]{pull}}
-\code{\link[ggplot2]{ggplot}}, \code{\link[ggplot2]{aes}}, \code{\link[ggplot2]{geom_path}}
+Takes a data frame with a list column of \code{fd} objects, evaluates each on
+a common grid, and draws them as overlaid line plots.
 }

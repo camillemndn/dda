@@ -1,6 +1,10 @@
 ---
 title: "Penalized log-spline density estimation: `density_mpl`"
 format: html
+vignette: >
+  %\VignetteIndexEntry{Penalized log-spline density estimation: density_mpl}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ## Model

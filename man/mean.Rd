@@ -3,46 +3,20 @@
 \name{mean.dd}
 \alias{mean.dd}
 \alias{mean.ddl}
-\title{FUNCTION_TITLE}
+\title{Mean of distributional data}
 \usage{
-\method{mean}{dd}(ddobj, ...)
+\method{mean}{dd}(x, ...)
 
-\method{mean}{ddl}(ddlist, ...)
+\method{mean}{ddl}(x, ...)
 }
 \arguments{
-\item{ddobj}{PARAM_DESCRIPTION}
+\item{x}{A \code{dd} object (or list of them) / a \code{ddl} list.}
 
-\item{...}{PARAM_DESCRIPTION}
-
-\item{ddlist}{PARAM_DESCRIPTION}
+\item{...}{Further arguments forwarded to \code{\link[=dd]{dd()}}.}
 }
 \value{
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
+A \code{dd} object.
 }
 \description{
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-}
-\seealso{
-\code{\link[fda]{mean.fd}}
+Mean of distributional data
 }

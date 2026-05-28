@@ -1,57 +1,38 @@
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param ddobj PARAM_DESCRIPTION
-#' @param rangeval PARAM_DESCRIPTION, Default: ddobj$basis$rangeval
-#' @param h PARAM_DESCRIPTION, Default: 0.001
-#' @param show.legend PARAM_DESCRIPTION, Default: FALSE
-#' @param ... PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if (interactive()) {
-#'   # EXAMPLE1
-#' }
-#' }
+#' Plot a distributional-data object
+#'
+#' @param x A `dd` object or list (`ddl` / `fdl`).
+#' @param ... Aesthetic arguments forwarded to ggplot layers.
+#' @return A `ggplot` object.
 #' @rdname plot
 #' @export
 #' @method plot dd
 #' @importFrom ggplot2 ggplot aes geom_line labs
 #' @importFrom fda plot.fd
-plot.dd <- function(ddobj, ...) {
-  plot_funs(data.frame(fun = I(as.list(ddobj))), fun, ...)
+plot.dd <- function(x, ...) {
+  plot_funs(data.frame(fun = I(as.list(x))), fun, ...)
 }
 
 #' @rdname plot
 #' @export
 #' @method plot ddl
-plot.ddl <- function(ddlist, ...) {
-  plot_funs(data.frame(fun = I(ddlist)), fun, ...)
+plot.ddl <- function(x, ...) {
+  plot_funs(data.frame(fun = I(x)), fun, ...)
 }
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param .data PARAM_DESCRIPTION
-#' @param funs PARAM_DESCRIPTION
-#' @param ... PARAM_DESCRIPTION
-#' @param n PARAM_DESCRIPTION, Default: 401
-#' @param rangeval PARAM_DESCRIPTION, Default: range(lapply(dplyr::pull(.data, {
-#'    {
-#'        funs
-#'    }
-#' }), function(fun) fun$basis$rangeval))
-#' @param x PARAM_DESCRIPTION, Default: seq(rangeval[1], rangeval[2], length.out = n)
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if (interactive()) {
-#'   # EXAMPLE1
-#' }
-#' }
-#' @seealso
-#'  \code{\link[dplyr]{pull}}
-#'  \code{\link[ggplot2]{ggplot}}, \code{\link[ggplot2]{aes}}, \code{\link[ggplot2]{geom_path}}
+#' Plot a column of functional objects
+#'
+#' Takes a data frame with a list column of `fd` objects, evaluates each on
+#' a common grid, and draws them as overlaid line plots.
+#'
+#' @param .data A data frame with a list column of `fd` objects.
+#' @param funs Tidy-selection for that column.
+#' @param ... Additional aesthetic arguments forwarded to [ggplot2::aes()].
+#' @param n Number of evaluation points. Default `401`.
+#' @param rangeval Numeric pair; abscissa range. Defaults to the union of
+#'   the basis ranges of the functions in `funs`.
+#' @param x Evaluation grid. Defaults to `seq(rangeval[1], rangeval[2],
+#'   length.out = n)`.
+#' @return A `ggplot` object.
 #' @rdname plot_funs
 #' @export
 #' @importFrom dplyr pull
@@ -63,99 +44,52 @@ plot_funs <- function(.data, funs, ..., n = 401,
                       )),
                       x = seq(rangeval[1], rangeval[2], length.out = n)) {
   eval_funs(.data, {{ funs }}, n, rangeval, x) |>
-    ggplot2::ggplot(ggplot2::aes(x, y, group = id, ...)) +
+    ggplot2::ggplot(ggplot2::aes(.data$x, .data$y, group = .data$id, ...)) +
     ggplot2::geom_line()
 }
 
+#' Faceted scatter-matrix plot
+#'
+#' Internal helper used to render an unordered grid of pairwise scatterplots
+#' over the non-`ddl` columns of `data`, faceted by variable pair.
+#'
+#' @param data A data frame with named columns.
+#' @param subset_vars Character vector of columns to plot pairwise.
+#' @param ... Additional aesthetic arguments forwarded to ggplot.
+#' @return A `ggplot` object.
+#' @keywords internal
 #' @export
+#' @importFrom ggplot2 ggplot aes geom_text facet_grid vars coord_fixed
+#'   scale_x_continuous scale_y_continuous
 plot_matrix <- function(data, subset_vars, ...) {
   data <- data |> dplyr::select(dplyr::where(\(x) !inherits(x, "ddl")))
-  # Check if subset_vars are in the data
   if (!all(subset_vars %in% names(data))) {
     stop("Some variables in subset_vars are not present in the data.")
   }
 
-  # Get all possible pairs of the subset variables
-  pairs <- tidyr::crossing(var1 = subset_vars, var2 = subset_vars) %>%
-    dplyr::filter(var1 != var2)
+  pairs <- tidyr::crossing(var1 = subset_vars, var2 = subset_vars) |>
+    dplyr::filter(.data$var1 != .data$var2)
 
-  # Create the long format data frame
-  long_data <- pairs %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(x = list(data[[var1]]), y = list(data[[var2]]), other = list(data |> dplyr::select(!subset_vars))) %>%
-    tidyr::unnest(c(x, y, other))
+  long_data <- pairs |>
+    dplyr::rowwise() |>
+    dplyr::mutate(
+      x = list(data[[.data$var1]]),
+      y = list(data[[.data$var2]]),
+      other = list(data |> dplyr::select(!dplyr::all_of(subset_vars)))
+    ) |>
+    tidyr::unnest(c(.data$x, .data$y, .data$other))
 
-  break_by_x <- function(x) {
+  break_by_x <- function(step) {
     function(limits) {
-      seq(ceiling(limits[1] / x) * x, floor(limits[2] / x) * x, x)
+      seq(ceiling(limits[1] / step) * step, floor(limits[2] / step) * step, step)
     }
   }
 
-  long_data %>%
-    ggplot(aes(x = x, y = y, ...)) +
-    geom_text() +
-    facet_grid(vars(var2), vars(var1)) +
-    coord_fixed() +
-    scale_x_continuous(breaks = break_by_x(2)) +
-    scale_y_continuous(breaks = break_by_x(2))
+  ggplot2::ggplot(long_data, ggplot2::aes(x = .data$x, y = .data$y, ...)) +
+    ggplot2::geom_text() +
+    ggplot2::facet_grid(ggplot2::vars(.data$var2), ggplot2::vars(.data$var1)) +
+    ggplot2::coord_fixed() +
+    ggplot2::scale_x_continuous(breaks = break_by_x(2)) +
+    ggplot2::scale_y_continuous(breaks = break_by_x(2))
 }
 
-#' @export
-#' @method plot ICS_Out_fd
-plot.ICS_Out_fd <- function(object, ...) {
-  X <- object$X
-  IC_distances <- object$ics_distances
-  n <- nrow(object$scores)
-  p <- ncol(object$scores)
-
-  screeplot_dat <- data.frame(
-    IC = 1:p,
-    gen_kurtosis = object$gen_kurtosis,
-    selected = as.factor(ifelse(1:p %in% object$index, "selected", "not selected")),
-    eigenfun = I(as.list(object$H_dual))
-  )
-  g1 <- ggplot(screeplot_dat, aes(IC, gen_kurtosis)) +
-    geom_line(alpha = 0.5) +
-    geom_point(aes(color = selected, size = selected))
-  plot(g1)
-  outlier_fact <- as.factor(ifelse(object$outliers == 1, "outlier", "not outlier"))
-  distances_dat <- data.frame(
-    Index = 1:n, IC_distances,
-    outlier = outlier_fact
-  )
-  screeplot_dat$IC <- as.factor(screeplot_dat$IC)
-  g2 <- screeplot_dat |>
-    filter(selected == "selected") |>
-    plot_funs(eigenfun, color = IC) +
-    if (inherits(X, "dd")) geom_hline(yintercept = 1 / diff(X$basis$rangeval))
-  plot(g2)
-
-  g3 <- ggplot(distances_dat, aes(Index, IC_distances, color = outlier)) +
-    geom_point() +
-    geom_hline(yintercept = object$ics_dist_cutoff)
-
-  pairs_dat <- data.frame(object$scores, outlier = outlier_fact)
-
-  g3b <- GGally::ggpairs(pairs_dat,
-    diag = "blank",
-    columns = 1:max(max(object$index), 2),
-    aes(label = 1:n, shape = NA, color = outlier)
-  ) + geom_text()
-  print(g3b)
-
-  if (!inherits(X, "ICS")) {
-    f_dat <- data.frame(
-      X = I(as.list(X)),
-      outlier = outlier_fact
-    )
-    g4 <- plot_funs(f_dat, X, color = outlier, alpha = outlier)
-    plot(g4)
-  }
-
-  g <- gridExtra::grid.arrange(ggplotGrob(g1), ggplotGrob(g2),
-    if (exists("g3b")) ggmatrix_gtable(g3b) else ggplotGrob(g3),
-    if (exists("g4")) ggplotGrob(g4) else NULL,
-    ncol = 2
-  )
-  plot(g)
-}

@@ -11,7 +11,9 @@ name = "dda"
 lto = true
 opt-level = 3
 codegen-units = 1
-panic = "abort"
+# `unwind` so R CMD check doesn't flag the binary for calling `abort`
+# (CRAN policy disallows compiled code that may terminate R).
+panic = "unwind"
 
 [dependencies]
 savvy = "0.10"

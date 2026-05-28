@@ -3,21 +3,20 @@
 \docType{data}
 \name{vietnam_provinces}
 \alias{vietnam_provinces}
-\title{DATASET_TITLE}
+\title{Vietnamese provinces (geographic boundaries)}
 \format{
-A data frame with 63 rows and 2 variables:
+A \code{sf} data frame with 63 rows and 4 variables:
 \describe{
-\item{\code{province}}{character COLUMN_DESCRIPTION}
-\item{\code{region}}{character COLUMN_DESCRIPTION}
+\item{region}{Administrative region code.}
+\item{province}{Province name.}
+\item{geometry}{\code{sfc} polygon geometry of the province boundary.}
+\item{climate_region}{Climate-region classification.}
 }
 }
 \usage{
 vietnam_provinces
 }
 \description{
-DATASET_DESCRIPTION
-}
-\details{
-DETAILS
+Administrative-province polygons with climate-region tags.
 }
 \keyword{datasets}

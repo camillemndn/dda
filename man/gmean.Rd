@@ -4,54 +4,22 @@
 \alias{gmean}
 \alias{gmean.ddl}
 \alias{gmean.dd}
-\title{FUNCTION_TITLE}
+\title{Geometric mean in Bayes space}
 \usage{
-gmean(...)
+gmean(x, ...)
 
-\method{gmean}{ddl}(ddlist, ...)
+\method{gmean}{ddl}(x, ...)
 
-\method{gmean}{dd}(ddlist, ...)
+\method{gmean}{dd}(x, ...)
 }
 \arguments{
-\item{...}{PARAM_DESCRIPTION}
+\item{x}{A \code{dd} object or a \code{ddl} list.}
 
-\item{ddlist}{PARAM_DESCRIPTION}
+\item{...}{Further arguments forwarded to the underlying \code{\link[=mean.dd]{mean.dd()}}.}
 }
 \value{
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
+A \code{dd} object (or list for \code{ddl} input).
 }
 \description{
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-
-DETAILS
-
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Bayes-space mean of a \code{dd} object or a list (\code{ddl}) of them.
 }

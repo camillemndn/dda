@@ -60,7 +60,6 @@ let
     ps: with ps; [
       dplyr
       fda
-      GGally
       ggplot2
       tidyr
     ];
@@ -128,9 +127,6 @@ let
 
       # ----- Nix -----
       nixfmt.enable = true;
-
-      # ----- Generic hygiene -----
-      trim-trailing-whitespace.enable = true;
 
       # ----- Custom: keep roxygen-generated NAMESPACE + man/ in sync -----
       roxygen-sync = {
@@ -252,7 +248,11 @@ rec {
           nativeBuildInputs = [
             cargo
             rustc
+            pkgs.glibcLocales
           ];
+          LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+          LANG = "en_US.UTF-8";
+          LC_ALL = "en_US.UTF-8";
           # Rust deps are pre-vendored under src/rust/vendor/ (committed to
           # the repo). src/Makevars.in detects that directory and runs
           # cargo with --offline + replace-with = "vendored-sources",
@@ -324,8 +324,12 @@ rec {
         nativeBuildInputs = [
           cargo
           rustc
+          pkgs.glibcLocales
           (rWrapper.override { packages = r-dev-deps rPackages; })
         ];
+        LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+        LANG = "en_US.UTF-8";
+        LC_ALL = "en_US.UTF-8";
         HOME = ".";
         buildPhase = ''
           export _R_CHECK_FORCE_SUGGESTS_=false
@@ -358,8 +362,12 @@ rec {
         nativeBuildInputs = [
           cargo
           rustc
+          pkgs.glibcLocales
           (rWrapper.override { packages = r-dev-deps rPackages; })
         ];
+        LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";
+        LANG = "en_US.UTF-8";
+        LC_ALL = "en_US.UTF-8";
         HOME = ".";
         buildPhase = ''
           export _R_CHECK_FORCE_SUGGESTS_=false

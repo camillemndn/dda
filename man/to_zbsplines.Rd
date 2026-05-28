@@ -2,7 +2,7 @@
 % Please edit documentation in R/dd.R
 \name{to_zbsplines}
 \alias{to_zbsplines}
-\title{FUNCTION_TITLE}
+\title{Change of basis to / from ZB-splines}
 \usage{
 to_zbsplines(
   fdobj = NULL,
@@ -12,27 +12,20 @@ to_zbsplines(
 )
 }
 \arguments{
-\item{fdobj}{PARAM_DESCRIPTION, Default: NULL}
+\item{fdobj}{An \code{fd} object (used only if \code{coefs} / \code{basis} are absent).}
 
-\item{coefs}{PARAM_DESCRIPTION, Default: fdobj$coefs}
+\item{coefs}{Coefficient matrix. Defaults to \code{fdobj$coefs}.}
 
-\item{basis}{PARAM_DESCRIPTION, Default: fdobj$basis}
+\item{basis}{The originating B-spline basis. Defaults to \code{fdobj$basis}.}
 
-\item{inv}{PARAM_DESCRIPTION, Default: FALSE}
+\item{inv}{If \code{TRUE}, apply the inverse transformation (ZB → B).}
 }
 \value{
-OUTPUT_DESCRIPTION
+A matrix of transformed coefficients (or \code{fd} when \code{fdobj} is
+passed).
 }
 \description{
-FUNCTION_DESCRIPTION
+Converts between a B-spline \code{fd} representation and its ZB-spline
+(zero-integral) equivalent.
 }
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-}
+\keyword{internal}

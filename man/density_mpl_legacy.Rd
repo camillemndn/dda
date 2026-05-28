@@ -2,13 +2,7 @@
 % Please edit documentation in R/density-mpl-legacy.R
 \name{density_mpl_legacy}
 \alias{density_mpl_legacy}
-\alias{loglfnden}
-\alias{Varfnden}
-\alias{normden.phi}
-\alias{expectden.phi}
-\alias{expectden.phiphit}
-\alias{polintarray}
-\title{FUNCTION_TITLE}
+\title{Silverman / Ramsay log-spline density estimator (legacy R backend)}
 \usage{
 density_mpl_legacy(
   x,
@@ -19,145 +13,28 @@ density_mpl_legacy(
   dbglev = 0,
   ...
 )
-
-loglfnden(x, f, basisobj, cvec = FALSE)
-
-Varfnden(x, basisobj, cvec = FALSE)
-
-normden.phi(basisobj, cvec, JMAX = 15, EPS = 1e-07)
-
-expectden.phi(basisobj, cvec, Cval = 1, nderiv = 0, JMAX = 15, EPS = 1e-07)
-
-expectden.phiphit(
-  basisobj,
-  cvec,
-  Cval = 1,
-  nderiv1 = 0,
-  nderiv2 = 0,
-  JMAX = 15,
-  EPS = 1e-07
-)
-
-polintarray(xa, ya, x0)
 }
 \arguments{
-\item{x}{PARAM_DESCRIPTION}
+\item{x}{Observation vector or two-column matrix.}
 
-\item{WfdParobj}{PARAM_DESCRIPTION}
+\item{WfdParobj}{An \code{fdPar} object specifying the basis and penalty.}
 
-\item{conv}{PARAM_DESCRIPTION, Default: 1e-04}
+\item{conv}{Convergence tolerance on the objective. Default \code{1e-4}.}
 
-\item{iterlim}{PARAM_DESCRIPTION, Default: 20}
+\item{iterlim}{Maximum Fisher-scoring iterations. Default \code{20}.}
 
-\item{active}{PARAM_DESCRIPTION, Default: 1:nbasis}
+\item{active}{Indices of coefficients that may be updated. Default all.}
 
-\item{dbglev}{PARAM_DESCRIPTION, Default: 0}
+\item{dbglev}{Verbosity for the line-search trace. Default \code{0}.}
 
-\item{...}{PARAM_DESCRIPTION}
-
-\item{f}{PARAM_DESCRIPTION}
-
-\item{basisobj}{PARAM_DESCRIPTION}
-
-\item{cvec}{PARAM_DESCRIPTION}
-
-\item{JMAX}{PARAM_DESCRIPTION, Default: 15}
-
-\item{EPS}{PARAM_DESCRIPTION, Default: 1e-07}
-
-\item{Cval}{PARAM_DESCRIPTION, Default: 1}
-
-\item{nderiv}{PARAM_DESCRIPTION, Default: 0}
-
-\item{nderiv1}{PARAM_DESCRIPTION, Default: 0}
-
-\item{nderiv2}{PARAM_DESCRIPTION, Default: 0}
-
-\item{xa}{PARAM_DESCRIPTION}
-
-\item{ya}{PARAM_DESCRIPTION}
-
-\item{x0}{PARAM_DESCRIPTION}
+\item{...}{Currently unused; accepted for forward-compatibility.}
 }
 \value{
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
+A list with \code{Wfdobj}, \code{C}, \code{Flist}, \code{iternum}, \code{iterhist}.
 }
 \description{
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
+Original \code{fda::density.fd} algorithm, ported verbatim. Use the unified
+\code{\link[=density_mpl]{density_mpl()}} (default backend: \code{"rust"}) unless you need bit-for-bit
+compatibility with prior results.
 }
-\details{
-DETAILS
-
-DETAILS
-
-DETAILS
-
-DETAILS
-
-DETAILS
-
-DETAILS
-
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-}
+\keyword{internal}

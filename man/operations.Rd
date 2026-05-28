@@ -8,7 +8,7 @@
 \alias{+.ddl}
 \alias{-.ddl}
 \alias{*.ddl}
-\title{Bayes space operations}
+\title{Bayes-space arithmetic on \code{dd} / \code{ddl} objects}
 \usage{
 \method{+}{dd}(...)
 
@@ -18,12 +18,22 @@
 
 \method{[}{dd}(...)
 
-\method{+}{ddl}(ddl1, ddl2, ...)
+\method{+}{ddl}(e1, e2)
 
-\method{-}{ddl}(ddl1, ddl2, ...)
+\method{-}{ddl}(e1, e2)
 
-\method{*}{ddl}(ddl1, ddl2, ...)
+\method{*}{ddl}(e1, e2)
+}
+\arguments{
+\item{...}{For \code{+.dd} / \code{-.dd} / \verb{*.dd} / \verb{[.dd}, the operands and
+indexing args forwarded to the underlying \code{fda} operator.}
+
+\item{e1, e2}{\code{dd} (or \code{ddl}) operands.}
+}
+\value{
+A \code{dd} object (or \code{ddl} list for \code{ddl} operands).
 }
 \description{
-Bayes space operations
+Pointwise Bayes-space addition, subtraction, multiplication and
+subsetting for distributional-data objects.
 }

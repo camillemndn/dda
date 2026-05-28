@@ -4,46 +4,20 @@
 \alias{c.dd}
 \alias{c.ddl}
 \alias{c.fdl}
-\title{FUNCTION_TITLE}
+\title{Concatenate distributional / functional objects}
 \usage{
 \method{c}{dd}(...)
 
 \method{c}{ddl}(...)
 
-\method{c}{fdl}(l)
+\method{c}{fdl}(...)
 }
 \arguments{
-\item{...}{PARAM_DESCRIPTION}
-
-\item{l}{PARAM_DESCRIPTION}
+\item{...}{Objects to concatenate (each \code{dd}, \code{ddl}, or \code{fdl}).}
 }
 \value{
-OUTPUT_DESCRIPTION
-
-OUTPUT_DESCRIPTION
+A single combined object of the same class as the first input.
 }
 \description{
-FUNCTION_DESCRIPTION
-
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-
-DETAILS
-}
-\examples{
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-\dontrun{
-if (interactive()) {
-  # EXAMPLE1
-}
-}
-}
-\seealso{
-\code{\link[fda]{character(0)}}
+Concatenate distributional / functional objects
 }
