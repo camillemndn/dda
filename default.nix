@@ -58,12 +58,11 @@ let
 
   r-import-deps =
     ps: with ps; [
+      dplyr
       fda
       GGally
       ggplot2
-      ICS
-      ICSOutlier
-      memoise
+      tidyr
     ];
 
   r-suggest-deps =
@@ -120,18 +119,17 @@ in
 rec {
   devShells.default = pkgs.mkShell {
     buildInputs = with pkgs; [
-      (quarto.override { extraRPackages = r-deps pkgs.rPackages; }) # ++ [ packages.x86_64-linux.dda ]; })
-      (rWrapper.override { packages = r-deps pkgs.rPackages; }) # ++ [ packages.x86_64-linux.dda ]; })
-      texliveFull
-      lon
+      (quarto.override { extraRPackages = r-deps pkgs.rPackages; })
+      (rWrapper.override { packages = r-deps pkgs.rPackages; })
       cargo
+      clippy
+      lon
       rustc
       rustfmt
-      clippy
+      texliveFull
     ];
     shellHook = ''
       ${pre-commit-hook.shellHook}
-      #Rscript -e "devtools::document()"
     '';
   };
 
@@ -144,13 +142,20 @@ rec {
           stdenv,
           rWrapper,
           rPackages,
+          cargo,
+          rustc,
           ...
         }:
         stdenv.mkDerivation {
           inherit name;
           src = builtins.fetchGit ./.;
 
-          buildInputs = [ (rWrapper.override { packages = r-dev-deps rPackages; }) ];
+          buildInputs = [
+            cargo
+            rustc
+            (rWrapper.override { packages = r-dev-deps rPackages; })
+          ];
+
           HOME = ".";
 
           buildPhase = ''
@@ -172,10 +177,24 @@ rec {
     in
     {
       dda = pkgs.callPackage (
-        { rPackages, ... }:
+        {
+          rPackages,
+          cargo,
+          rustc,
+          ...
+        }:
         rPackages.buildRPackage {
           name = "dda";
           src = builtins.fetchGit ./.;
+          nativeBuildInputs = [
+            cargo
+            rustc
+          ];
+          # Rust deps are pre-vendored under src/rust/vendor/ (committed to
+          # the repo). src/Makevars.in detects that directory and runs
+          # cargo with --offline + replace-with = "vendored-sources",
+          # which works both inside the Nix sandbox and on the CRAN build
+          # farm.
           propagatedBuildInputs = r-import-deps rPackages;
         }
       ) { };
@@ -187,6 +206,8 @@ rec {
           pandoc,
           rPackages,
           rWrapper,
+          cargo,
+          rustc,
           ...
         }:
 
@@ -194,6 +215,8 @@ rec {
           name = "dda-website";
           src = builtins.fetchGit ./.;
           buildInputs = [
+            cargo
+            rustc
             image_optim
             pandoc
             (rWrapper.override { packages = r-dev-deps rPackages; })

@@ -1,0 +1,22 @@
+[package]
+name = "savvy-bindgen"
+description = "Parse Rust functions, and generate C and R code"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full", "extra-traits"] }
+prettyplease = { version = "0.2", optional = true }
+
+[features]
+default = []
+use_formatter = ["prettyplease"]
+
+[package.metadata.dist]
+dist = false

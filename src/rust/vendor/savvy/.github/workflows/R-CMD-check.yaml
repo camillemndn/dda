@@ -1,0 +1,83 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+name: R-CMD-check
+
+jobs:
+  R-CMD-check:
+    runs-on: ${{ matrix.config.os }}
+    defaults:
+      run:
+        shell: bash
+
+    name: "${{ matrix.config.os }} (R: ${{ matrix.config.r }}, rust: ${{ matrix.config.rust }})"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          # prettier-ignore
+          - { os: "macos-latest",     r: "release", rust: "stable" }
+          - { os: "macos-15-intel",   r: "release", rust: "stable" }
+          - { os: "windows-latest",   r: "release", rust: "stable" }
+          - { os: "ubuntu-latest",    r: "release", rust: "stable" }
+          - { os: "ubuntu-latest",    r: "devel",   rust: "stable", http-user-agent: "release" }
+          - { os: "ubuntu-latest",    r: "release", rust: "nightly" }
+          - { os: "ubuntu-24.04-arm", r: "release", rust: "stable", rspm: "false"}
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dtolnay/rust-toolchain@nightly
+        if: matrix.config.rust == 'nightly'
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          http-user-agent: ${{ matrix.config.http-user-agent }}
+          use-public-rspm: ${{ matrix.config.rspm || 'true' }}
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::rcmdcheck
+            github::yutannihilation/savvy-helper-R-package
+          needs: check
+          working-directory: R-package
+
+      - name: Run cargo test
+        run: |
+          cargo test --manifest-path=./savvy-macro/Cargo.toml
+          cargo test --manifest-path=./savvy-bindgen/Cargo.toml
+          cargo test --manifest-path=./savvy-cli/Cargo.toml
+
+          # run `savvy-cli test` to test savvy itself
+          cargo r-test --features complex
+
+          # run `savvy-cli test` on R-package to test `savvy-cli test`
+          cargo r-test ./R-package/src/rust/
+        env:
+          SAVVY_PROFILE: dev
+
+      - uses: r-lib/actions/check-r-package@v2
+        with:
+          args: 'c("--no-manual")' # no --as-cran
+          upload-snapshots: true
+          working-directory: R-package
+        env:
+          MAKEFLAGS: -j2 # cf. https://github.com/yutannihilation/savvy/issues/355#issuecomment-2740005471
+          SAVVY_PROFILE: dev
+
+      - name: debug
+        run: cat ./R-package/check/*.Rcheck/00install.out
+        if: ${{ always() }}

@@ -1,0 +1,28 @@
+[package]
+name = "savvy-macro"
+description = "Generate R-ready Rust functions by adding `#[savvy]` macro"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme = "README.md"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full", "extra-traits"] }
+
+savvy-bindgen = { version = "0.10.2", path = "../savvy-bindgen" }
+
+[dev-dependencies]
+trybuild = "1"
+prettyplease = "0.2"
+insta = { version = "1.38.0", features = ["yaml"] }
+
+[package.metadata.dist]
+dist = false

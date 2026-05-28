@@ -67,8 +67,11 @@ docs
 # Nix
 result*
 
-# Rust build artifacts
+# Rust / C build artifacts
 src/Makevars
 src/.cargo/
 src/rust/target/
+src/*.so
+src/*.o
+src/symbols.rds
 

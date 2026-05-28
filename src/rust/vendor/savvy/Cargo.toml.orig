@@ -1,0 +1,79 @@
+[package]
+name = "savvy"
+description = "A simple R extension interface"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+readme = "README.md"
+exclude = ["/book", "/R-package", "README.qmd"]
+
+rust-version = "1.88"
+
+[dependencies]
+savvy-ffi = { version = "0.10.2", path = "./savvy-ffi" }
+savvy-macro = { version = "0.10.2", path = "./savvy-macro" }
+num-complex = { version = "0.4.5", optional = true }
+
+log = { version = "0.4", optional = true }
+env_logger = { version = "0.11", default-features = false, optional = true }
+
+[features]
+default = []
+
+# Support complex
+complex = ["num-complex", "savvy-ffi/complex"]
+
+# Support ALTREP
+altrep = ["savvy-ffi/altrep"]
+
+# Support logger
+logger = ["log", "env_logger"]
+
+# By default, savvy provides `impl<E: std::error::Error + 'static> From<E> for Error`.
+# However, this conflicts if the user implements their custom error and the
+# conversion from it to savvy::Error. This flag removes the impl to allow such a
+# custom error.
+use-custom-error = []
+
+savvy-test = []
+
+[build-dependencies]
+cc = "1.2.9" # 1.2.8 had a problem with webr build
+
+[package.metadata.docs.rs]
+features = ["complex", "altrep", "logger"]
+
+[workspace.metadata.release]
+tag = false # do not create tags for individual crates (e.g. "savvy-cli-v0.2.5")
+
+[package.metadata.release]
+tag = true # create a single tag for the version (e.g. "v0.2.5")
+pre-release-replacements = [
+    { file = "CHANGELOG.md", search = "Unreleased", replace = "v{{version}}", min = 1 },
+    { file = "CHANGELOG.md", search = "\\.\\.\\.HEAD", replace = "...{{tag_name}}", exactly = 1 },
+    { file = "CHANGELOG.md", search = "ReleaseDate", replace = "{{date}}", min = 1 },
+    { file = "CHANGELOG.md", search = "<!-- next-header -->", replace = "<!-- next-header -->\n## [Unreleased] (ReleaseDate)\n", exactly = 1 },
+    { file = "CHANGELOG.md", search = "<!-- next-url -->", replace = "<!-- next-url -->\n[Unreleased]: https://github.com/yutannihilation/savvy/compare/{{tag_name}}...HEAD", exactly = 1 },
+]
+
+[package.metadata.dist]
+dist = false
+
+[workspace]
+members = ["savvy-macro", "savvy-bindgen", "savvy-cli", "savvy-ffi", "xtask"]
+resolver = "2"
+
+[workspace.package]
+version = "0.10.2"
+edition = "2024"
+authors = ["Hiroaki Yutani"]
+license = "MIT"
+repository = "https://github.com/yutannihilation/savvy/"
+homepage = "https://yutannihilation.github.io/savvy/guide/"
+
+# The profile that 'cargo dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
