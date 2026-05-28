@@ -85,3 +85,50 @@ test_that("Two-column input with frequencies is handled identically", {
   expect_densities_close(res, seq(-4, 4, length.out = 401), tol = 5e-3)
   expect_rust_at_least_as_good(res)
 })
+
+# ---------------------------------------------------------------------------
+# Closed-form / math-based tests (no reference to R's density.fd).
+#
+# At the MLE of the exponential family p(x;c) = exp(φ(x)ᵀ c) / C(c), the
+# gradient zero condition is
+#         E_p[φ_j(X)]  =  (1/F) Σ_i f_i φ_j(x_i)        for each j,
+# i.e. the population moments of the basis functions under the fitted
+# density equal their (weighted) empirical moments. For a B-spline
+# (partition of unity) basis this holds with no constant slack, so we can
+# check the equality directly — no R reference needed.
+
+mle_moment_check <- function(x, basis, tol) {
+  Wfd0 <- fda::fd(matrix(0, basis$nbasis, 1), basis)
+  WfdPar <- fda::fdPar(Wfd0, lambda = 0)
+  res <- dda::density_fd_rust(x, WfdPar, conv = 1e-10, iterlim = 200)
+
+  # Empirical moment of each basis function: (1/N) Σ_i φ_j(x_i).
+  phi_sample  <- fda::eval.basis(x, basis)
+  emp_moments <- colMeans(phi_sample)
+
+  # Population moment under the fitted density via a fine trapezoid rule
+  # (well past the 1e-7 tolerance of Romberg used inside the Rust kernel).
+  rng  <- basis$rangeval
+  grid <- seq(rng[1], rng[2], length.out = 8001)
+  dx   <- (rng[2] - rng[1]) / 8000
+  W    <- as.numeric(fda::eval.fd(grid, res$Wfdobj))
+  p    <- exp(W) / res$C
+  phi_grid    <- fda::eval.basis(grid, basis)
+  mle_moments <- as.numeric(colSums(phi_grid * p) * dx)
+
+  expect_lt(max(abs(mle_moments - emp_moments)), tol)
+}
+
+test_that("MLE moment-matching condition holds (B-spline, Gaussian sample)", {
+  skip_if_no_rust()
+  set.seed(11); x <- rnorm(500)
+  basis <- fda::create.bspline.basis(c(-4, 4), nbasis = 13, norder = 4)
+  mle_moment_check(x, basis, tol = 1e-4)
+})
+
+test_that("MLE moment-matching condition holds (B-spline, mixture)", {
+  skip_if_no_rust()
+  set.seed(12); x <- c(rnorm(300, -1, 0.6), rnorm(200, 1.2, 0.4))
+  basis <- fda::create.bspline.basis(c(-4, 4), nbasis = 17, norder = 4)
+  mle_moment_check(x, basis, tol = 1e-4)
+})
