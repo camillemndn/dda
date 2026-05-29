@@ -18,6 +18,7 @@ Imports:
 Suggests:
     boot,
     corrplot,
+    covr,
     DeBoinR,
     fdANOVA,
     fda.usc,

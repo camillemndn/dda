@@ -375,5 +375,63 @@ rec {
         '';
       }
     ) { };
+
+    # `covr::package_coverage()` — line-level coverage of the R surface.
+    # The testthat suite skips unless `DDA_RUST_INSTALLED` is set, so we
+    # signal that explicitly. Emits:
+    #   coverage.html — full self-contained covr report
+    #   coverage.rds  — the coverage object (load with readRDS)
+    #   coverage.json — shields.io endpoint payload for a README badge
+    coverage = pkgs.callPackage (
+      {
+        stdenv,
+        rWrapper,
+        rPackages,
+        cargo,
+        rustc,
+        glibcLocales,
+        ...
+      }:
+      stdenv.mkDerivation {
+        name = "dda-coverage";
+        src = builtins.fetchGit ./.;
+        nativeBuildInputs = [
+          cargo
+          rustc
+          glibcLocales
+          (rWrapper.override {
+            packages = r-dev-deps rPackages ++ [ rPackages.covr ];
+          })
+        ];
+        LOCALE_ARCHIVE = "${glibcLocales}/lib/locale/locale-archive";
+        LANG = "en_US.UTF-8";
+        LC_ALL = "en_US.UTF-8";
+        HOME = ".";
+        DDA_RUST_INSTALLED = "1";
+        buildPhase = ''
+          Rscript -e '
+            cov <- covr::package_coverage(
+              # savvy-generated .Call wrappers are not user code.
+              line_exclusions = list("R/000-wrappers.R")
+            )
+            print(cov)
+            pct <- round(100 * covr::percent_coverage(cov), 1)
+            cat(sprintf("\nTotal R coverage: %s%%\n", pct))
+            covr::report(cov, file = "coverage.html", browse = FALSE)
+            saveRDS(cov, "coverage.rds")
+            color <- if (pct > 80) "brightgreen"
+                     else if (pct > 60) "yellow" else "red"
+            writeLines(sprintf(
+              "{\"schemaVersion\":1,\"label\":\"coverage\",\"message\":\"%s%%\",\"color\":\"%s\"}",
+              format(pct, nsmall = 1), color
+            ), "coverage.json")
+          '
+        '';
+        installPhase = ''
+          mkdir -p $out
+          cp coverage.html coverage.rds coverage.json $out/
+        '';
+      }
+    ) { };
   };
 }
