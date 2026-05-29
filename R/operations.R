@@ -64,10 +64,21 @@ gmean.dd <- function(x, ...) mean.dd(x, normalize = FALSE)
 
 #' Bayes-space arithmetic on `dd` / `ddl` objects
 #'
-#' Pointwise Bayes-space addition, subtraction, multiplication and
-#' subsetting for distributional-data objects.
+#' Bayes-Hilbert space operations on distributional data:
+#' \itemize{
+#'   \item `+.dd(p, q)`: density "addition" \eqn{p \oplus q = pq / \int pq};
+#'         clr is `clr(p) + clr(q)`.
+#'   \item `-.dd(p, q)`: density "subtraction" \eqn{p \ominus q = (p/q) / Z};
+#'         clr is `clr(p) - clr(q)`.
+#'   \item `*.dd(alpha, p)`: scalar multiplication
+#'         \eqn{\alpha \odot p = p^{\alpha} / Z}; clr is `alpha * clr(p)`.
+#'         One operand must be a numeric scalar; `dd * dd` is not defined
+#'         in Bayes space and errors.
+#'   \item `[.dd(x, i)`: select realizations from a multi-column `dd`.
+#' }
 #'
-#' @param e1,e2 `dd` (or `ddl`) operands.
+#' @param e1,e2 `dd` (or `ddl`) operands. For `*` exactly one of them must
+#'   be a length-1 numeric scalar.
 #' @return A `dd` object (or `ddl` list for `ddl` operands).
 #' @rdname operations
 #' @export
@@ -79,7 +90,19 @@ gmean.dd <- function(x, ...) mean.dd(x, normalize = FALSE)
 
 #' @rdname operations
 #' @export
-`*.dd` <- function(e1, e2) dd(clr = fda::times.fd(e1, e2))
+`*.dd` <- function(e1, e2) {
+  if (is.numeric(e1) && length(e1) == 1L) {
+    alpha <- e1; p <- e2
+  } else if (is.numeric(e2) && length(e2) == 1L) {
+    alpha <- e2; p <- e1
+  } else {
+    stop("`*` on `dd` is Bayes-space scalar multiplication; ",
+         "one operand must be a length-1 numeric scalar.")
+  }
+  fd_p <- as.fd(p)
+  fd_p$coefs <- alpha * fd_p$coefs
+  dd(clr = fd_p)
+}
 
 #' @rdname operations
 #' @param x A `dd` object to subset.
@@ -116,7 +139,18 @@ relative.dd <- function(e1, e2, ...) {
 
 #' @rdname operations
 #' @export
-`*.ddl` <- function(e1, e2) as.list(`*.dd`(c(e1), c(e2)))
+`*.ddl` <- function(e1, e2) {
+  if (is.numeric(e1) && length(e1) == 1L && inherits(e2, "ddl")) {
+    structure(lapply(e2, function(p) e1 * p),
+              class = c("ddl", "fdl", "list"))
+  } else if (inherits(e1, "ddl") && is.numeric(e2) && length(e2) == 1L) {
+    structure(lapply(e1, function(p) p * e2),
+              class = c("ddl", "fdl", "list"))
+  } else {
+    stop("`*` on `ddl` is Bayes-space scalar multiplication; ",
+         "one operand must be a length-1 numeric scalar.")
+  }
+}
 
 #' @rdname relative
 #' @export

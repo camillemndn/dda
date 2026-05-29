@@ -25,7 +25,8 @@
 \method{*}{ddl}(e1, e2)
 }
 \arguments{
-\item{e1, e2}{\code{dd} (or \code{ddl}) operands.}
+\item{e1, e2}{\code{dd} (or \code{ddl}) operands. For \code{*} exactly one of them must
+be a length-1 numeric scalar.}
 
 \item{x}{A \code{dd} object to subset.}
 
@@ -35,6 +36,16 @@
 A \code{dd} object (or \code{ddl} list for \code{ddl} operands).
 }
 \description{
-Pointwise Bayes-space addition, subtraction, multiplication and
-subsetting for distributional-data objects.
+Bayes-Hilbert space operations on distributional data:
+\itemize{
+\item \code{+.dd(p, q)}: density "addition" \eqn{p \oplus q = pq / \int pq};
+clr is \code{clr(p) + clr(q)}.
+\item \code{-.dd(p, q)}: density "subtraction" \eqn{p \ominus q = (p/q) / Z};
+clr is \code{clr(p) - clr(q)}.
+\item \verb{*.dd(alpha, p)}: scalar multiplication
+\eqn{\alpha \odot p = p^{\alpha} / Z}; clr is \code{alpha * clr(p)}.
+One operand must be a numeric scalar; \code{dd * dd} is not defined
+in Bayes space and errors.
+\item \verb{[.dd(x, i)}: select realizations from a multi-column \code{dd}.
+}
 }
