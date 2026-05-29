@@ -17,19 +17,6 @@ let
               };
             };
 
-            pkgdown_offline = buildRPackage {
-              name = "pkgdown_offline";
-              src = pkgs.fetchFromGitHub {
-                owner = "nanxstats";
-                repo = "pkgdown.offline";
-                rev = "v0.1.1";
-                hash = "sha256-zu16X/WbCTdrIv5GNOUQbWuqDWCrSHAII7uf8I+2Wdk=";
-              };
-              propagatedBuildInputs = [
-                pkgdown
-              ];
-            };
-
             tidyfun = buildRPackage {
               name = "tidyfun";
               src = pkgs.fetchFromGitHub {
