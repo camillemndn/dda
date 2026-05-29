@@ -68,21 +68,24 @@ gmean.dd <- function(x, ...) mean.dd(x, normalize = FALSE)
 #' subsetting for distributional-data objects.
 #'
 #' @param e1,e2 `dd` (or `ddl`) operands.
-#' @param ... For `+.dd` / `-.dd` / `*.dd` / `[.dd`, the operands and
-#'   indexing args forwarded to the underlying `fda` operator.
 #' @return A `dd` object (or `ddl` list for `ddl` operands).
 #' @rdname operations
 #' @export
-`+.dd` <- function(...) dd(clr = fda::plus.fd(...))
+`+.dd` <- function(e1, e2) dd(clr = fda::plus.fd(e1, e2))
+
 #' @rdname operations
 #' @export
-`-.dd` <- function(...) dd(clr = fda::minus.fd(...))
+`-.dd` <- function(e1, e2) dd(clr = fda::minus.fd(e1, e2))
+
 #' @rdname operations
 #' @export
-`*.dd` <- function(...) dd(clr = fda::times.fd(...))
+`*.dd` <- function(e1, e2) dd(clr = fda::times.fd(e1, e2))
+
 #' @rdname operations
+#' @param x A `dd` object to subset.
+#' @param i Index (vector, logical, or name) selecting realizations.
 #' @export
-`[.dd` <- function(...) dd(clr = fda::`[.fd`(...))
+`[.dd` <- function(x, i) dd(clr = fda::`[.fd`(x, i))
 #' Bayes-space relative density
 #'
 #' Generic `relative(e1, e2)` returns the Bayes-space ratio of two
@@ -106,9 +109,11 @@ relative.dd <- function(e1, e2, ...) {
 #' @rdname operations
 #' @export
 `+.ddl` <- function(e1, e2) as.list(`+.dd`(c(e1), c(e2)))
+
 #' @rdname operations
 #' @export
 `-.ddl` <- function(e1, e2) as.list(`-.dd`(c(e1), c(e2)))
+
 #' @rdname operations
 #' @export
 `*.ddl` <- function(e1, e2) as.list(`*.dd`(c(e1), c(e2)))

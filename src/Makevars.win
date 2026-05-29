@@ -10,6 +10,7 @@ VENDOR_DIR = $(CURDIR)/rust/vendor
 $(SHLIB): $(STATLIB)
 
 $(STATLIB):
+	@cargo --version && rustc --version
 	if [ -d "$(VENDOR_DIR)" ]; then \
 		mkdir -p $(CARGOTMP) && \
 		echo '[source.crates-io]'                 >  $(CARGOTMP)/config.toml && \

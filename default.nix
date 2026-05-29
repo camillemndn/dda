@@ -341,6 +341,10 @@ rec {
         rPackages,
         cargo,
         rustc,
+        checkbashisms,
+        glibcLocales,
+        pandoc,
+        qpdf,
         ...
       }:
       stdenv.mkDerivation {
@@ -348,8 +352,11 @@ rec {
         src = builtins.fetchGit ./.;
         nativeBuildInputs = [
           cargo
+          checkbashisms
+          glibcLocales
+          pandoc
+          qpdf
           rustc
-          pkgs.glibcLocales
           (rWrapper.override { packages = r-dev-deps rPackages; })
         ];
         LOCALE_ARCHIVE = "${pkgs.glibcLocales}/lib/locale/locale-archive";

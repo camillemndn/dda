@@ -10,13 +10,13 @@
 \alias{*.ddl}
 \title{Bayes-space arithmetic on \code{dd} / \code{ddl} objects}
 \usage{
-\method{+}{dd}(...)
+\method{+}{dd}(e1, e2)
 
-\method{-}{dd}(...)
+\method{-}{dd}(e1, e2)
 
-\method{*}{dd}(...)
+\method{*}{dd}(e1, e2)
 
-\method{[}{dd}(...)
+\method{[}{dd}(x, i)
 
 \method{+}{ddl}(e1, e2)
 
@@ -25,10 +25,11 @@
 \method{*}{ddl}(e1, e2)
 }
 \arguments{
-\item{...}{For \code{+.dd} / \code{-.dd} / \verb{*.dd} / \verb{[.dd}, the operands and
-indexing args forwarded to the underlying \code{fda} operator.}
-
 \item{e1, e2}{\code{dd} (or \code{ddl}) operands.}
+
+\item{x}{A \code{dd} object to subset.}
+
+\item{i}{Index (vector, logical, or name) selecting realizations.}
 }
 \value{
 A \code{dd} object (or \code{ddl} list for \code{ddl} operands).
