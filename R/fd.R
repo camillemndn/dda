@@ -34,7 +34,7 @@ as.fd.dd <- function(x, ...) {
 #' @rdname c
 #' @export
 c.fdl <- function(...) {
-  do.call(getS3method("c", "fd"), unlist(list(...), recursive = FALSE))
+  do.call(utils::getFromNamespace("c.fd", "fda"), unlist(list(...), recursive = FALSE))
 }
 
 #' @export

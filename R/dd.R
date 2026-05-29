@@ -129,7 +129,7 @@ c.dd <- function(...) {
 		x$basis$call <- NULL
 		x
 	})
-	ddobj <- do.call(getS3method("c", "fd"), ddlist)
+	ddobj <- do.call(utils::getFromNamespace("c.fd", "fda"), ddlist)
 	class(ddobj) <- c("dd", "fd")
 	ddobj$constant <- unlist(lapply(ddlist, \(x) x$constant))
 	ddobj$sample <- lapply(ddlist, \(x) x$sample)
